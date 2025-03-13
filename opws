@@ -728,7 +728,7 @@ local function handlePlayer()
     wait(0.1)
 end
 
-SectionQuest:AddToggle({
+TabQuest:AddToggle({
     Name = "AutoQuest [ XP + Essence ]",
     Default = false,
     Callback = function(Value)
