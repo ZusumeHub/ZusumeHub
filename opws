@@ -768,38 +768,6 @@ local autoCollectActive = false
 local statusLabel = TabAutoCollect:AddLabel("Status: ❌ INACTIVE")
 local clickIndicatorGui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
 
-
--- Dropdown AutoCollect v2
-SectionCollect:AddDropdown({
-    Name = "AutoCollect",
-    Default = "AutoCollect v2",
-    Options = {"AutoCollect v2"},
-    Callback = function(Value)
-        autoCollectActive = (Value == "AutoCollect v2")
-        updateSize(autoCollectActive and 100 or 10)
-    end
-})
-
--- Input X Offset
-SectionCollect:AddTextbox({
-    Name = "X Offset",
-    Default = tostring(config.XOffset),
-    TextDisappear = false,
-    Callback = function(Value)
-        config.XOffset = tonumber(Value) or 0
-    end
-})
-
--- Input Y Offset
-SectionCollect:AddTextbox({
-    Name = "Y Offset",
-    Default = tostring(config.YOffset),
-    TextDisappear = false,
-    Callback = function(Value)
-        config.YOffset = tonumber(Value) or 0
-    end
-})
-
 -- AutoCollect Function
 local function updateSize(size)
     for _, bag in ipairs(game.Workspace:GetChildren()) do
@@ -898,6 +866,38 @@ local function autoClickLoop()
         task.wait(success and CLICK_INTERVAL or 0.5)
     end
 end
+
+-- Input X Offset
+SectionCollect:AddTextbox({
+    Name = "X Offset",
+    Default = tostring(config.XOffset),
+    TextDisappear = false,
+    Callback = function(Value)
+        config.XOffset = tonumber(Value) or 0
+    end
+})
+
+-- Input Y Offset
+SectionCollect:AddTextbox({
+    Name = "Y Offset",
+    Default = tostring(config.YOffset),
+    TextDisappear = false,
+    Callback = function(Value)
+        config.YOffset = tonumber(Value) or 0
+    end
+})
+
+-- Dropdown AutoCollect v2
+SectionCollect:AddDropdown({
+    Name = "AutoCollect",
+    Default = "AutoCollect v2",
+    Options = {"AutoCollect v2"},
+    Callback = function(Value)
+        autoCollectActive = (Value == "AutoCollect v2")
+        updateSize(autoCollectActive and 100 or 10)
+    end
+})
+
 
 -- Toggle Button
 SectionCollect:AddToggle({
