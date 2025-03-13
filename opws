@@ -677,7 +677,7 @@ end
 
 -- Toggle AutoHarvest menggunakan OrionLib (tanpa GUI custom lainnya)
 SectionQuest:AddToggle({
-    Name = "Auto Harvest",
+    Name = "Auto Harvest [ Mushroom+Berry ]",
     Default = false,
     Callback = function(Value)
         enabled = Value
@@ -751,7 +751,7 @@ SectionQuest:AddToggle({
 
 local SectionAutoCollect = TabAutoCollect:AddSection({ Name = "AutoCollect Setting" })
 -- Konfigurasi Default
-local DEFAULT_OFFSET = { X = 0, Y = 10 }
+local DEFAULT_OFFSET = { X = 0, Y = 45 }
 local CLICK_INTERVAL = 0.1
 local config = {
     XOffset = DEFAULT_OFFSET.X,
@@ -767,6 +767,17 @@ local autoCollectActive = false
 -- Sistem Indikator
 local statusLabel = TabAutoCollect:AddLabel("Status: ❌ INACTIVE")
 local clickIndicatorGui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
+
+-- Dropdown AutoCollect v2
+TabAutoCollect:AddDropdown({
+    Name = "AutoCollect",
+    Default = "AutoCollect v2",
+    Options = {"AutoCollect v2"},
+    Callback = function(Value)
+        autoCollectActive = (Value == "AutoCollect v2")
+        updateSize(autoCollectActive and 100 or 10)
+    end
+})
 
 -- Input X Offset
 TabAutoCollect:AddTextbox({
@@ -904,17 +915,6 @@ TabAutoCollect:AddToggle({
             if guiUpdater then task.cancel(guiUpdater) guiUpdater = nil end
             updateSize(10) -- Reset TriggerRadius saat dimatikan
         end
-    end
-})
-
--- Dropdown AutoCollect v2
-TabAutoCollect:AddDropdown({
-    Name = "AutoCollect",
-    Default = "AutoCollect v2",
-    Options = {"AutoCollect v2"},
-    Callback = function(Value)
-        autoCollectActive = (Value == "AutoCollect v2")
-        updateSize(autoCollectActive and 100 or 10)
     end
 })
 
