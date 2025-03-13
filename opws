@@ -751,7 +751,7 @@ SectionQuest:AddToggle({
 
 local SectionCollect = TabAutoCollect:AddSection({ Name = "AutoCollect Setting" })
 -- Konfigurasi Default
-local DEFAULT_OFFSET = { X = 0, Y = 10 }
+local DEFAULT_OFFSET = { X = 0, Y = 45 }
 local CLICK_INTERVAL = 0.1
 local config = {
     XOffset = DEFAULT_OFFSET.X,
@@ -1217,283 +1217,426 @@ SectionAdmin:AddButton({
 
 local SectionMining = TabMining:AddSection({ Name = "Mining Features" })
 
-local Player = game.Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
+local player = Players.LocalPlayer
+local Character = player.Character or player.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
-local miningOptions = {
-    "Default", 
-    "Rock", 
-    "Moonstone", 
-    "Emerald", 
-    "Amberite", 
-    "Amethys", 
-    "OakWood", 
-    "MapleWood", 
-    "PalmWood", 
-    "YggrasilCelestial", 
-    "PhoenixTimber", 
-    "Emberstone"
-}
+-- Folder Harvest (pastikan struktur ini sesuai)
+local harvestFolderPath = workspace:WaitForChild("Game"):WaitForChild("Harvest")
+local enabledharvest1 = false
 
--- Locations categorized by ore type
+---------------------------------------------------
+-- Tabel lokasi ore (semua koordinat)
+---------------------------------------------------
 local locations = {
     PalmWood = {
-        Vector3.new(9326.69, 40, -1926),
-        Vector3.new(9411, 42, -1764.89),
-        Vector3.new(9443.69, 42, -1530.52),
-        Vector3.new(9682, 39.9, -1666.58),
-        Vector3.new(9915, 44.2, -1797.32),
-        Vector3.new(10007, 40.2, -1530.21),
-        Vector3.new(10008.25, 39.5, -1529.86),
-        Vector3.new(10971.68, 39.9, -1469.31),
-        Vector3.new(5928, 16, -2654.92),
-        Vector3.new(5990.56, 16, -2611.49),
-        Vector3.new(6002.63, 16, -2511.28),
-        Vector3.new(6074, 16, -2344.73),
-        Vector3.new(3484, 16, -127.93),
-        Vector3.new(3820.36, 24, 8.46),
-        Vector3.new(3927, 20, 117.29),
-        Vector3.new(4211, 12, 474.25),
-        Vector3.new(4300, 28, 385.70)
+    Vector3.new(9326.69, 30, -1926),
+    Vector3.new(9411, 32, -1764.89),
+    Vector3.new(9443.69, 32, -1530.52),
+    Vector3.new(9682, 29.9, -1666.58),
+    Vector3.new(9915, 34.2, -1797.32),
+    Vector3.new(10007, 30.2, -1530.21),
+    Vector3.new(10008.25, 29.5, -1529.86),
+    Vector3.new(10971.68, 29.9, -1469.31),
+    Vector3.new(5928, 6, -2654.92),
+    Vector3.new(5990.56, 6, -2611.49),
+    Vector3.new(6002.63, 6, -2511.28),
+    Vector3.new(6074, 6, -2344.73),
+    Vector3.new(3484, 6, -127.93),
+    Vector3.new(3820.36, 14, 8.46),
+    Vector3.new(3927, 10, 117.29),
+    Vector3.new(4211, 2, 474.25),
+    Vector3.new(4300, 18, 385.70)
+},
+YggrasilCelestial = {
+    Vector3.new(-988.24, 130, -1882.98),
+    Vector3.new(-1178.15, 140.00, -2282.66),
+    Vector3.new(1509.65, 88, -3567.02),
+    Vector3.new(1760.83, 90, -3313.54),
+    Vector3.new(2031.67, 99, -4209.42),
+    Vector3.new(1649.11, 95, -4267.45),
+    Vector3.new(1015.43, 90, -3682.32),
+    Vector3.new(1369, 170, -3138.73)
+},
+Moonstone = {
+    Vector3.new(1635.84, -245, 188.75),
+    Vector3.new(2286.72, -250, 107.21),
+    Vector3.new(2517, -285, 96),
+    Vector3.new(2419, -265, 534),
+    Vector3.new(1707, -130, -805),
+    Vector3.new(2401.77, -215, -292.88),
+    Vector3.new(2171.57, -205, -406.99),
+    Vector3.new(1696, -232, -187),
+    Vector3.new(3344.34, 49.45, -801.09),
+    Vector3.new(3138.30, 45, -376.54),
+    Vector3.new(3018.03, 45, -451.32),
+    Vector3.new(2133, 12, -1143),
+    Vector3.new(1959, 17, -1589),
+    Vector3.new(3898, 35, -923),
+    Vector3.new(4094.10, 40, -1108.67),
+    Vector3.new(3653.50, 55, -558.37),
+    Vector3.new(4000.84, 45, -401.76),
+    Vector3.new(3651.48, 50, -556.75),
+    Vector3.new(2528, 24, -3054.78)
+},
+PhoenixTimber = {
+    Vector3.new(2128.79, 70, -3765.65),
+    Vector3.new(1781.60, 90, -4318.85),
+    Vector3.new(1472.45, 173, -3099.79),
+    Vector3.new(2487.99, 27, -2909.80),
+    Vector3.new(1332.81, 20, -2114.49)
+},
+OakWood = {
+    Vector3.new(2425.61, 18, -1391.93),
+    Vector3.new(2140, 20, -1416),
+    Vector3.new(2159, -200, -305),
+    Vector3.new(1938, -210, -108.56),
+    Vector3.new(1971, -247, 190),
+    Vector3.new(2036, -265, 302),
+    Vector3.new(2208, -246, 79),
+    Vector3.new(2517.45, -279, 178),
+    Vector3.new(2191.86, -275, 342),
+    Vector3.new(4340, -99, -1051.72),
+    Vector3.new(4201, 75, -371),
+    Vector3.new(4816, 67, -458),
+    Vector3.new(3941.34, 45, -282.34),
+    Vector3.new(3322.51, 60, -425.17)
+},
+Rock = {
+    Vector3.new(4701, 120, -1825.45),
+    Vector3.new(4361, 77, -1948.54),
+    Vector3.new(4354, 82, -1229.71),
+    Vector3.new(4314, 75, -1071.56),
+    Vector3.new(4316, 75, -850),
+    Vector3.new(2212.77, -258, 173),
+    Vector3.new(2462, -257, 721),
+    Vector3.new(1237, -175, 274.21),
+    Vector3.new(1656, -234, 28.44),        
+    Vector3.new(1774, -235, -51.96)       
+},
+MapleWood = {
+    Vector3.new(1944.66, 14, -1488),
+    Vector3.new(1671.38, -21, -1181),
+    Vector3.new(1920, -30, -1150),
+    Vector3.new(1960, -100, -880),
+    Vector3.new(5780.13, 115, -2125.75),
+    Vector3.new(6381.43, 115, -578.41),
+    Vector3.new(4409.69, 77, -1647.59),
+    Vector3.new(4710, 79, -809),
+    Vector3.new(3069.70, 69, -710),
+    Vector3.new(2740.13, 50, -936.85),
+    Vector3.new(2600, 45, -1088.83),
+    Vector3.new(2268.33, 14, -1240.53),
+    Vector3.new(2134.73, 21.50, -1361.85)
+},
+Emerald = {
+    Vector3.new(1687, -270, -3674),
+    Vector3.new(1693, -270, -4044),
+    Vector3.new(1690, -270, -4592),
+    Vector3.new(1580, -270, -4832),
+    Vector3.new(1447, -270, -4750),
+    Vector3.new(1191, -270, -5195),
+    Vector3.new(1021, -265, -4417),
+    Vector3.new(12600, 24, -690),
+    Vector3.new(12302, -155, -621),
+    Vector3.new(11996, -152, -715),
+    Vector3.new(12729, -155, -906),
+    Vector3.new(2330, 74, -3882),
+    Vector3.new(2293, 75, -4054),
+    Vector3.new(1338, 70, -4032),
+    Vector3.new(4309, 65, -270),
+    Vector3.new(3869, 46, -555),                
+    Vector3.new(2004, 65, -3963),
+    Vector3.new(1715, 75, -3534),
+    Vector3.new(1962, 71, -3496)
+},
+Amberite = {
+    Vector3.new(1592, -270, -3668),
+    Vector3.new(1573, -270, -3960),
+    Vector3.new(1598, -270, -4472),
+    Vector3.new(1330, -273, -4765),
+    Vector3.new(1472, -270, -5183),
+    Vector3.new(1338, -270, -3973),
+    Vector3.new(1082, -273, -4029),
+    Vector3.new(666, -270, -4074),
+    Vector3.new(12368, 19, -974),
+    Vector3.new(12228, -160, -500),
+    Vector3.new(12182, -158, -768),
+    Vector3.new(12253, -455, -1423)
+},
+Amethys = {
+    Vector3.new(1100, -270, -4776),
+    Vector3.new(1575, -273, -5031),
+    Vector3.new(1174, -270, -4249),
+    Vector3.new(1131, -270, -4003),
+    Vector3.new(644, -275, -4437),
+    Vector3.new(12211, -160, -970),
+    Vector3.new(12653, -80, -921),
+    Vector3.new(12685, -410, -1121),
+    Vector3.new(12376, -410, -911),
+    Vector3.new(11954, -410, -420)
+},
+Emberstone = {
+    Vector3.new(1674, -268.99, -4432),
+    Vector3.new(1318, -268, -4857),    
+    Vector3.new(12206, -152, -799),
+    Vector3.new(12020, -402, -404),
+    Vector3.new(12661, -400, -1173)
+}
+}
+
+-- Mapping dropdown ore type ke folder Harvest
+local folderMapping = {
+    PalmWood = "PalmTree",
+    YggrasilCelestial = "CelestialYggdrasil",
+    Moonstone = "Moonstone",
+    PhoenixTimber = "PhoenixheartRedwood",
+    OakWood = "OakTree",
+    Rock = "Rock",
+    MapleWood = "StarfallMaple",
+    Emerald = "Emeraldite",
+    Amberite = "Amberite",
+    Amethys = "Amethystium",
+    Emberstone = "EmberstoneCluster"
+}
+
+-- Priority selections (5 dropdown) dengan default "Default"
+local prioritySelections = {"Default", "Default", "Default", "Default", "Default"}
+-- Table untuk menyimpan koordinat per priority (jika "Default" maka kosong)
+local priorityCoordinates = {{}, {}, {}, {}, {}}
+
+-- Default Tools Type
+local selectedToolsType = "Common"  -- default Tools Type
+
+---------------------------------------------------
+-- Delay mapping berdasarkan Tools Type dan Ore Type
+---------------------------------------------------
+local delayMapping = {
+    Common = {
+        default = 6,
     },
-    YggrasilCelestial = {
-        Vector3.new(-988.24, 140, -1882.98),
-        Vector3.new(-1178.15, 150.00, -2282.66),
-        Vector3.new(1509.65, 98, -3567.02),
-        Vector3.new(1760.83, 100, -3313.54),
-        Vector3.new(2031.67, 109, -4209.42),
-        Vector3.new(1649.11, 105, -4267.45),
-        Vector3.new(1015.43, 100, -3682.32),
-        Vector3.new(1369, 180, -3138.73),
-        
+    Uncommon = {
+        default = 6,
     },
-    Moonstone = {
-        Vector3.new(1635.84, -235, 188.75),
-        Vector3.new(2286.72, -240, 107.21),
-        Vector3.new(2517, -275, 96),
-        Vector3.new(2419, -255, 534),
-        Vector3.new(1707, -120, -805),
-        Vector3.new(2401.77, -205, -292.88),
-        Vector3.new(2171.57, -195, -406.99),
-        Vector3.new(1696, -222, -187),
-        Vector3.new(3344.34, 59.45, -801.09),
-        Vector3.new(3138.30, 55, -376.54),
-        Vector3.new(3018.03, 55, -451.32),
-        Vector3.new(2133, 22, -1143),
-        Vector3.new(1959, 27, -1589),
-        Vector3.new(3898, 45, -923),
-        Vector3.new(4094.10, 50, -1108.67),
-        Vector3.new(3653.50, 65, -558.37),
-        Vector3.new(4000.84, 55, -401.76),
-        Vector3.new(3651.48, 60, -556.75),
-        Vector3.new(2528, 34, -3054.78)
+    Rare = {
+        Rock = 0.7,
+        Moonstone = 2.9,
+        Amberite = 4,
+        Amethys = 5.7,
+        Emberstone = 5.9,
+        OakWood = 1,
+        MapleWood = 1.5,
+        Yggdrasil = 4.4,
+        PalmWood = 3,
+        PhoenixTimber = 5.5,
+        Emerald = 4.4,
+        default = 5,
     },
-    PhoenixTimber = {
-        Vector3.new(2128.79, 80, -3765.65),
-        Vector3.new(1781.60, 100, -4318.85),
-        Vector3.new(1472.45, 183, -3099.79),
-        Vector3.new(2487.99, 37, -2909.80),
-        Vector3.new(1332.81, 30, -2114.49)
+    Epic = {
+        default = 6,
     },
-    OakWood = {
-        Vector3.new(2425.61, 28, -1391.93),
-        Vector3.new(2140, 30, -1416),
-        Vector3.new(2159, -190, -305),
-        Vector3.new(1938, -200, -108.56),
-        Vector3.new(1971, -237, 190),
-        Vector3.new(2036, -255, 302),
-        Vector3.new(2208, -236, 79),
-        Vector3.new(2517.45, -269, 178),
-        Vector3.new(2191.86, -265, 342),
-        Vector3.new(4340, -89, -1051.72),
-        Vector3.new(4201, 85, -371),
-        Vector3.new(4816, 77, -458),
-        Vector3.new(3941.34, 55, -282.34),
-        Vector3.new(3322.51, 70, -425.17)
+    Legend = {
+        default = 6,
     },
-    Rock = {
-        Vector3.new(4701, 130, -1825.45),
-        Vector3.new(4361, 87, -1948.54),
-        Vector3.new(4354, 92, -1229.71),
-        Vector3.new(4314, 85, -1071.56),
-        Vector3.new(4316, 85, -850),
-        Vector3.new(2212.77, -248, 173),
-        Vector3.new(2462, -247, 721),
-        Vector3.new(1237, -165, 274.21),
-        Vector3.new(1656, -224, 28.44),        
-        Vector3.new(1774, -225, -51.96)       
-    },
-    MapleWood = {
-        Vector3.new(1944.66, 24, -1488),
-        Vector3.new(1671.38, -11, -1181),
-        Vector3.new(1920, -20, -1150),
-        Vector3.new(1960, -90, -880),
-        Vector3.new(5780.13, 125, -2125.75),
-        Vector3.new(6381.43, 125, -578.41),
-        Vector3.new(4409.69, 87, -1647.59),
-        Vector3.new(4710, 89, -809),
-        Vector3.new(3069.70, 79, -710),
-        Vector3.new(2740.13, 60, -936.85),
-        Vector3.new(2600, 55, -1088.83),
-        Vector3.new(2268.33, 24, -1240.53),
-        Vector3.new(2134.73, 31.50, -1361.85)
-    },
-    Emerald = {
-        Vector3.new(1687, -260, -3674),
-        Vector3.new(1693, -260, -4044),
-        Vector3.new(1690, -260, -4592),
-        Vector3.new(1580, -260, -4832),
-        Vector3.new(1447, -260, -4750),
-        Vector3.new(1191, -260, -5195),
-        Vector3.new(1021, -255, -4417),
-        Vector3.new(12600, 34, -690),
-        Vector3.new(12302, -145, -621),
-        Vector3.new(11996, -142, -715),
-        Vector3.new(12729, -145, -906),
-        Vector3.new(2330, 84, -3882),
-        Vector3.new(2293, 85, -4054),
-        Vector3.new(1338, 80, -4032),
-        Vector3.new(4309, 75, -270),
-        Vector3.new(3869, 56, -555),                
-        Vector3.new(2004, 75, -3963),
-        Vector3.new(1715, 85, -3534),
-        Vector3.new(1962, 81, -3496)
-    },
-    Amberite = {
-        Vector3.new(1592, -260, -3668),
-        Vector3.new(1573, -260, -3960),
-        Vector3.new(1598, -260, -4472),
-        Vector3.new(1330, -263, -4765),
-        Vector3.new(1472, -260, -5183),
-        Vector3.new(1338, -260, -3973),
-        Vector3.new(1082, -263, -4029),
-        Vector3.new(666, -260, -4074),
-        Vector3.new(12368, 29, -974),
-        Vector3.new(12228, -150, -500),
-        Vector3.new(12182, -148, -768),
-        Vector3.new(12253, -445, -1423)
-    },
-    Amethys = {
-        Vector3.new(1100, -260, -4776),
-        Vector3.new(1575, -263, -5031),
-        Vector3.new(1174, -260, -4249),
-        Vector3.new(1131, -260, -4003),
-        Vector3.new(644, -265, -4437),
-        Vector3.new(12211, -150, -970),
-        Vector3.new(12653, -70, -921),
-        Vector3.new(12685, -400, -1121),
-        Vector3.new(12376, -400, -911),
-        Vector3.new(11954, -400, -420)
-    },
-    Emberstone = {
-        Vector3.new(1674, -258.99, -4432),
-        Vector3.new(1318, -258, -4857),    
-        Vector3.new(12206, -142, -799),
-        Vector3.new(12020, -392, -404),
-        Vector3.new(12661, -390, -1173),     
+    Unique = {
+        Rock = 0.4,
+        Moonstone = 1.4,
+        Amberite = 1.6,
+        Amethys = 2.5,
+        Emberstone = 5.9,
+        OakWood = 0.5,
+        MapleWood = 0.75,
+        Yggdrasil = 1.8,
+        PalmWood = 1.5,
+        default = 5,
+        PhoenixTimber = 2.5,
+        Emerald = 2.2,
     }
 }
 
-local prioritySelections = {}
-local currentLocations = {}
-local teleportIndex = 1
-local teleportEnabled = false
-local toolSelection = "Rare Tools"  -- Default tool selection
-
-
--- Create dropdown for tool selection
-SectionMining:AddDropdown({
-    Name = "Select Tools",
-    Default = "Rare Tools",
-    Options = {"Rare Tools", "Unique Tools"},
-    Callback = function(Value)
-        toolSelection = Value
+---------------------------------------------------
+-- Fungsi Harvest
+---------------------------------------------------
+-- Fungsi untuk mendapatkan BasePart dari ModelParts (cek langsung dan dalam Model anak)
+local function getHarvestPart(modelParts)
+    for _, child in ipairs(modelParts:GetChildren()) do
+        if child:IsA("BasePart") then
+            return child
+        end
     end
-})
--- Create dropdown menus for mining priorities (5 menus)
-for i = 1, 5 do
-    SectionMining:AddDropdown({
-        Name = "Mining Priority [" .. i .. "]",
-        Default = "Default",
-        Options = miningOptions,
-        Callback = function(Value)
-            prioritySelections[i] = Value
-            -- Update mining locations based on selected priorities
-            currentLocations = {}
-            for _, priority in ipairs(prioritySelections) do
-                if locations[priority:gsub(" ", "")] then -- remove spaces for table lookup
-                    for _, loc in ipairs(locations[priority:gsub(" ", "")]) do
-                        table.insert(currentLocations, loc)
+    for _, child in ipairs(modelParts:GetChildren()) do
+        if child:IsA("Model") then
+            for _, subChild in ipairs(child:GetChildren()) do
+                if subChild:IsA("BasePart") then
+                    return subChild
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- Fungsi validasi harvest:
+-- Harvest dianggap _masih aktif_ jika:
+-- (1) Ditemukan BasePart dengan Transparency < 0.9
+-- AND
+-- (2) HarvestModel.PrimaryPart memiliki ProximityPrompt dengan Enabled = true.
+-- Jadi, jika ProximityPrompt sudah false, harvest dianggap selesai meskipun transparansi masih < 0.9.
+local function isHarvestValid(harvestModel)
+    if not harvestModel or not harvestModel.Parent then
+        return false
+    end
+    local modelParts = harvestModel:FindFirstChild("ModelParts")
+    if modelParts then
+        local harvestPart = getHarvestPart(modelParts)
+        if harvestPart then
+            local transparencyActive = (harvestPart.Transparency < 0.9)
+            local promptActive = false
+            if harvestModel.PrimaryPart then
+                local prompt = harvestModel.PrimaryPart:FindFirstChildOfClass("ProximityPrompt")
+                if prompt then
+                    promptActive = prompt.Enabled  -- harvest aktif jika prompt aktif (true)
+                end
+            end
+            return transparencyActive and promptActive
+        end
+    end
+    return false
+end
+
+-- Fungsi mencari HarvestModel terdekat di folder yang sesuai berdasarkan jarak dan validitas harvest.
+local function findNearestHarvestModel(oreType)
+    local folderName = folderMapping[oreType]
+    if not folderName then return nil, math.huge end
+    local oreFolder = harvestFolderPath:FindFirstChild(folderName)
+    local closestHarvestModel = nil
+    local shortestDistance = math.huge
+    if oreFolder and oreFolder:IsA("Folder") then
+        for _, harvestModel in ipairs(oreFolder:GetChildren()) do
+            if harvestModel:IsA("Model") and harvestModel.Name == "HarvestModel" then
+                if isHarvestValid(harvestModel) then
+                    local modelParts = harvestModel:FindFirstChild("ModelParts")
+                    local harvestPart = modelParts and getHarvestPart(modelParts)
+                    if harvestPart then
+                        local distance = (HumanoidRootPart.Position - harvestPart.Position).Magnitude
+                        if distance < shortestDistance then
+                            shortestDistance = distance
+                            closestHarvestModel = harvestModel
+                        end
                     end
                 end
             end
-
-            -- Reset the teleport index when priorities are changed
-            teleportIndex = 1
         end
-    })
+    end
+    return closestHarvestModel, shortestDistance
 end
 
-
-
--- Function to teleport to the next mining location
-local function teleportToNextMiningLocation()
-    if teleportEnabled and #currentLocations > 0 then
-        -- Teleport to the current ore location
-        HumanoidRootPart.CFrame = CFrame.new(currentLocations[teleportIndex])
+---------------------------------------------------
+-- Fungsi untuk teleport ke lokasi ore dan melakukan harvest
+-- Setelah teleport, jika harvest aktif, tunggu delay spesifik (berdasarkan Tools Type & oreType)
+-- kemudian panggil event Harvest satu kali.
+-- Jika harvest tidak aktif, langsung lanjut ke ore berikutnya.
+local function processTeleportLocation(location, oreType)
+    if player.Character and HumanoidRootPart then
+        -- Teleport ke lokasi
+        local targetPos = location + Vector3.new(0, 3, 0)
+        local tweenInfo = TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        local tween = TweenService:Create(HumanoidRootPart, tweenInfo, {CFrame = CFrame.new(targetPos)})
+        tween:Play()
+        tween.Completed:Wait()
         
-        -- Wait based on tool selection
-        local waitTime = toolSelection == "Rare Tools" and 4.8 or 2.8 -- Set wait time based on selected tools
+        task.wait(0.3)  -- Tunggu stabilisasi setelah teleport
         
-        -- Wait at the ore location
-        wait(2.5)
+        -- Cek GameplayPaused: TUNGGU SAMPAI FALSE
+        while player and player.GameplayPaused do
+            task.wait(0.1)
+            if not enabledharvest1 then break end
+        end
+        if not enabledharvest1 then return end  -- Hentikan jika toggle mati
         
-        -- Teleport to the predefined location (1863, 65, 1259)
-        HumanoidRootPart.CFrame = CFrame.new(1863, 65, 1259)
-        
-        
-        wait(waitTime) 
-
-        -- Increment teleport index for the next ore location
-        teleportIndex = teleportIndex + 1
-        
-        if teleportIndex > #currentLocations then
-            teleportIndex = 1 -- Loop back to start
+        -- Lanjut ke pengecekan harvest HANYA JIKA GameplayPaused = false
+        local harvestModel, _ = findNearestHarvestModel(oreType)
+        if harvestModel and isHarvestValid(harvestModel) then
+            -- Hitung delay berdasarkan Tools Type & Ore Type
+            local toolsMapping = delayMapping[selectedToolsType] or {}
+            local oreKey = oreType
+            if oreKey == "YggrasilCelestial" then oreKey = "Yggdrasil" end
+            local specificDelay = toolsMapping[oreKey] or toolsMapping.default or 5
+            
+            task.wait(specificDelay)  -- Tunggu delay sebelum harvest
+            
+            -- Trigger harvest event
+            local harvestId = harvestModel:GetAttribute("HarvestId")
+            if harvestId then
+                ReplicatedStorage.Events.Harvest.Harvest:FireServer("Harvest", harvestId)
+            end
+            
+            -- Delay tambahan untuk Tools Unique
+            if selectedToolsType == "Unique" then
+                task.wait(0.3)
+            else
+                task.wait(0.8)
+            end
         end
     end
 end
 
--- Toggle button for mining
-SectionMining:AddToggle({
-    Name = "Start Mining",
-    Default = false,
-    Callback = function(Value)
-        teleportEnabled = Value
 
-        if Value then
-            -- Start teleporting with the defined timing
-            while teleportEnabled do
-                teleportToNextMiningLocation()
-                wait(1.5) -- This wait is to ensure a delay before moving to the next ore
+---------------------------------------------------
+-- Loop AutoHarvest berdasarkan Priority
+---------------------------------------------------
+local function harvestLoop()
+    while enabledharvest1 do
+        for priority = 1, 5 do
+            local oreType = prioritySelections[priority]
+            
+            if oreType and oreType ~= "Default" then
+                local coords = locations[oreType]
+                
+                if coords and #coords > 0 then
+                    for i = 1, #coords do
+                        if not enabledharvest1 then break end
+                        
+                        -- Tunggu sampai GameplayPaused = false
+                        while LocalPlayer and LocalPlayer.GameplayPaused do
+                            task.wait(0.1)
+                            if not enabledharvest1 then break end
+                        end
+                        if not enabledharvest1 then break end
+                        
+                        processTeleportLocation(coords[i], oreType)
+                    end
+                end
             end
+            
+            if not enabledharvest1 then break end
         end
+        
+        task.wait(0.1)
+    end
+end
 
-        StarterGui:SetCore("SendNotification", {
-            Title = "Mining",
-            Text = Value and "Mining: Enabled" or "Mining: Disabled",
-            Button1 = "OK",
-            Duration = 5
-        })
+-- Dropdown untuk memilih Tools Type
+SectionMining:AddDropdown({
+    Name = "Select Tools Type",
+    Default = "Rare",
+    Options = {"Common (coming soon)", "Uncommon (coming soon)", "Rare", "Epic (coming soon)", "Legend (coming soon)", "Unique"},
+    Callback = function(Value)
+        selectedToolsType = Value
     end
 })
 
--- Ensure that the teleportation stops when the toggle is turned off
-game:GetService("RunService").Heartbeat:Connect(function()
-    if not teleportEnabled then
-        teleportIndex = 1 -- Reset when stopped
-    end
-end)
+-- Buat 5 dropdown untuk Harvest Priority [1] sampai [5]
+for i = 1, 5 do
+    SectionMining:AddDropdown({
+        Name = "Harvest Priority [" .. i .. "]",
+        Default = "Default",
+        Options = {"Default", "PalmWood", "YggrasilCelestial", "Moonstone", "PhoenixTimber", "OakWood", "Rock", "MapleWood", "Emerald", "Amberite", "Amethys", "Emberstone"},
+        Callback = function(Value)
+            prioritySelections[i] = Value
+        end
+    })
+end
 
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -1606,38 +1749,24 @@ SectionMining:AddToggle({
     end
 })
 
+-- Toggle AutoHarvest (satu toggle untuk semua priority)
+SectionMining:AddToggle({
+    Name = "Start Harvest",
+    Default = false,
+    Callback = function(Value)
+        enabledharvest1 = Value
+        if enabledharvest1 then
+            spawn(harvestLoop)
+        end
+    end
+})
+
+
 
 local Player = game.Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
-SectionMining:AddToggle({
-    Name = "Auto Harvest",
-    Default = false,
-    Callback = function(Value)
-        teleportEnabled = Value
-
-        if Value then
-            
-            while teleportEnabled do
-                
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.G, false, game)
-                task.wait(0.1) -- Tunggu sebentar sebelum melepaskan tombol
-
-                
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.G, false, game)
-                task.wait(0.3) -- Tunggu 0.3 detik agar total menjadi 0.4 detik
-            end
-        end
-
-        StarterGui:SetCore("SendNotification", {
-            Title = "Auto Harvest",
-            Text = Value and "Auto Harvest: Enabled" or "Auto Harvest: Disabled",
-            Button1 = "OK",
-            Duration = 3
-        })
-    end
-})
 
 -- Section: Misc Features
 local SectionMisc = TabMisc:AddSection({ Name = "Misc Features" })
