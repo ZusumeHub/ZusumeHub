@@ -749,7 +749,7 @@ SectionQuest:AddToggle({
 })
 
 
-local SectionAutoCollect = TabAutoCollect:AddSection({ Name = "AutoCollect Setting" })
+local SectionCollect = TabAutoCollect:AddSection({ Name = "AutoCollect Setting" })
 -- Konfigurasi Default
 local DEFAULT_OFFSET = { X = 0, Y = 10 }
 local CLICK_INTERVAL = 0.1
@@ -768,8 +768,20 @@ local autoCollectActive = false
 local statusLabel = TabAutoCollect:AddLabel("Status: ❌ INACTIVE")
 local clickIndicatorGui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
 
+
+-- Dropdown AutoCollect v2
+SectionCollect:AddDropdown({
+    Name = "AutoCollect",
+    Default = "AutoCollect v2",
+    Options = {"AutoCollect v2"},
+    Callback = function(Value)
+        autoCollectActive = (Value == "AutoCollect v2")
+        updateSize(autoCollectActive and 100 or 10)
+    end
+})
+
 -- Input X Offset
-TabAutoCollect:AddTextbox({
+SectionCollect:AddTextbox({
     Name = "X Offset",
     Default = tostring(config.XOffset),
     TextDisappear = false,
@@ -779,7 +791,7 @@ TabAutoCollect:AddTextbox({
 })
 
 -- Input Y Offset
-TabAutoCollect:AddTextbox({
+SectionCollect:AddTextbox({
     Name = "Y Offset",
     Default = tostring(config.YOffset),
     TextDisappear = false,
@@ -888,7 +900,7 @@ local function autoClickLoop()
 end
 
 -- Toggle Button
-TabAutoCollect:AddToggle({
+SectionCollect:AddToggle({
     Name = "Start Session",
     Default = false,
     Callback = function(Value)
@@ -904,17 +916,6 @@ TabAutoCollect:AddToggle({
             if guiUpdater then task.cancel(guiUpdater) guiUpdater = nil end
             updateSize(10) -- Reset TriggerRadius saat dimatikan
         end
-    end
-})
-
--- Dropdown AutoCollect v2
-TabAutoCollect:AddDropdown({
-    Name = "AutoCollect",
-    Default = "AutoCollect v2",
-    Options = {"AutoCollect v2"},
-    Callback = function(Value)
-        autoCollectActive = (Value == "AutoCollect v2")
-        updateSize(autoCollectActive and 100 or 10)
     end
 })
 
