@@ -317,6 +317,8 @@ TabFish:AddToggle({
     end
 })
 
+local SectionQuest = TabQuest:AddSection({ Name = "AutoQuest Option" })
+
 -- Label untuk counter
 local glacierLabelOrion = TabQuest:AddLabel("Glacier Teleports: 0")
 local boulderLabelOrion = TabQuest:AddLabel("Boulder Teleports: 0")
@@ -546,7 +548,7 @@ local function teleportLoop()
     end
 end
 
-TabQuest:AddToggle({
+SectionQuest:AddToggle({
     Name = "Mount Quest",
     Default = false,
     Callback = function(Value)
@@ -674,7 +676,7 @@ local function harvestLoop()
 end
 
 -- Toggle AutoHarvest menggunakan OrionLib (tanpa GUI custom lainnya)
-TabQuest:AddToggle({
+SectionQuest:AddToggle({
     Name = "Auto Harvest",
     Default = false,
     Callback = function(Value)
@@ -728,7 +730,7 @@ local function handlePlayer()
     wait(0.1)
 end
 
-TabQuest:AddToggle({
+SectionQuest:AddToggle({
     Name = "AutoQuest [ XP + Essence ]",
     Default = false,
     Callback = function(Value)
