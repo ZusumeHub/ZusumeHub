@@ -2000,30 +2000,6 @@ SectionHacks:AddButton({
     end
 })
 
--- Create a Slider for Walk Speed
-local walkSpeed = 16 -- Default WalkSpeed
-local player = game.Players.LocalPlayer
-
-local Slider = SectionHacks:AddSlider({
-    Name = "Speed Boost",
-    Min = 1,
-    Max = 200,
-    Default = walkSpeed,
-    Color = Color3.fromRGB(255, 255, 255),
-    Increment = 1,
-    ValueName = "Speed",
-    Callback = function(Value)
-        walkSpeed = Value
-        
-    end    
-})
-
-RunService.RenderStepped:Connect(function()
-    if player.Character and player.Character:FindFirstChild("Humanoid") then
-        player.Character.Humanoid.WalkSpeed = walkSpeed
-    end
-end)
-
 SectionHacks:AddButton({
     Name = "Aura Attack [ Sword ]",
     Callback = function()
@@ -2047,6 +2023,291 @@ SectionHacks:AddButton({
             Button1 = "OK",
             Duration = 3
         })
+    end
+})
+
+-- Warna yang diperbolehkan
+local function isColorValid(color)
+    local white = Color3.new(1, 1, 1)
+    local purple = Color3.new(163/255, 60/255, 206/255)
+    
+    local tolerance = 0.02
+    local isWhite = (math.abs(color.R - white.R) < tolerance and
+                    math.abs(color.G - white.G) < tolerance and
+                    math.abs(color.B - white.B) < tolerance)
+    
+    local isPurple = (math.abs(color.R - purple.R) < tolerance and
+                     math.abs(color.G - purple.G) < tolerance and
+                     math.abs(color.B - purple.B) < tolerance)
+    
+    print("[DEBUG] Color Check - Current:", color, "Is White:", isWhite, "Is Purple:", isPurple)
+    return isWhite or isPurple
+end
+
+-- Ambil warna teks dari path yang benar
+local function getTextColor()
+    local character = player.Character or player.CharacterAdded:Wait()
+    if not character then return Color3.new(0,0,0) end
+
+    local head = character:FindFirstChild("Head")
+    if not head then return Color3.new(0,0,0) end
+
+    local healthMana = head:FindFirstChild("HealthAndMana")
+    if not healthMana then return Color3.new(0,0,0) end
+
+    local desc = healthMana:FindFirstChild("PlayerDescription")
+    if not desc then return Color3.new(0,0,0) end
+
+    local nameFrame = desc:FindFirstChild("NameAndTitle")
+    if not nameFrame then return Color3.new(0,0,0) end
+
+    return nameFrame.NameFrame.NameText.TextColor3
+end
+
+-- Variabel untuk posisi dan monitoring
+local monitoringActive = false
+local savedCFrame = nil
+local cleanseAttemptCount = 0 -- Menyimpan jumlah usaha cleansing
+
+local cleanToggle = SectionHacks:AddToggle({
+    Name = "Auto Cleanse PlayerKiller [ Essence Required ]",
+    Default = false,
+    Callback = function(state)
+        monitoringActive = state
+
+        if state then
+            -- Cek warna nama pemain sebelum melanjutkan
+            local initialTextColor = getTextColor()
+            if isColorValid(initialTextColor) then
+                OrionLib:MakeNotification({
+                    Name = "NOTICE",
+                    Content = "You are not playerkiller!",
+                    Time = 5
+                })
+                return -- Keluarkan dari fungsi tanpa menjalankan kode lebih lanjut
+            end
+
+            -- Simpan posisi awal pemain
+            local success, err = pcall(function()
+                local character = player.Character or player.CharacterAdded:Wait()
+                local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5)
+                if humanoidRootPart then
+                    savedCFrame = humanoidRootPart.CFrame
+                    print("[DEBUG] Saved initial position:", savedCFrame)
+                    OrionLib:MakeNotification({
+                        Name = "SYSTEM",
+                        Content = "Position saved!",
+                        Time = 3
+                    })
+
+                    -- Teleport ke koordinat yang ditentukan setelah menyimpan posisi
+                    humanoidRootPart.CFrame = CFrame.new(2250.95, -237.38, 961.54)
+                    OrionLib:MakeNotification({
+                        Name = "SYSTEM",
+                        Content = "Teleported to target position!",
+                        Time = 3
+                    })
+                end
+            end)
+
+            if not success then
+                OrionLib:MakeNotification({
+                    Name = "ERROR",
+                    Content = "Failed to save position!",
+                    Time = 5
+                })
+                monitoringActive = false
+                cleanToggle:Set(false)
+                return
+            end
+
+            -- Reset jumlah upaya saat monitoring dimulai
+            cleanseAttemptCount = 0
+            
+            OrionLib:MakeNotification({
+                Name = "SYSTEM",
+                Content = "Starting monitoring...",
+                Time = 3
+            })
+
+            task.spawn(function()
+                while monitoringActive do
+                    local textColor = getTextColor()
+                    print("[DEBUG] Current Color:", textColor)
+
+                    if isColorValid(textColor) then
+                        -- Hitung total essence yang digunakan
+                        local totalEssence = cleanseAttemptCount * 320
+                        OrionLib:MakeNotification({
+                            Name = "SUCCESS",
+                            Content = "Total Essence Used: " .. totalEssence,
+                            Time = 5
+                        })
+
+                        -- Teleport ke saved CFrame setelah status bersih terdeteksi
+                        pcall(function()
+                            local character = player.Character
+                            if character then
+                                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                                if humanoidRootPart and savedCFrame then
+                                    humanoidRootPart.CFrame = savedCFrame
+                                    OrionLib:MakeNotification({
+                                        Name = "SUCCESS",
+                                        Content = "Teleported back to original position!",
+                                        Time = 5
+                                    })
+                                end
+                            end
+                        end)
+
+                        -- Matikan toggle secara instan
+                        monitoringActive = false
+                        cleanToggle:Set(false)
+                        break
+                    else
+                        cleanseAttemptCount = cleanseAttemptCount + 1
+                        OrionLib:MakeNotification({
+                            Name = "WARNING",
+                            Content = "Detected PlayerKiller status! Attempt #" .. cleanseAttemptCount,
+                            Time = 3
+                        })
+
+                        -- Proses cleansing
+                        pcall(function()
+                            game:GetService("ReplicatedStorage").Events.Store.BuyItem:FireServer("KarmaCleansePotion", "grocery")
+                            task.wait(1.2)
+                            game:GetService("ReplicatedStorage").Events.ItemBar.ActivateItem:FireServer("KarmaCleansePotion", {
+                                activePetsData = {}
+                            })
+                        end)
+
+                        task.wait(0.5) -- Tunggu sebelum melanjutkan loop
+                    end
+
+                    if not monitoringActive then break end
+                    task.wait(0.1)
+                end
+            end)
+        else
+            -- Reset jumlah upaya saat monitoring dinonaktifkan
+            cleanseAttemptCount = 0
+            OrionLib:MakeNotification({
+                Name = "SYSTEM",
+                Content = "Monitoring stopped",
+                Time = 3
+            })
+        end
+    end
+})
+
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local originalSize = humanoidRootPart.Size -- Simpan ukuran asli
+
+
+local SectionSize = TabHacks:AddSection({ Name = "Character Configuration" })
+
+
+-- Slider for Speed Boost
+local speedBoostEnabled = false -- To track if the speed boost is enabled
+local walkSpeed = 16 -- Default WalkSpeed
+
+-- Slider for Speed
+local Slider = SectionSize:AddSlider({
+    Name = "Speed Boost",
+    Min = 1,
+    Max = 200,
+    Default = walkSpeed,
+    Color = Color3.fromRGB(255, 255, 255),
+    Increment = 1,
+    ValueName = "Speed",
+    Callback = function(Value)
+        walkSpeed = Value
+    end    
+})
+
+SectionSize:AddToggle({
+    Name = "Enable Speed Boost",
+    Default = false,
+    Callback = function(Value)
+        speedBoostEnabled = Value
+
+        -- Notify the user
+        if Value then
+            StarterGui:SetCore("SendNotification", {
+                Title = "Speed Boost",
+                Text = "Speed Boost: Enabled",
+                Button1 = "OK",
+                Duration = 3
+            })
+        else
+            StarterGui:SetCore("SendNotification", {
+                Title = "Speed Boost",
+                Text = "Speed Boost: Disabled",
+                Button1 = "OK",
+                Duration = 3
+            })
+        end
+    end
+})
+
+-- Update WalkSpeed based on Toggle and Slider
+RunService.RenderStepped:Connect(function()
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        if speedBoostEnabled then
+            player.Character.Humanoid.WalkSpeed = walkSpeed
+        else
+            player.Character.Humanoid.WalkSpeed = 16 -- Reset to default if disabled
+        end
+    end
+end)
+
+-- Variabel untuk menyimpan pengaturan
+local currentYSize = 1
+local sizeActive = false
+
+-- Tambahkan Slider
+SectionSize:AddSlider({
+    Name = "Y Axis Size",
+    Min = 1,
+    Max = 50,
+    Default = 1,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "units",
+    Callback = function(Value)
+        currentYSize = Value
+        -- Update size jika toggle aktif
+        if sizeActive then
+            humanoidRootPart.Size = Vector3.new(originalSize.X, currentYSize, originalSize.Z)
+        end
+    end    
+})
+
+-- Tambahkan Toggle
+SectionSize:AddToggle({
+    Name = "Apply Size",
+    Default = false,
+    Callback = function(Value)
+        sizeActive = Value
+        
+        if Value then
+            -- Terapkan ukuran baru
+            humanoidRootPart.Size = Vector3.new(originalSize.X, currentYSize, originalSize.Z)
+            StarterGui:SetCore("SendNotification", {
+                Title = "Size Applied",
+                Text = "Y Size: "..currentYSize.." units",
+                Duration = 3
+            })
+        else
+            -- Kembalikan ke ukuran asli
+            humanoidRootPart.Size = originalSize
+            StarterGui:SetCore("SendNotification", {
+                Title = "Size Reset",
+                Text = "Y Size reset to original",
+                Duration = 3
+            })
+        end
     end
 })
 
