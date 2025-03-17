@@ -765,7 +765,7 @@ local guiUpdater = nil
 local autoCollectActive = false
 
 -- Sistem Indikator
-local statusLabel = TabAutoCollect:AddLabel("Status: ❌ INACTIVE")
+local statusLabel = SectionCollect:AddLabel("Status: ❌ INACTIVE")
 local clickIndicatorGui = Instance.new("ScreenGui", localPlayer:WaitForChild("PlayerGui"))
 
 -- AutoCollect Function
