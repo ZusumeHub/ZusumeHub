@@ -46,21 +46,21 @@ local TabTeleportation = Window:MakeTab({
 
 -- Tab: Mining
 local TabMining = Window:MakeTab({
-    Name = "Harvest",
+    Name = "AutoHarvest",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
 
 -- Tab: Quest
 local TabQuest = Window:MakeTab({
-    Name = "Quest",
+    Name = "AutoQuest",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
 
 -- Tab: Fish
 local TabFish = Window:MakeTab({
-    Name = "Fish",
+    Name = "AutoFish",
     Icon = "rbxassetid://4483345998",
     PremiumOnly = false
 })
@@ -915,6 +915,120 @@ SectionCollect:AddToggle({
             loopActive = false
             if guiUpdater then task.cancel(guiUpdater) guiUpdater = nil end
             updateSize(10) -- Reset TriggerRadius saat dimatikan
+        end
+    end
+})
+
+local TeleportLoot = TabAutoCollect:AddSection({ Name = "AutoLoot Setting" })
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+local originalHRPSize = humanoidRootPart.Size
+
+-- Variabel konfigurasi
+local YSetting = 1
+local selectedDropType = "Bag"
+local moblotActive = false
+local currentBag = nil
+
+-- Tambahkan Dropdown
+local dropdown = TeleportLoot:AddDropdown({
+    Name = "Select Drop Type",
+    Default = "MobDrop Loot",
+    Options = {"MobDrop Loot", "PlayerDrop Loot"},
+    Callback = function(Value)
+        selectedDropType = (Value == "MobDrop Loot") and "Bag" or "PlayerDropBag"
+    end    
+})
+
+-- Tambahkan Slider
+TeleportLoot:AddSlider({
+    Name = "Y Offset",
+    Min = 1,
+    Max = 50,
+    Default = 1,
+    Color = Color3.fromRGB(255,255,255),
+    Increment = 1,
+    ValueName = "units",
+    Callback = function(Value)
+        YSetting = Value
+    end    
+})
+
+local function findNearestBag()
+    local closestBag = nil
+    local shortestDistance = math.huge
+    local currentPosition = humanoidRootPart.Position
+    
+    for _, instance in ipairs(workspace:GetDescendants()) do
+        if instance.Name == selectedDropType and instance:IsA("Model") then
+            local primaryPart = instance.PrimaryPart
+            if primaryPart and primaryPart:IsDescendantOf(workspace) then
+                local distance = (currentPosition - primaryPart.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestBag = instance
+                end
+            end
+        end
+    end
+    return closestBag
+end
+
+local function bagMonitor()
+    while moblotActive do
+        local targetBag = findNearestBag()
+        
+        if targetBag and targetBag ~= currentBag then
+            currentBag = targetBag
+            
+            -- Terapkan pengaturan
+            humanoidRootPart.Size = Vector3.new(originalHRPSize.X, YSetting, originalHRPSize.Z)
+            humanoidRootPart.CFrame = targetBag.PrimaryPart.CFrame + Vector3.new(0, YSetting, 0)
+            humanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+            
+            -- Monitor keberadaan Bag
+            local connection
+            connection = targetBag.AncestryChanged:Connect(function(_, parent)
+                if not parent then
+                    currentBag = nil
+                    connection:Disconnect()
+                end
+            end)
+            
+            -- Timeout 30 detik
+            local timeout = os.time() + 30
+            repeat
+                task.wait()
+            until not currentBag or os.time() > timeout
+        end
+        task.wait(1)
+    end
+end
+
+-- Toggle utama
+TeleportLoot:AddToggle({
+    Name = "Start Teleport Loot",
+    Default = false,
+    Callback = function(Value)
+        moblotActive = Value
+        
+        if Value then
+            StarterGui:SetCore("SendNotification", {
+                Title = "Settings Applied",
+                Text = "Drop Type: "..selectedDropType.."\nY Offset: "..YSetting,
+                Duration = 3
+            })
+            
+            coroutine.wrap(bagMonitor)()
+        else
+            humanoidRootPart.Size = originalHRPSize
+            StarterGui:SetCore("SendNotification", {
+                Title = "Settings Disabled",
+                Text = "Teleportation stopped",
+                Duration = 3
+            })
+            currentBag = nil
         end
     end
 })
