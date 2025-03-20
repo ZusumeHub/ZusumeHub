@@ -320,8 +320,8 @@ TabFish:AddToggle({
 local SectionQuest = TabQuest:AddSection({ Name = "AutoQuest Option" })
 
 -- Label untuk counter
-local glacierLabelOrion = TabQuest:AddLabel("Glacier Teleports: 0")
-local boulderLabelOrion = TabQuest:AddLabel("Boulder Teleports: 0")
+local glacierLabelOrion = SectionQuest:AddLabel("Glacier Teleports: 0")
+local boulderLabelOrion = SectionQuest:AddLabel("Boulder Teleports: 0")
 
 -- Variabel Global
 local glacierTeleports = 0    -- Max 10
@@ -2195,6 +2195,66 @@ local cleanToggle = SectionHacks:AddToggle({
                 Name = "SYSTEM",
                 Content = "Monitoring stopped",
                 Time = 3
+            })
+        end
+    end
+})
+
+local autoRespawnEnabled = false
+
+SectionHacks:AddToggle({
+    Name = "Auto Respawn",
+    Default = false,
+    Callback = function(Value)
+        autoRespawnEnabled = Value
+        if Value then
+            StarterGui:SetCore("SendNotification", {
+                Title = "Auto Respawn",
+                Text = "Auto Respawn: Enabled",
+                Button1 = "OK",
+                Duration = 3
+            })
+            
+            spawn(function()
+                local player = Players.LocalPlayer
+                while autoRespawnEnabled and player do
+                    -- Cek GUI Death Window
+                    local deathGUI = player.PlayerGui:FindFirstChild("Actions")
+                    if deathGUI then
+                        local deathWindow = deathGUI:FindFirstChild("DeathWindow")
+                        if deathWindow and deathWindow.Visible then
+                            -- Simpan CFrame sebelum respawn
+                            wait(0.1)
+                            local character = player.Character
+                            local humanoidRoot = character and character:FindFirstChild("HumanoidRootPart")
+                            
+                            if humanoidRoot then
+                                local savedCFrame = humanoidRoot.CFrame
+                                
+                                -- Panggil respawn
+                                wait(0.2)
+                                game:GetService("ReplicatedStorage").Events.Player.GoToNearestTown:FireServer("Death")
+                                
+                                -- Tunggu dan teleport kembali
+                                wait(0.3)
+                                local newCharacter = player.Character
+                                local newRoot = newCharacter and newCharacter:FindFirstChild("HumanoidRootPart")
+                                
+                                if newRoot then
+                                    newRoot.CFrame = savedCFrame
+                                end
+                            end
+                        end
+                    end
+                    wait(0.1) -- Cooldown pemeriksaan
+                end
+            end)
+        else
+            StarterGui:SetCore("SendNotification", {
+                Title = "Auto Respawn",
+                Text = "Auto Respawn: Disabled",
+                Button1 = "OK",
+                Duration = 3
             })
         end
     end
