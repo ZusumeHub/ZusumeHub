@@ -798,4 +798,241 @@ function XenoLib:MakeWindow(config)
                         Tween(DropdownContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2)
                         
                         task.wait(0.2)
+                                           DropdownContainer.Visible = false
+                        callback(option)
                         
+                        -- Save config
+                        if Window.SaveConfig then
+                            Window.SavedConfig[dropdownName] = option
+                            SaveConfig(Window.ConfigFolder, Window.Name, Window.SavedConfig)
+                        end
+                    end)
+                end
+
+                -- Dropdown Object
+                local DropdownObj = {
+                    Frame = Dropdown,
+                    Button = DropdownButton,
+                    Container = DropdownContainer,
+                    Options = options,
+                    Value = default
+                }
+
+                -- Improved dropdown toggle
+                local function ToggleDropdown()
+                    for _, item in pairs(SectionObj.Items) do
+                        if item.Type == "Dropdown" and item ~= DropdownObj then
+                            item.Container.Visible = false
+                            Tween(item.Frame, {Size = UDim2.new(1, 0, 0, 50)}, 0.2)
+                        end
+                    end
+
+                    if DropdownContainer.Visible then
+                        Tween(Dropdown, {Size = UDim2.new(1, 0, 0, 50)}, 0.2):Play()
+                        Tween(DropdownContainer, {Size = UDim2.new(1, 0, 0, 0)}, 0.2):Play()
+                        DropdownContainer.Visible = false
+                    else
+                        DropdownContainer.Visible = true
+                        local containerHeight = math.min(#options * 25 + (#options - 1) * 2, 150)
+                        Tween(Dropdown, {Size = UDim2.new(1, 0, 0, 50 + containerHeight)}, 0.2):Play()
+                        Tween(DropdownContainer, {
+                            Size = UDim2.new(1, 0, 0, containerHeight)
+                        }, 0.2):Play()
+                    end
+                end
+
+                -- Enhanced input handling for Xeno compatibility
+                local function HandleDropdownInput(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        local mousePos = input.Position
+                        if IsInBounds(DropdownButton, mousePos.X, mousePos.Y) then
+                            ToggleDropdown()
+                        end
+                    end
+                end
+
+                -- Connect using both input methods
+                UserInputService.InputBegan:Connect(HandleDropdownInput)
+                DropdownButton.MouseButton1Click:Connect(ToggleDropdown)
+
+                -- Close dropdown when clicking outside
+                local closeConnection
+                closeConnection = UserInputService.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                        local mousePos = input.Position
+                        if not IsInBounds(Dropdown, mousePos.X, mousePos.Y) and DropdownContainer.Visible then
+                            ToggleDropdown()
+                            closeConnection:Disconnect()
+                        end
+                    end
+                end)
+
+                -- Initialize if default exists
+                if default and table.find(options, default) then
+                    DropdownButton.Text = default
+                    DropdownButton.TextColor3 = TEXT_COLOR
+                end
+
+                SectionObj.Items[dropdownName] = {
+                    Type = "Dropdown",
+                    Object = DropdownObj
+                }
+
+                return DropdownObj
+            end
+
+            -- Add Keybind (New Feature)
+            function SectionObj:AddKeybind(keybindConfig)
+                keybindConfig = keybindConfig or {}
+                local keybindName = keybindConfig.Name or "Keybind"
+                local default = keybindConfig.Default or Enum.KeyCode.Unknown
+                local callback = keybindConfig.Callback or function() end
+
+                -- Check saved config
+                if Window.SaveConfig and Window.SavedConfig[keybindName] ~= nil then
+                    default = Enum.KeyCode[Window.SavedConfig[keybindName]]
+                end
+
+                local Keybind = Create("Frame")({
+                    Name = keybindName .. "Keybind",
+                    Parent = SectionContent,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 30)
+                })
+
+                local KeybindLabel = Create("TextLabel")({
+                    Name = "Label",
+                    Parent = Keybind,
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(0.6, 0, 1, 0),
+                    Font = Enum.Font.Gotham,
+                    Text = keybindName,
+                    TextColor3 = TEXT_COLOR,
+                    TextSize = 14,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+
+                local KeybindButton = Create("TextButton")({
+                    Name = "Button",
+                    Parent = Keybind,
+                    BackgroundColor3 = BACKGROUND_COLOR,
+                    Position = UDim2.new(0.6, 5, 0, 0),
+                    Size = UDim2.new(0.4, -5, 1, 0),
+                    Font = Enum.Font.Gotham,
+                    Text = default.Name ~= "Unknown" and default.Name or "Click to bind",
+                    TextColor3 = GRAY_TEXT_COLOR,
+                    TextSize = 14,
+                    BorderSizePixel = 0,
+                    AutoButtonColor = false
+                })
+
+                local KeybindCorner = Create("UICorner")({
+                    CornerRadius = UDim.new(0, 4),
+                    Parent = KeybindButton
+                })
+
+                local listening = false
+                local currentKey = default
+
+                local function UpdateKeybind(key)
+                    currentKey = key
+                    KeybindButton.Text = key.Name
+                    KeybindButton.TextColor3 = TEXT_COLOR
+                    
+                    if Window.SaveConfig then
+                        Window.SavedConfig[keybindName] = key.Name
+                        SaveConfig(Window.ConfigFolder, Window.Name, Window.SavedConfig)
+                    end
+                    
+                    callback(key)
+                end
+
+                KeybindButton.MouseButton1Click:Connect(function()
+                    listening = true
+                    KeybindButton.Text = "..."
+                    KeybindButton.TextColor3 = ACCENT_COLOR
+                end)
+
+                local keyConnection
+                keyConnection = UserInputService.InputBegan:Connect(function(input)
+                    if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+                        listening = false
+                        UpdateKeybind(input.KeyCode)
+                        keyConnection:Disconnect()
+                    end
+                end)
+
+                -- Initialize if default exists
+                if default.Name ~= "Unknown" then
+                    UpdateKeybind(default)
+                end
+
+                return {
+                    Frame = Keybind,
+                    Button = KeybindButton,
+                    Key = currentKey,
+                    SetKey = UpdateKeybind
+                }
+            end
+
+            table.insert(SectionObj.Items, SectionObj)
+            return SectionObj
+        end
+
+        -- Select first tab by default
+        if #Window.Tabs == 0 then
+            table.insert(Window.Tabs, Tab)
+            Tab:Select()
+        else
+            table.insert(Window.Tabs, Tab)
+        end
+
+        return Tab
+    end
+
+    -- Initialize dragging with Xeno compatibility
+    local dragging
+    local dragInput
+    local dragStart
+    local startPos
+
+    local function UpdateInput(input)
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
+
+    MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    MainFrame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            UpdateInput(input)
+        end
+    end)
+
+    return Window
+end
+
+return XenoLib
