@@ -2,459 +2,128 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local RS = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
 
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "EnhancedGUI"
+ScreenGui.Name = "TeleportGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = PlayerGui
 
--- Main Container (for both menus)
-local MainContainer = Instance.new("Frame")
-MainContainer.Name = "MainContainer"
-MainContainer.Size = UDim2.new(0, 400, 0, 350)
-MainContainer.Position = UDim2.new(0.5, -200, 0.5, -175)
-MainContainer.BackgroundTransparency = 1
-MainContainer.BorderSizePixel = 0
-MainContainer.ClipsDescendants = true
-MainContainer.Parent = ScreenGui
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 250, 0, 220) -- Made taller to accommodate dropdown
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -110)
+MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
 
--- Background Gradient Effect
-local BackgroundFrame = Instance.new("Frame")
-BackgroundFrame.Name = "BackgroundFrame"
-BackgroundFrame.Size = UDim2.new(1, 0, 1, 0)
-BackgroundFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-BackgroundFrame.BorderSizePixel = 0
-BackgroundFrame.Parent = MainContainer
-
+-- Round the corners
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 15)
-UICorner.Parent = BackgroundFrame
-
-local UIGradient = Instance.new("UIGradient")
-UIGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 50, 80)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(30, 35, 60)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 25, 45))
-})
-UIGradient.Rotation = 45
-UIGradient.Parent = BackgroundFrame
-
--- Animated gradient effect
-spawn(function()
-    local rotation = 0
-    while true do
-        rotation = (rotation + 0.2) % 360
-        UIGradient.Rotation = rotation
-        wait(0.05)
-    end
-end)
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
 
 -- Top Bar
 local TopBar = Instance.new("Frame")
 TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-TopBar.BackgroundTransparency = 0.2
+TopBar.Size = UDim2.new(1, 0, 0, 30)
+TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TopBar.BorderSizePixel = 0
-TopBar.Parent = MainContainer
+TopBar.Parent = MainFrame
 
-local TopBarCorner = Instance.new("UICorner")
-TopBarCorner.CornerRadius = UDim.new(0, 10)
-TopBarCorner.Parent = TopBar
-
--- Title with emoji
+-- Title
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(1, -150, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 20
+Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
-Title.Text = "🚀 Quantum Hub"
+Title.Text = "Quest Teleporter"
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
-
--- Executor Label
-local ExecutorLabel = Instance.new("TextLabel")
-ExecutorLabel.Name = "ExecutorLabel"
-ExecutorLabel.Size = UDim2.new(0, 100, 0, 20)
-ExecutorLabel.Position = UDim2.new(0, 18, 1, -22)
-ExecutorLabel.BackgroundColor3 = Color3.fromRGB(60, 70, 170)
-ExecutorLabel.BackgroundTransparency = 0.3
-ExecutorLabel.BorderSizePixel = 0
-ExecutorLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
-ExecutorLabel.TextSize = 10
-ExecutorLabel.Font = Enum.Font.GothamSemibold
-ExecutorLabel.Text = "🔧 Synapse X"
-ExecutorLabel.Parent = TopBar
-
-local ExecutorCorner = Instance.new("UICorner")
-ExecutorCorner.CornerRadius = UDim.new(0, 6)
-ExecutorCorner.Parent = ExecutorLabel
 
 -- Close Button
 local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -38, 0, 5)
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(1, -28, 0, 2)
 CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BackgroundTransparency = 0.2
 CloseButton.BorderSizePixel = 0
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "✖"
-CloseButton.TextSize = 16
+CloseButton.Text = "X"
+CloseButton.TextSize = 14
 CloseButton.Parent = TopBar
 
+-- Round the close button
 local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 8)
+CloseCorner.CornerRadius = UDim.new(0, 5)
 CloseCorner.Parent = CloseButton
 
 -- Minimize Button
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Position = UDim2.new(1, -75, 0, 5)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 220)
-MinimizeButton.BackgroundTransparency = 0.2
+MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
+MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.Text = "−"
-MinimizeButton.TextSize = 20
+MinimizeButton.Text = "-"
+MinimizeButton.TextSize = 16
 MinimizeButton.Parent = TopBar
 
+-- Round the minimize button
 local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 8)
+MinimizeCorner.CornerRadius = UDim.new(0, 5)
 MinimizeCorner.Parent = MinimizeButton
 
--- Navigation Bar
-local NavigationBar = Instance.new("Frame")
-NavigationBar.Name = "NavigationBar"
-NavigationBar.Size = UDim2.new(1, 0, 0, 40)
-NavigationBar.Position = UDim2.new(0, 0, 0, 40)
-NavigationBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-NavigationBar.BackgroundTransparency = 0.1
-NavigationBar.BorderSizePixel = 0
-NavigationBar.Parent = MainContainer
+-- Content Frame
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, 0, 1, -30)
+ContentFrame.Position = UDim2.new(0, 0, 0, 30)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
 
--- Home Tab Button
-local HomeButton = Instance.new("TextButton")
-HomeButton.Name = "HomeButton"
-HomeButton.Size = UDim2.new(0.5, 0, 1, 0)
-HomeButton.BackgroundTransparency = 0.9
-HomeButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-HomeButton.BorderSizePixel = 0
-HomeButton.Font = Enum.Font.GothamSemibold
-HomeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HomeButton.Text = "🏠 Home"
-HomeButton.TextSize = 16
-HomeButton.Parent = NavigationBar
+-- Dropdown Label
+local DropdownLabel = Instance.new("TextLabel")
+DropdownLabel.Name = "DropdownLabel"
+DropdownLabel.Size = UDim2.new(0.8, 0, 0, 30)
+DropdownLabel.Position = UDim2.new(0.1, 0, 0.05, 0)
+DropdownLabel.BackgroundTransparency = 1
+DropdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+DropdownLabel.TextSize = 14
+DropdownLabel.Font = Enum.Font.GothamSemibold
+DropdownLabel.Text = "Teleportation"
+DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+DropdownLabel.Parent = ContentFrame
 
-local HomeButtonSelect = Instance.new("Frame")
-HomeButtonSelect.Name = "HomeButtonSelect"
-HomeButtonSelect.Size = UDim2.new(1, 0, 0, 3)
-HomeButtonSelect.Position = UDim2.new(0, 0, 1, -3)
-HomeButtonSelect.BackgroundColor3 = Color3.fromRGB(70, 200, 255)
-HomeButtonSelect.BorderSizePixel = 0
-HomeButtonSelect.Parent = HomeButton
+-- Dropdown Frame (container for dropdown button and list)
+local DropdownContainer = Instance.new("Frame")
+DropdownContainer.Name = "DropdownContainer"
+DropdownContainer.Size = UDim2.new(0.8, 0, 0, 35)
+DropdownContainer.Position = UDim2.new(0.1, 0, 0.2, 0)
+DropdownContainer.BackgroundTransparency = 1
+DropdownContainer.BorderSizePixel = 0
+DropdownContainer.ZIndex = 2
+DropdownContainer.Parent = ContentFrame
 
--- Hacks Tab Button
-local HackButton = Instance.new("TextButton")
-HackButton.Name = "HackButton"
-HackButton.Size = UDim2.new(0.5, 0, 1, 0)
-HackButton.Position = UDim2.new(0.5, 0, 0, 0)
-HackButton.BackgroundTransparency = 0.9
-HackButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-HackButton.BorderSizePixel = 0
-HackButton.Font = Enum.Font.GothamSemibold
-HackButton.TextColor3 = Color3.fromRGB(190, 190, 190)
-HackButton.Text = "⚡ Hacks"
-HackButton.TextSize = 16
-HackButton.Parent = NavigationBar
-
-local HackButtonSelect = Instance.new("Frame")
-HackButtonSelect.Name = "HackButtonSelect"
-HackButtonSelect.Size = UDim2.new(1, 0, 0, 3)
-HackButtonSelect.Position = UDim2.new(0, 0, 1, -3)
-HackButtonSelect.BackgroundColor3 = Color3.fromRGB(70, 200, 255)
-HackButtonSelect.BackgroundTransparency = 1
-HackButtonSelect.BorderSizePixel = 0
-HackButtonSelect.Parent = HackButton
-
--- Content Container
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, 0, 1, -80)
-ContentContainer.Position = UDim2.new(0, 0, 0, 80)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.BorderSizePixel = 0
-ContentContainer.ClipsDescendants = true
-ContentContainer.Parent = MainContainer
-
--- HOME PAGE CONTENT
-local HomeContent = Instance.new("Frame")
-HomeContent.Name = "HomeContent"
-HomeContent.Size = UDim2.new(1, 0, 1, 0)
-HomeContent.BackgroundTransparency = 1
-HomeContent.BorderSizePixel = 0
-HomeContent.Visible = true
-HomeContent.Parent = ContentContainer
-
--- Time Display
-local TimeFrame = Instance.new("Frame")
-TimeFrame.Name = "TimeFrame"
-TimeFrame.Size = UDim2.new(0.9, 0, 0, 60)
-TimeFrame.Position = UDim2.new(0.05, 0, 0, 20)
-TimeFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-TimeFrame.BackgroundTransparency = 0.4
-TimeFrame.BorderSizePixel = 0
-TimeFrame.Parent = HomeContent
-
-local TimeCorner = Instance.new("UICorner")
-TimeCorner.CornerRadius = UDim.new(0, 10)
-TimeCorner.Parent = TimeFrame
-
-local TimeIcon = Instance.new("TextLabel")
-TimeIcon.Name = "TimeIcon"
-TimeIcon.Size = UDim2.new(0, 30, 0, 30)
-TimeIcon.Position = UDim2.new(0, 15, 0, 15)
-TimeIcon.BackgroundTransparency = 1
-TimeIcon.TextColor3 = Color3.fromRGB(120, 210, 255)
-TimeIcon.TextSize = 24
-TimeIcon.Font = Enum.Font.GothamBold
-TimeIcon.Text = "⏰"
-TimeIcon.Parent = TimeFrame
-
-local TimeLabel = Instance.new("TextLabel")
-TimeLabel.Name = "TimeLabel"
-TimeLabel.Size = UDim2.new(0, 150, 0, 20)
-TimeLabel.Position = UDim2.new(0, 55, 0, 10)
-TimeLabel.BackgroundTransparency = 1
-TimeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TimeLabel.TextSize = 14
-TimeLabel.Font = Enum.Font.GothamSemibold
-TimeLabel.Text = "Current Time"
-TimeLabel.TextXAlignment = Enum.TextXAlignment.Left
-TimeLabel.Parent = TimeFrame
-
-local TimeDisplay = Instance.new("TextLabel")
-TimeDisplay.Name = "TimeDisplay"
-TimeDisplay.Size = UDim2.new(0, 150, 0, 25)
-TimeDisplay.Position = UDim2.new(0, 55, 0, 28)
-TimeDisplay.BackgroundTransparency = 1
-TimeDisplay.TextColor3 = Color3.fromRGB(200, 230, 255)
-TimeDisplay.TextSize = 18
-TimeDisplay.Font = Enum.Font.GothamBold
-TimeDisplay.Text = "00:00:00 AM"
-TimeDisplay.TextXAlignment = Enum.TextXAlignment.Left
-TimeDisplay.Parent = TimeFrame
-
-local DateDisplay = Instance.new("TextLabel")
-DateDisplay.Name = "DateDisplay"
-DateDisplay.Size = UDim2.new(0, 150, 0, 20)
-DateDisplay.Position = UDim2.new(1, -165, 0, 20)
-DateDisplay.BackgroundTransparency = 1
-DateDisplay.TextColor3 = Color3.fromRGB(200, 230, 255)
-DateDisplay.TextSize = 12
-DateDisplay.Font = Enum.Font.Gotham
-DateDisplay.Text = "April 25, 2025"
-DateDisplay.TextXAlignment = Enum.TextXAlignment.Right
-DateDisplay.Parent = TimeFrame
-
--- Player Profile
-local ProfileFrame = Instance.new("Frame")
-ProfileFrame.Name = "ProfileFrame"
-ProfileFrame.Size = UDim2.new(0.9, 0, 0, 100)
-ProfileFrame.Position = UDim2.new(0.05, 0, 0, 100)
-ProfileFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-ProfileFrame.BackgroundTransparency = 0.4
-ProfileFrame.BorderSizePixel = 0
-ProfileFrame.Parent = HomeContent
-
-local ProfileCorner = Instance.new("UICorner")
-ProfileCorner.CornerRadius = UDim.new(0, 10)
-ProfileCorner.Parent = ProfileFrame
-
--- Avatar Circle Container
-local AvatarCircle = Instance.new("Frame")
-AvatarCircle.Name = "AvatarCircle"
-AvatarCircle.Size = UDim2.new(0, 70, 0, 70)
-AvatarCircle.Position = UDim2.new(0, 15, 0, 15)
-AvatarCircle.BackgroundColor3 = Color3.fromRGB(60, 70, 90)
-AvatarCircle.BorderSizePixel = 0
-AvatarCircle.Parent = ProfileFrame
-
-local CircleCorner = Instance.new("UICorner")
-CircleCorner.CornerRadius = UDim.new(1, 0)
-CircleCorner.Parent = AvatarCircle
-
--- Avatar Image (placeholder)
-local AvatarImage = Instance.new("ImageLabel")
-AvatarImage.Name = "AvatarImage"
-AvatarImage.Size = UDim2.new(1, -6, 1, -6)
-AvatarImage.Position = UDim2.new(0, 3, 0, 3)
-AvatarImage.BackgroundTransparency = 1
-AvatarImage.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-AvatarImage.Parent = AvatarCircle
-
-local AvatarCorner = Instance.new("UICorner")
-AvatarCorner.CornerRadius = UDim.new(1, 0)
-AvatarCorner.Parent = AvatarImage
-
--- Username display
-local UsernameLabel = Instance.new("TextLabel")
-UsernameLabel.Name = "UsernameLabel"
-UsernameLabel.Size = UDim2.new(0, 200, 0, 25)
-UsernameLabel.Position = UDim2.new(0, 100, 0, 20)
-UsernameLabel.BackgroundTransparency = 1
-UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-UsernameLabel.TextSize = 18
-UsernameLabel.Font = Enum.Font.GothamBold
-UsernameLabel.Text = "Username" -- Will be set dynamically
-UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-UsernameLabel.Parent = ProfileFrame
-
-local UserIdLabel = Instance.new("TextLabel")
-UserIdLabel.Name = "UserIdLabel"
-UserIdLabel.Size = UDim2.new(0, 200, 0, 20)
-UserIdLabel.Position = UDim2.new(0, 100, 0, 45)
-UserIdLabel.BackgroundTransparency = 1
-UserIdLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
-UserIdLabel.TextSize = 14
-UserIdLabel.Font = Enum.Font.Gotham
-UserIdLabel.Text = "ID: 123456789" -- Will be set dynamically
-UserIdLabel.TextXAlignment = Enum.TextXAlignment.Left
-UserIdLabel.Parent = ProfileFrame
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Name = "StatusLabel"
-StatusLabel.Size = UDim2.new(0, 80, 0, 20)
-StatusLabel.Position = UDim2.new(0, 100, 0, 70)
-StatusLabel.BackgroundColor3 = Color3.fromRGB(40, 180, 90)
-StatusLabel.BackgroundTransparency = 0.3
-StatusLabel.BorderSizePixel = 0
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.TextSize = 12
-StatusLabel.Font = Enum.Font.GothamSemibold
-StatusLabel.Text = "✓ VIP Access"
-StatusLabel.Parent = ProfileFrame
-
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0, 6)
-StatusCorner.Parent = StatusLabel
-
--- Game Info
-local GameInfoFrame = Instance.new("Frame")
-GameInfoFrame.Name = "GameInfoFrame"
-GameInfoFrame.Size = UDim2.new(0.9, 0, 0, 80)
-GameInfoFrame.Position = UDim2.new(0.05, 0, 0, 220)
-GameInfoFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-GameInfoFrame.BackgroundTransparency = 0.4
-GameInfoFrame.BorderSizePixel = 0
-GameInfoFrame.Parent = HomeContent
-
-local GameInfoCorner = Instance.new("UICorner")
-GameInfoCorner.CornerRadius = UDim.new(0, 10)
-GameInfoCorner.Parent = GameInfoFrame
-
-local GameIcon = Instance.new("TextLabel")
-GameIcon.Name = "GameIcon"
-GameIcon.Size = UDim2.new(0, 30, 0, 30)
-GameIcon.Position = UDim2.new(0, 15, 0, 10)
-GameIcon.BackgroundTransparency = 1
-GameIcon.TextColor3 = Color3.fromRGB(120, 210, 255)
-GameIcon.TextSize = 24
-GameIcon.Font = Enum.Font.GothamBold
-GameIcon.Text = "🎮"
-GameIcon.Parent = GameInfoFrame
-
-local GameLabel = Instance.new("TextLabel")
-GameLabel.Name = "GameLabel"
-GameLabel.Size = UDim2.new(0, 150, 0, 20)
-GameLabel.Position = UDim2.new(0, 55, 0, 15)
-GameLabel.BackgroundTransparency = 1
-GameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-GameLabel.TextSize = 14
-GameLabel.Font = Enum.Font.GothamSemibold
-GameLabel.Text = "Current Game"
-GameLabel.TextXAlignment = Enum.TextXAlignment.Left
-GameLabel.Parent = GameInfoFrame
-
-local GameName = Instance.new("TextLabel")
-GameName.Name = "GameName"
-GameName.Size = UDim2.new(1, -70, 0, 25)
-GameName.Position = UDim2.new(0, 15, 0, 45)
-GameName.BackgroundTransparency = 1
-GameName.TextColor3 = Color3.fromRGB(200, 230, 255)
-GameName.TextSize = 14
-GameName.Font = Enum.Font.Gotham
-GameName.Text = "Loading game info..."
-GameName.TextXAlignment = Enum.TextXAlignment.Left
-GameName.Parent = GameInfoFrame
-
--- HACK PAGE CONTENT
-local HackContent = Instance.new("Frame")
-HackContent.Name = "HackContent"
-HackContent.Size = UDim2.new(1, 0, 1, 0)
-HackContent.BackgroundTransparency = 1
-HackContent.BorderSizePixel = 0
-HackContent.Visible = false
-HackContent.Parent = ContentContainer
-
--- Scroll Frame for Hack Options
-local HackScroll = Instance.new("ScrollingFrame")
-HackScroll.Name = "HackScroll"
-HackScroll.Size = UDim2.new(0.9, 0, 1, -20)
-HackScroll.Position = UDim2.new(0.05, 0, 0, 10)
-HackScroll.BackgroundTransparency = 1
-HackScroll.BorderSizePixel = 0
-HackScroll.ScrollBarThickness = 4
-HackScroll.ScrollBarImageColor3 = Color3.fromRGB(100, 120, 200)
-HackScroll.CanvasSize = UDim2.new(0, 0, 0, 370) -- Will adjust based on content
-HackScroll.Parent = HackContent
-
--- Teleport Section
-local TeleportSection = Instance.new("Frame")
-TeleportSection.Name = "TeleportSection"
-TeleportSection.Size = UDim2.new(1, -20, 0, 150)
-TeleportSection.Position = UDim2.new(0, 10, 0, 10)
-TeleportSection.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-TeleportSection.BackgroundTransparency = 0.4
-TeleportSection.BorderSizePixel = 0
-TeleportSection.Parent = HackScroll
-
-local SectionCorner = Instance.new("UICorner")
-SectionCorner.CornerRadius = UDim.new(0, 8)
-SectionCorner.Parent = TeleportSection
-
-local TeleportTitle = Instance.new("TextLabel")
-TeleportTitle.Name = "TeleportTitle"
-TeleportTitle.Size = UDim2.new(1, -20, 0, 30)
-TeleportTitle.Position = UDim2.new(0, 10, 0, 5)
-TeleportTitle.BackgroundTransparency = 1
-TeleportTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleportTitle.TextSize = 16
-TeleportTitle.Font = Enum.Font.GothamBold
-TeleportTitle.Text = "🌐 Teleportation"
-TeleportTitle.TextXAlignment = Enum.TextXAlignment.Left
-TeleportTitle.Parent = TeleportSection
-
--- Dropdown Frame
+-- Dropdown Button Frame
 local DropdownFrame = Instance.new("Frame")
 DropdownFrame.Name = "DropdownFrame"
-DropdownFrame.Size = UDim2.new(1, -20, 0, 35)
-DropdownFrame.Position = UDim2.new(0, 10, 0, 40)
-DropdownFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
+DropdownFrame.Size = UDim2.new(1, 0, 0, 35)
+DropdownFrame.Position = UDim2.new(0, 0, 0, 0)
+DropdownFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 DropdownFrame.BorderSizePixel = 0
-DropdownFrame.Parent = TeleportSection
+DropdownFrame.ZIndex = 2
+DropdownFrame.Parent = DropdownContainer
 
+-- Round the dropdown frame
 local DropdownCorner = Instance.new("UICorner")
 DropdownCorner.CornerRadius = UDim.new(0, 6)
 DropdownCorner.Parent = DropdownFrame
@@ -469,6 +138,8 @@ DropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 DropdownButton.Text = "Select destination..."
 DropdownButton.TextSize = 14
 DropdownButton.TextXAlignment = Enum.TextXAlignment.Left
+DropdownButton.TextTruncate = Enum.TextTruncate.AtEnd
+DropdownButton.ZIndex = 2
 DropdownButton.Parent = DropdownFrame
 
 -- Dropdown Padding
@@ -486,19 +157,21 @@ DropdownArrow.TextColor3 = Color3.fromRGB(200, 200, 200)
 DropdownArrow.TextSize = 16
 DropdownArrow.Font = Enum.Font.GothamBold
 DropdownArrow.Text = "▼"
+DropdownArrow.ZIndex = 2
 DropdownArrow.Parent = DropdownFrame
 
--- Dropdown List (initially hidden)
+-- Create dropdown list (options container)
 local DropdownList = Instance.new("Frame")
 DropdownList.Name = "DropdownList"
-DropdownList.Size = UDim2.new(1, 0, 0, 105)
-DropdownList.Position = UDim2.new(0, 0, 1, 0)
-DropdownList.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
+DropdownList.Size = UDim2.new(1, 0, 0, 105) -- Increased height for 3 options (35 height each)
+DropdownList.Position = UDim2.new(0, 0, 1, 0) -- Position right below dropdown button
+DropdownList.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 DropdownList.BorderSizePixel = 0
 DropdownList.Visible = false
-DropdownList.ZIndex = 10
+DropdownList.ZIndex = 3 -- Higher zIndex to appear above other elements
 DropdownList.Parent = DropdownFrame
 
+-- Round the dropdown list corners
 local DropdownListCorner = Instance.new("UICorner")
 DropdownListCorner.CornerRadius = UDim.new(0, 6)
 DropdownListCorner.Parent = DropdownList
@@ -510,419 +183,132 @@ OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 OptionsLayout.Padding = UDim.new(0, 1)
 OptionsLayout.Parent = DropdownList
 
--- Create dropdown options
+-- Create option buttons
 local optionHeight = 35
 
--- Option 1
+-- Option 1: Teleport to next quest
 local Option1 = Instance.new("TextButton")
 Option1.Name = "Option1"
 Option1.Size = UDim2.new(1, 0, 0, optionHeight - 1)
-Option1.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
+Option1.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 Option1.BorderSizePixel = 0
 Option1.Font = Enum.Font.Gotham
 Option1.TextColor3 = Color3.fromRGB(255, 255, 255)
 Option1.Text = "Teleport to next quest"
 Option1.TextSize = 14
 Option1.TextXAlignment = Enum.TextXAlignment.Left
-Option1.ZIndex = 10
+Option1.ZIndex = 3
 Option1.LayoutOrder = 1
 Option1.Parent = DropdownList
 
+-- Option 1 padding
 local Option1Padding = Instance.new("UIPadding")
 Option1Padding.PaddingLeft = UDim.new(0, 10)
 Option1Padding.Parent = Option1
 
--- Option 2
+-- Option 2: Teleport to training skill
 local Option2 = Instance.new("TextButton")
 Option2.Name = "Option2"
 Option2.Size = UDim2.new(1, 0, 0, optionHeight - 1)
-Option2.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
+Option2.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 Option2.BorderSizePixel = 0
 Option2.Font = Enum.Font.Gotham
 Option2.TextColor3 = Color3.fromRGB(255, 255, 255)
 Option2.Text = "Teleport to training skill"
 Option2.TextSize = 14
 Option2.TextXAlignment = Enum.TextXAlignment.Left
-Option2.ZIndex = 10
+Option2.ZIndex = 3
 Option2.LayoutOrder = 2
 Option2.Parent = DropdownList
 
+-- Option 2 padding
 local Option2Padding = Instance.new("UIPadding")
 Option2Padding.PaddingLeft = UDim.new(0, 10)
 Option2Padding.Parent = Option2
 
--- Option 3
+-- Option 3: Teleport to Drop Supplies (NEW)
 local Option3 = Instance.new("TextButton")
 Option3.Name = "Option3"
 Option3.Size = UDim2.new(1, 0, 0, optionHeight - 1)
-Option3.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
+Option3.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 Option3.BorderSizePixel = 0
 Option3.Font = Enum.Font.Gotham
 Option3.TextColor3 = Color3.fromRGB(255, 255, 255)
 Option3.Text = "Teleport to Drop Supplies"
 Option3.TextSize = 14
 Option3.TextXAlignment = Enum.TextXAlignment.Left
-Option3.ZIndex = 10
+Option3.ZIndex = 3
 Option3.LayoutOrder = 3
 Option3.Parent = DropdownList
 
+-- Option 3 padding
 local Option3Padding = Instance.new("UIPadding")
 Option3Padding.PaddingLeft = UDim.new(0, 10)
 Option3Padding.Parent = Option3
 
 -- Apply Button
-local TeleportButton = Instance.new("TextButton")
-TeleportButton.Name = "TeleportButton"
-TeleportButton.Size = UDim2.new(1, -20, 0, 40)
-TeleportButton.Position = UDim2.new(0, 10, 0, 90)
-TeleportButton.BackgroundColor3 = Color3.fromRGB(70, 150, 220)
-TeleportButton.BorderSizePixel = 0
-TeleportButton.Font = Enum.Font.GothamBold
-TeleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleportButton.Text = "🚀 Apply"
-TeleportButton.TextSize = 16
-TeleportButton.Parent = TeleportSection
+local ApplyButton = Instance.new("TextButton")
+ApplyButton.Name = "ApplyButton"
+ApplyButton.Size = UDim2.new(0.8, 0, 0, 40)
+ApplyButton.Position = UDim2.new(0.1, 0, 0.4, 0)
+ApplyButton.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
+ApplyButton.BorderSizePixel = 0
+ApplyButton.Font = Enum.Font.GothamBold
+ApplyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ApplyButton.Text = "Apply"
+ApplyButton.TextSize = 14
+ApplyButton.Parent = ContentFrame
 
-local TeleportButtonCorner = Instance.new("UICorner")
-TeleportButtonCorner.CornerRadius = UDim.new(0, 8)
-TeleportButtonCorner.Parent = TeleportButton
+-- Round the apply button
+local ApplyCorner = Instance.new("UICorner")
+ApplyCorner.CornerRadius = UDim.new(0, 8)
+ApplyCorner.Parent = ApplyButton
 
--- Add a subtle glow effect
-local TeleportGlow = Instance.new("UIGradient")
-TeleportGlow.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(70, 150, 220)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80, 170, 240)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 150, 220))
-})
-TeleportGlow.Parent = TeleportButton
+-- AutoAttack Button (renamed from ToggleButton)
+local AutoAttackButton = Instance.new("TextButton")
+AutoAttackButton.Name = "AutoAttackButton"
+AutoAttackButton.Size = UDim2.new(0.8, 0, 0, 40)
+AutoAttackButton.Position = UDim2.new(0.1, 0, 0.65, 0)
+AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+AutoAttackButton.BorderSizePixel = 0
+AutoAttackButton.Font = Enum.Font.GothamBold
+AutoAttackButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoAttackButton.Text = "AutoAttack: OFF"
+AutoAttackButton.TextSize = 14
+AutoAttackButton.Parent = ContentFrame
 
--- Create a glow animation for the button
-spawn(function()
-    local offset = 0
-    while wait(0.05) do
-        offset = (offset + 0.01) % 1
-        TeleportGlow.Offset = Vector2.new(offset, 0)
-    end
-end)
+-- Round the autoattack button
+local AutoAttackCorner = Instance.new("UICorner")
+AutoAttackCorner.CornerRadius = UDim.new(0, 8)
+AutoAttackCorner.Parent = AutoAttackButton
 
--- Stats Section
-local StatsSection = Instance.new("Frame")
-StatsSection.Name = "StatsSection"
-StatsSection.Size = UDim2.new(1, -20, 0, 190)
-StatsSection.Position = UDim2.new(0, 10, 0, 170)
-StatsSection.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-StatsSection.BackgroundTransparency = 0.4
-StatsSection.BorderSizePixel = 0
-StatsSection.Parent = HackScroll
+-- Status Label
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Name = "StatusLabel"
+StatusLabel.Size = UDim2.new(0.8, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0.1, 0, 0.85, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+StatusLabel.TextSize = 12
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Text = "Ready"
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+StatusLabel.Parent = ContentFrame
 
-local StatsSectionCorner = Instance.new("UICorner")
-StatsSectionCorner.CornerRadius = UDim.new(0, 8)
-StatsSectionCorner.Parent = StatsSection
+-- Toggle Status
+local autoAttackStatus = false
 
-local StatsTitle = Instance.new("TextLabel")
-StatsTitle.Name = "StatsTitle"
-StatsTitle.Size = UDim2.new(1, -20, 0, 30)
-StatsTitle.Position = UDim2.new(0, 10, 0, 5)
-StatsTitle.BackgroundTransparency = 1
-StatsTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatsTitle.TextSize = 16
-StatsTitle.Font = Enum.Font.GothamBold
-StatsTitle.Text = "⚔️ Combat Stats"
-StatsTitle.TextXAlignment = Enum.TextXAlignment.Left
-StatsTitle.Parent = StatsSection
+-- Minimize Status
+local isMinimized = false
+local originalSize = MainFrame.Size
 
--- Speed Multiplier
-local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Name = "SpeedLabel"
-SpeedLabel.Size = UDim2.new(0.5, -15, 0, 25)
-SpeedLabel.Position = UDim2.new(0, 10, 0, 40)
-SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedLabel.TextSize = 14
-SpeedLabel.Font = Enum.Font.Gotham
-SpeedLabel.Text = "Speed Multiplier"
-SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-SpeedLabel.Parent = StatsSection
+-- Selected teleport option
+local selectedOption = nil
 
-local SpeedFrame = Instance.new("Frame")
-SpeedFrame.Name = "SpeedFrame"
-SpeedFrame.Size = UDim2.new(0.5, -15, 0, 25)
-SpeedFrame.Position = UDim2.new(0.5, 10, 0, 40)
-SpeedFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
-SpeedFrame.BorderSizePixel = 0
-SpeedFrame.Parent = StatsSection
+-- Auto Attack Connection
+local autoAttackConnection = nil
 
-local SpeedCorner = Instance.new("UICorner")
-SpeedCorner.CornerRadius = UDim.new(0, 4)
-SpeedCorner.Parent = SpeedFrame
-
-local SpeedTextBox = Instance.new("TextBox")
-SpeedTextBox.Name = "SpeedTextBox"
-SpeedTextBox.Size = UDim2.new(1, -10, 1, 0)
-SpeedTextBox.Position = UDim2.new(0, 5, 0, 0)
-SpeedTextBox.BackgroundTransparency = 1
-SpeedTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedTextBox.TextSize = 14
-SpeedTextBox.Font = Enum.Font.Gotham
-SpeedTextBox.Text = "1.0"
-SpeedTextBox.PlaceholderText = "Speed (e.g. 1.0)"
-SpeedTextBox.ClearTextOnFocus = false
-SpeedTextBox.Parent = SpeedFrame
-
--- Jump Power
-local JumpLabel = Instance.new("TextLabel")
-JumpLabel.Name = "JumpLabel"
-JumpLabel.Size = UDim2.new(0.5, -15, 0, 25)
-JumpLabel.Position = UDim2.new(0, 10, 0, 75)
-JumpLabel.BackgroundTransparency = 1
-JumpLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-JumpLabel.TextSize = 14
-JumpLabel.Font = Enum.Font.Gotham
-JumpLabel.Text = "Jump Power"
-JumpLabel.TextXAlignment = Enum.TextXAlignment.Left
-JumpLabel.Parent = StatsSection
-
-local JumpFrame = Instance.new("Frame")
-JumpFrame.Name = "JumpFrame"
-JumpFrame.Size = UDim2.new(0.5, -15, 0, 25)
-JumpFrame.Position = UDim2.new(0.5, 10, 0, 75)
-JumpFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
-JumpFrame.BorderSizePixel = 0
-JumpFrame.Parent = StatsSection
-
-local JumpCorner = Instance.new("UICorner")
-JumpCorner.CornerRadius = UDim.new(0, 4)
-JumpCorner.Parent = JumpFrame
-
-local JumpTextBox = Instance.new("TextBox")
-JumpTextBox.Name = "JumpTextBox"
-JumpTextBox.Size = UDim2.new(1, -10, 1, 0)
-JumpTextBox.Position = UDim2.new(0, 5, 0, 0)
-JumpTextBox.BackgroundTransparency = 1
-JumpTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-JumpTextBox.TextSize = 14
-JumpTextBox.Font = Enum.Font.Gotham
-JumpTextBox.Text = "50"
-JumpTextBox.PlaceholderText = "Jump (e.g. 50)"
-JumpTextBox.ClearTextOnFocus = false
-JumpTextBox.Parent = JumpFrame
-
--- Auto Collect Toggle
-local AutoCollectLabel = Instance.new("TextLabel")
-AutoCollectLabel.Name = "AutoCollectLabel"
-AutoCollectLabel.Size = UDim2.new(0.6, 0, 0, 25)
-AutoCollectLabel.Position = UDim2.new(0, 10, 0, 110)
-AutoCollectLabel.BackgroundTransparency = 1
-AutoCollectLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoCollectLabel.TextSize = 14
-AutoCollectLabel.Font = Enum.Font.Gotham
-AutoCollectLabel.Text = "Auto Collect Items"
-AutoCollectLabel.TextXAlignment = Enum.TextXAlignment.Left
-AutoCollectLabel.Parent = StatsSection
-
--- Toggle Button for Auto Collect
-local AutoCollectToggle = Instance.new("Frame")
-AutoCollectToggle.Name = "AutoCollectToggle"
-AutoCollectToggle.Size = UDim2.new(0, 40, 0, 20)
-AutoCollectToggle.Position = UDim2.new(0.7, 0, 0, 112)
-AutoCollectToggle.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-AutoCollectToggle.BorderSizePixel = 0
-AutoCollectToggle.Parent = StatsSection
-
-local ToggleCorner = Instance.new("UICorner")
-ToggleCorner.CornerRadius = UDim.new(1, 0)
-ToggleCorner.Parent = AutoCollectToggle
-
-local ToggleCircle = Instance.new("Frame")
-ToggleCircle.Name = "ToggleCircle"
-ToggleCircle.Size = UDim2.new(0, 16, 0, 16)
-ToggleCircle.Position = UDim2.new(0, 2, 0, 2)
-ToggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ToggleCircle.BorderSizePixel = 0
-ToggleCircle.Parent = AutoCollectToggle
-
-local CircleCorner2 = Instance.new("UICorner")
-CircleCorner2.CornerRadius = UDim.new(1, 0)
-CircleCorner2.Parent = ToggleCircle
-
--- Apply Stats Button
-local ApplyStatsButton = Instance.new("TextButton")
-ApplyStatsButton.Name = "ApplyStatsButton"
-ApplyStatsButton.Size = UDim2.new(1, -20, 0, 40)
-ApplyStatsButton.Position = UDim2.new(0, 10, 0, 140)
-ApplyStatsButton.BackgroundColor3 = Color3.fromRGB(70, 120, 220)
-ApplyStatsButton.BorderSizePixel = 0
-ApplyStatsButton.Font = Enum.Font.GothamBold
-ApplyStatsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ApplyStatsButton.Text = "💪 Apply Stats"
-ApplyStatsButton.TextSize = 16
-ApplyStatsButton.Parent = StatsSection
-
-local ApplyStatsCorner = Instance.new("UICorner")
-ApplyStatsCorner.CornerRadius = UDim.new(0, 8)
-ApplyStatsCorner.Parent = ApplyStatsButton
-
--- ApplyStats Button Glow effect
-local ApplyStatsGlow = Instance.new("UIGradient")
-ApplyStatsGlow.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(70, 120, 220)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(90, 140, 240)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(70, 120, 220))
-})
-ApplyStatsGlow.Parent = ApplyStatsButton
-
--- Create a glow animation for the ApplyStats button
-spawn(function()
-    local offset = 0
-    while wait(0.05) do
-        offset = (offset + 0.01) % 1
-        ApplyStatsGlow.Offset = Vector2.new(offset, 0)
-    end
-end)
-
--- Auto Collect Status
-local isAutoCollectEnabled = false
-
--- Toggle AutoCollect function
-AutoCollectToggle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isAutoCollectEnabled = not isAutoCollectEnabled
-        
-        if isAutoCollectEnabled then
-            -- Toggle ON
-            AutoCollectToggle.BackgroundColor3 = Color3.fromRGB(60, 200, 120)
-            ToggleCircle:TweenPosition(UDim2.new(0, 22, 0, 2), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-            
-            -- Start auto-collecting items
-            spawn(function()
-                while isAutoCollectEnabled do
-                    -- Find and collect items in workspace.Drop
-                    local dropFolder = workspace:FindFirstChild("Drop")
-                    if dropFolder then
-                        for _, item in pairs(dropFolder:GetChildren()) do
-                            if item:IsA("BasePart") then
-                                local args = {
-                                    [1] = item
-                                }
-                                local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("Remote")
-                                if remoteEvent and remoteEvent:FindFirstChild("AttemptInteractionRE") then
-                                    remoteEvent.AttemptInteractionRE:FireServer(unpack(args))
-                                end
-                            end
-                        end
-                    end
-                    wait(0.5) -- Collect every half second
-                end
-            end)
-        else
-            -- Toggle OFF
-            AutoCollectToggle.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-            ToggleCircle:TweenPosition(UDim2.new(0, 2, 0, 2), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        end
-    end
-end)
-
--- Apply stats function
-ApplyStatsButton.MouseButton1Click:Connect(function()
-    local speedValue = tonumber(SpeedTextBox.Text) or 1
-    local jumpValue = tonumber(JumpTextBox.Text) or 50
-    
-    -- Limit values to reasonable ranges
-    speedValue = math.min(math.max(speedValue, 0.1), 5)
-    jumpValue = math.min(math.max(jumpValue, 10), 200)
-    
-    -- Update the character's stats
-    local character = LocalPlayer.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.WalkSpeed = speedValue * 16 -- Base speed is 16
-        character.Humanoid.JumpPower = jumpValue
-        
-        -- Flash button as visual feedback
-        local originalColor = ApplyStatsButton.BackgroundColor3
-        ApplyStatsButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
-        wait(0.2)
-        ApplyStatsButton.BackgroundColor3 = originalColor
-    end
-end)
-
--- Tab switching functionality
-HomeButton.MouseButton1Click:Connect(function()
-    HomeContent.Visible = true
-    HackContent.Visible = false
-    
-    -- Update button styling
-    HomeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HomeButtonSelect.BackgroundTransparency = 0
-    
-    HackButton.TextColor3 = Color3.fromRGB(190, 190, 190)
-    HackButtonSelect.BackgroundTransparency = 1
-end)
-
-HackButton.MouseButton1Click:Connect(function()
-    HomeContent.Visible = false
-    HackContent.Visible = true
-    
-    -- Update button styling
-    HackButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HackButtonSelect.BackgroundTransparency = 0
-    
-    HomeButton.TextColor3 = Color3.fromRGB(190, 190, 190)
-    HomeButtonSelect.BackgroundTransparency = 1
-end)
-
--- Clock Updater
-spawn(function()
-    while true do
-        local date = os.date("*t")
-        local hour = date.hour
-        local minute = date.min
-        local second = date.sec
-        local ampm = "AM"
-        
-        if hour >= 12 then
-            ampm = "PM"
-            if hour > 12 then
-                hour = hour - 12
-            end
-        elseif hour == 0 then
-            hour = 12
-        end
-        
-        TimeDisplay.Text = string.format("%02d:%02d:%02d %s", hour, minute, second, ampm)
-        DateDisplay.Text = os.date("%B %d, %Y")
-        
-        wait(1)
-    end
-end)
-
--- Update Player Info
-spawn(function()
-    UsernameLabel.Text = LocalPlayer.Name
-    UserIdLabel.Text = "ID: " .. LocalPlayer.UserId
-    
-    -- Set up the player's avatar image
-    spawn(function()
-        local userId = LocalPlayer.UserId
-        local thumbType = Enum.ThumbnailType.HeadShot
-        local thumbSize = Enum.ThumbnailSize.Size420x420
-        local content = Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
-        
-        AvatarImage.Image = content
-    end)
-    
-    -- Get current game info
-    local success, result = pcall(function()
-        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-    end)
-    
-    if success then
-        GameName.Text = result.Name
-    else
-        GameName.Text = "Unknown Game"
-    end
-end)
-
--- Drag functionality
+-- Make GUI draggable
 local dragging
 local dragInput
 local dragStart
@@ -930,14 +316,14 @@ local startPos
 
 local function updateDrag(input)
     local delta = input.Position - dragStart
-    MainContainer.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
-        startPos = MainContainer.Position
+        startPos = MainFrame.Position
         
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
@@ -959,104 +345,68 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
--- Hide/show functionality
-local function hideGUI()
-    MainContainer:TweenPosition(UDim2.new(0.5, -200, 1.5, 0), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.5, true)
-end
-
-local function showGUI()
-    MainContainer:TweenPosition(UDim2.new(0.5, -200, 0.5, -175), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.5, true)
-end
-
+-- Close GUI function
 CloseButton.MouseButton1Click:Connect(function()
-    hideGUI()
+    ScreenGui.Enabled = false
+    
+    -- Clean up auto attack when closing GUI
+    if autoAttackConnection then
+        autoAttackConnection:Disconnect()
+        autoAttackConnection = nil
+    end
 end)
 
+-- Minimize function
 MinimizeButton.MouseButton1Click:Connect(function()
-    if MainContainer.Position.Y.Scale < 1 then
-        hideGUI()
+    if isMinimized then
+        -- Restore
+        MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        ContentFrame.Visible = true
+        MinimizeButton.Text = "-"
     else
-        showGUI()
+        -- Minimize
+        originalSize = MainFrame.Size
+        MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        ContentFrame.Visible = false
+        MinimizeButton.Text = "+"
     end
+    isMinimized = not isMinimized
 end)
 
--- Set up keybind toggle (default M key)
-UIS.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.M then
-        if MainContainer.Position.Y.Scale < 1 then
-            hideGUI()
-        else
-            showGUI()
-        end
-    end
-end)
-
--- Toggle dropdown
-DropdownButton.MouseButton1Click:Connect(function()
-    DropdownList.Visible = not DropdownList.Visible
-    if DropdownList.Visible then
-        DropdownArrow.Text = "▲"
-    else
-        DropdownArrow.Text = "▼"
-    end
-end)
-
--- Option selection
-local selectedOption = nil
-
-Option1.MouseButton1Click:Connect(function()
-    DropdownButton.Text = Option1.Text
-    selectedOption = Option1.Text
-    DropdownList.Visible = false
-    DropdownArrow.Text = "▼"
-end)
-
-Option2.MouseButton1Click:Connect(function()
-    DropdownButton.Text = Option2.Text
-    selectedOption = Option2.Text
-    DropdownList.Visible = false
-    DropdownArrow.Text = "▼"
-end)
-
-Option3.MouseButton1Click:Connect(function()
-    DropdownButton.Text = Option3.Text
-    selectedOption = Option3.Text
-    DropdownList.Visible = false
-    DropdownArrow.Text = "▼"
-end)
-
--- Teleport function
-TeleportButton.MouseButton1Click:Connect(function()
-    if selectedOption then
-        if selectedOption == "Teleport to next quest" then
-            -- Find StoryPromptREMOTE in workspace
-            local storyPrompt = workspace:FindFirstChild("StoryPromptREMOTE")
-            if storyPrompt and storyPrompt:IsA("BasePart") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = storyPrompt.CFrame
-            end
-        elseif selectedOption == "Teleport to training skill" then
-            -- Teleport to hardcoded training area
-            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2013.29, -193.87, 80.82)
-        elseif selectedOption == "Teleport to Drop Supplies" then
-            -- Find Drop folder and get any BasePart inside
-            local dropFolder = workspace:FindFirstChild("Drop")
-            if dropFolder and dropFolder:IsA("Folder") then
-                for _, child in pairs(dropFolder:GetChildren()) do
-                    if child:IsA("BasePart") then
-                        local targetPos = child.Position + Vector3.new(0, 5, 0)
-                        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
-                        break
-                    end
+-- ENHANCED: Function to check if a mob is alive using multiple methods
+local function isMobAlive(mobPrimaryPart)
+    -- Method 1: Check via MODEL path
+    if mobPrimaryPart and mobPrimaryPart:FindFirstChild("MODEL") then
+        local head = mobPrimaryPart.MODEL:FindFirstChild("Head")
+        if head then
+            local gui = head:FindFirstChild("GUI")
+            if gui and gui:FindFirstChild("GUI/UnitGUI") then
+                local frame = gui["GUI/UnitGUI"]:FindFirstChild("Frame")
+                if frame and frame:FindFirstChild("HP") then
+                    return frame.HP.Visible
                 end
             end
         end
     end
-end)
+    
+    -- Method 2: Direct check via HumanoidRootPart path
+    if mobPrimaryPart and mobPrimaryPart:FindFirstChild("MODEL") then
+        local hrp = mobPrimaryPart.MODEL:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local gui = hrp:FindFirstChild("GUI")
+            if gui and gui:FindFirstChild("GUI/UnitGUI") then
+                local frame = gui["GUI/UnitGUI"]:FindFirstChild("Frame")
+                if frame and frame:FindFirstChild("HP") then
+                    return frame.HP.Visible
+                end
+            end
+        end
+    end
+    
+    return false
+end
 
--- Auto Attack System
-local isAutoAttacking = false
-local autoAttackConnection = nil
-
+-- Function to find the closest mob
 local function findClosestMob()
     local closestMob = nil
     local closestDistance = math.huge
@@ -1065,14 +415,11 @@ local function findClosestMob()
     
     local hrp = character.HumanoidRootPart
     
-    local unitFolder = workspace:FindFirstChild("Units")
-    if unitFolder then
-        for _, unit in pairs(unitFolder:GetChildren()) do
-            -- Check if the unit is a valid target
-            if unit:IsA("BasePart") then
-                -- Basic validation - can be extended based on game mechanics
+    if workspace:FindFirstChild("Units") then
+        for _, unit in pairs(workspace.Units:GetChildren()) do
+            if unit:IsA("BasePart") and unit ~= hrp and isMobAlive(unit) then
                 local distance = (unit.Position - hrp.Position).Magnitude
-                if distance < closestDistance and distance < 50 then
+                if distance < closestDistance then
                     closestDistance = distance
                     closestMob = unit
                 end
@@ -1083,666 +430,200 @@ local function findClosestMob()
     return closestMob
 end
 
-local function performAttack()
+-- Auto Attack Function
+local function performAutoAttack()
+    if not autoAttackStatus then return end
+    
     local character = LocalPlayer.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then return end
     
-    local target = findClosestMob()
-    if target then
-        -- Create attack args
+    local hrp = character.HumanoidRootPart
+    local closestMob = findClosestMob()
+    
+    if closestMob then
+        -- Create the args table with the required structure
         local args = {
             [1] = {
                 ["Type"] = "Hit",
-                ["From"] = character.HumanoidRootPart.Position,
-                ["Slot"] = "Light", -- Can be changed based on attack type
-                ["UID"] = target.Name -- Assuming target name is the UID
+                ["From"] = Vector3.new(hrp.Position.X, hrp.Position.Y, hrp.Position.Z),
+                ["Slot"] = "Light",
+                ["UID"] = closestMob.Name -- The unique ID from the unit in workspace.Units
             }
         }
         
-        -- Find and fire the remote event for attacks
-        local remoteEvent = game:GetService("ReplicatedStorage"):FindFirstChild("Remote")
-        if remoteEvent and remoteEvent:FindFirstChild("CharacterRE") then
-            remoteEvent.CharacterRE:FireServer(unpack(args))
-        end
+        -- Fire the remote event to perform attack
+        game:GetService("ReplicatedStorage").Remote.CharacterRE:FireServer(unpack(args))
+        
+        StatusLabel.Text = "Attacking: " .. closestMob.Name
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
+    else
+        StatusLabel.Text = "No targets found"
+        StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end
 
--- Indicator frame
-local AttackIndicator = Instance.new("TextLabel")
-AttackIndicator.Name = "AttackIndicator"
-AttackIndicator.Size = UDim2.new(0, 100, 0, 25)
-AttackIndicator.Position = UDim2.new(1, -110, 0, 5)
-AttackIndicator.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-AttackIndicator.BackgroundTransparency = 0.4
-AttackIndicator.BorderSizePixel = 0
-AttackIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
-AttackIndicator.TextSize = 12
-AttackIndicator.Font = Enum.Font.GothamBold
-AttackIndicator.Text = "⚔️ Auto OFF"
-AttackIndicator.Visible = false
-AttackIndicator.Parent = TopBar
-
-local AttackIndicatorCorner = Instance.new("UICorner")
-AttackIndicatorCorner.CornerRadius = UDim.new(0, 6)
-AttackIndicatorCorner.Parent = AttackIndicator
-
--- Add Auto Attack Toggle to the GUI
-local AutoAttackButton = Instance.new("TextButton")
-AutoAttackButton.Name = "AutoAttackButton"
-AutoAttackButton.Size = UDim2.new(0.8, 0, 0, 40)
-AutoAttackButton.Position = UDim2.new(0.1, 0, 0, 375)
-AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
-AutoAttackButton.BorderSizePixel = 0
-AutoAttackButton.Font = Enum.Font.GothamBold
-AutoAttackButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoAttackButton.Text = "🗡️ Auto Attack: OFF"
-AutoAttackButton.TextSize = 14
-AutoAttackButton.Parent = HackScroll
-
-local AutoAttackCorner = Instance.new("UICorner")
-AutoAttackCorner.CornerRadius = UDim.new(0, 8)
-AutoAttackCorner.Parent = AutoAttackButton
-
+-- AutoAttack toggle function
 AutoAttackButton.MouseButton1Click:Connect(function()
-    isAutoAttacking = not isAutoAttacking
+    autoAttackStatus = not autoAttackStatus
     
-    if isAutoAttacking then
+    if autoAttackStatus then
+        AutoAttackButton.Text = "AutoAttack: ON"
         AutoAttackButton.BackgroundColor3 = Color3.fromRGB(70, 200, 70)
-        AutoAttackButton.Text = "🗡️ Auto Attack: ON"
-        AttackIndicator.BackgroundColor3 = Color3.fromRGB(70, 200, 70)
-        AttackIndicator.Text = "⚔️ Auto ON"
-        AttackIndicator.Visible = true
         
-        -- Start auto attack loop
+        -- Start the auto attack loop
         if autoAttackConnection then
             autoAttackConnection:Disconnect()
         end
         
+        -- Run the auto attack function repeatedly
         autoAttackConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            performAttack()
+            performAutoAttack()
         end)
-    else
-        AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
-        AutoAttackButton.Text = "🗡️ Auto Attack: OFF"
-        AttackIndicator.Visible = false
         
-        -- Stop auto attack
+        StatusLabel.Text = "Auto Attack enabled"
+        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    else
+        AutoAttackButton.Text = "AutoAttack: OFF"
+        AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+        
+        -- Stop the auto attack loop
         if autoAttackConnection then
             autoAttackConnection:Disconnect()
             autoAttackConnection = nil
         end
+        
+        StatusLabel.Text = "Auto Attack disabled"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        
+        -- Reset status color after delay
+        wait(2)
+        StatusLabel.Text = "Ready"
+        StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
--- Adjust canvas size to fit all content
-HackScroll.CanvasSize = UDim2.new(0, 0, 0, 425)
+-- Dropdown toggle function
+local isDropdownOpen = false
 
-Perbaiki script ini karna pada saat tombol dipencet tidak begitu bagus serta tambahkan fungsi executor detector lain seperti Xeno, Solara, Delta, dll serta resize ukurannya menjadi agar lebih kecil 1,5x lebih kecil dan tombol Minimize tidak bekerja malah menghancurkan GUI, serta saat button dipencet muncul floating gui yang tidak jelas arahnya menganggu fungsi GUI lainnya dan saat kadang ada kasus toggle tidak bisa dinyalakann dan juga Dropdown gui tidak berfungsi dengan baik karna terhalang gui lain saat dipencet ( minimize jangan keybind cukup perkecil gui naik ke atas ( hanya tittle tersisa ) sepeerti minimize biasa )
-------------
-Proggresss saya saat ini
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local RS = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
+DropdownButton.MouseButton1Click:Connect(function()
+    if isDropdownOpen then
+        -- Close dropdown
+        DropdownList.Visible = false
+        DropdownArrow.Text = "▼"
+    else
+        -- Open dropdown
+        DropdownList.Visible = true
+        DropdownArrow.Text = "▲"
+    end
+    
+    isDropdownOpen = not isDropdownOpen
+end)
 
--- Remove any existing GUI with same name
-local existingGui = PlayerGui:FindFirstChild("EnhancedGUI")
-if existingGui then
-    existingGui:Destroy()
+-- Option click handlers
+Option1.MouseButton1Click:Connect(function()
+    selectedOption = "Teleport to next quest"
+    DropdownButton.Text = selectedOption
+    DropdownList.Visible = false
+    DropdownArrow.Text = "▼"
+    isDropdownOpen = false
+    StatusLabel.Text = "Selected: " .. selectedOption
+end)
+
+Option2.MouseButton1Click:Connect(function()
+    selectedOption = "Teleport to training skill"
+    DropdownButton.Text = selectedOption
+    DropdownList.Visible = false
+    DropdownArrow.Text = "▼"
+    isDropdownOpen = false
+    StatusLabel.Text = "Selected: " .. selectedOption
+end)
+
+-- New Option3 click handler for Drop Supplies
+Option3.MouseButton1Click:Connect(function()
+    selectedOption = "Teleport to Drop Supplies"
+    DropdownButton.Text = selectedOption
+    DropdownList.Visible = false
+    DropdownArrow.Text = "▼"
+    isDropdownOpen = false
+    StatusLabel.Text = "Selected: " .. selectedOption
+end)
+
+-- Function to find PrimaryPart in Drop folder
+local function findDropPrimaryPart()
+    local dropFolder = workspace:FindFirstChild("Drop")
+    if dropFolder and dropFolder:IsA("Folder") then
+        -- Find the PrimaryPart within Drop folder
+        for _, child in pairs(dropFolder:GetChildren()) do
+            if child:IsA("BasePart") and child.Name ~= "Drop" then
+                return child
+            end
+        end
+    end
+    return nil
 end
 
--- Create GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "EnhancedGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = PlayerGui
-
--- Main Container (for both menus) - REDUCED SIZE BY 1.5x
-local MainContainer = Instance.new("Frame")
-MainContainer.Name = "MainContainer"
-MainContainer.Size = UDim2.new(0, 267, 0, 233) -- Reduced from 400x350
-MainContainer.Position = UDim2.new(0.5, -133, 0.5, -117) -- Centered position
-MainContainer.BackgroundTransparency = 1
-MainContainer.BorderSizePixel = 0
-MainContainer.ClipsDescendants = true
-MainContainer.Parent = ScreenGui
-
--- Background Gradient Effect
-local BackgroundFrame = Instance.new("Frame")
-BackgroundFrame.Name = "BackgroundFrame"
-BackgroundFrame.Size = UDim2.new(1, 0, 1, 0)
-BackgroundFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-BackgroundFrame.BorderSizePixel = 0
-BackgroundFrame.Parent = MainContainer
-
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10) -- Reduced corner radius to match smaller size
-UICorner.Parent = BackgroundFrame
-
-local UIGradient = Instance.new("UIGradient")
-UIGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 50, 80)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(30, 35, 60)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 25, 45))
-})
-UIGradient.Rotation = 45
-UIGradient.Parent = BackgroundFrame
-
--- Animated gradient effect
-spawn(function()
-    local rotation = 0
-    while true do
-        rotation = (rotation + 0.2) % 360
-        UIGradient.Rotation = rotation
-        wait(0.05)
+-- Apply button function
+ApplyButton.MouseButton1Click:Connect(function()
+    -- Add visual feedback when button is clicked
+    local originalColor = ApplyButton.BackgroundColor3
+    ApplyButton.BackgroundColor3 = Color3.fromRGB(50, 150, 90)
+    
+    if selectedOption then
+        if selectedOption == "Teleport to next quest" then
+            -- Get the CFrame from StoryPromptREMOTE
+            local storyPrompt = workspace:FindFirstChild("StoryPromptREMOTE")
+            if storyPrompt and storyPrompt:IsA("BasePart") then
+                -- Teleport the player to the quest location
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = storyPrompt.CFrame
+                    StatusLabel.Text = "Teleported to next quest"
+                    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                end
+            else
+                StatusLabel.Text = "Error: Quest location not found"
+                StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+            end
+        elseif selectedOption == "Teleport to training skill" then
+            -- Teleport to training skill location
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2013.29, -193.87, 80.82)
+                StatusLabel.Text = "Teleported to training skill"
+                StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+            end
+        elseif selectedOption == "Teleport to Drop Supplies" then
+            -- UPDATED: Find and teleport to PrimaryPart in Drop folder
+            local primaryPart = findDropPrimaryPart()
+            if primaryPart then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    -- Get the PrimaryPart's CFrame and add 5 to the Y position
+                    local dropCFrame = primaryPart.CFrame
+                    local newPosition = Vector3.new(dropCFrame.X, dropCFrame.Y + 5, dropCFrame.Z)
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(newPosition)
+                    StatusLabel.Text = "Teleported to Drop Supplies"
+                    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                end
+            else
+                StatusLabel.Text = "Error: Drop Supplies not found"
+                StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+            end
+        end
+    else
+        StatusLabel.Text = "Please select a destination"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
     end
+    
+    -- Restore button color after a short delay
+    wait(0.2)
+    ApplyButton.BackgroundColor3 = originalColor
+    
+    -- Reset status label color after delay
+    wait(2)
+    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 end)
 
--- Top Bar
-local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 30) -- Reduced height
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-TopBar.BackgroundTransparency = 0.2
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainContainer
-
-local TopBarCorner = Instance.new("UICorner")
-TopBarCorner.CornerRadius = UDim.new(0, 8) -- Reduced corner radius
-TopBarCorner.Parent = TopBar
-
--- Title with emoji
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, -100, 1, 0) -- Adjusted for smaller top bar
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 14 -- Reduced text size
-Title.Font = Enum.Font.GothamBold
-Title.Text = "🚀 Quantum Hub"
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
-
--- Executor Label
-local ExecutorLabel = Instance.new("TextLabel")
-ExecutorLabel.Name = "ExecutorLabel"
-ExecutorLabel.Size = UDim2.new(0, 80, 0, 16) -- Reduced size
-ExecutorLabel.Position = UDim2.new(0, 12, 1, -18) -- Adjusted position
-ExecutorLabel.BackgroundColor3 = Color3.fromRGB(60, 70, 170)
-ExecutorLabel.BackgroundTransparency = 0.3
-ExecutorLabel.BorderSizePixel = 0
-ExecutorLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
-ExecutorLabel.TextSize = 9 -- Reduced text size
-ExecutorLabel.Font = Enum.Font.GothamSemibold
-ExecutorLabel.Text = "🔧 Synapse X"
-ExecutorLabel.ZIndex = 2
-ExecutorLabel.Parent = TopBar
-
-local ExecutorCorner = Instance.new("UICorner")
-ExecutorCorner.CornerRadius = UDim.new(0, 4) -- Reduced corner radius
-ExecutorCorner.Parent = ExecutorLabel
-
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 20, 0, 20) -- Reduced size
-CloseButton.Position = UDim2.new(1, -25, 0, 5) -- Adjusted position
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BackgroundTransparency = 0.2
-CloseButton.BorderSizePixel = 0
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "✖"
-CloseButton.TextSize = 12 -- Reduced text size
-CloseButton.ZIndex = 2
-CloseButton.Parent = TopBar
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 6) -- Reduced corner radius
-CloseCorner.Parent = CloseButton
-
--- Minimize Button
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 20, 0, 20) -- Reduced size
-MinimizeButton.Position = UDim2.new(1, -50, 0, 5) -- Adjusted position
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 220)
-MinimizeButton.BackgroundTransparency = 0.2
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.Text = "−"
-MinimizeButton.TextSize = 14 -- Reduced text size
-MinimizeButton.ZIndex = 2
-MinimizeButton.Parent = TopBar
-
-local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 6) -- Reduced corner radius
-MinimizeCorner.Parent = MinimizeButton
-
--- Navigation Bar
-local NavigationBar = Instance.new("Frame")
-NavigationBar.Name = "NavigationBar"
-NavigationBar.Size = UDim2.new(1, 0, 0, 30) -- Reduced height
-NavigationBar.Position = UDim2.new(0, 0, 0, 30) -- Adjusted position
-NavigationBar.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-NavigationBar.BackgroundTransparency = 0.1
-NavigationBar.BorderSizePixel = 0
-NavigationBar.Parent = MainContainer
-
--- Home Tab Button
-local HomeButton = Instance.new("TextButton")
-HomeButton.Name = "HomeButton"
-HomeButton.Size = UDim2.new(0.5, 0, 1, 0)
-HomeButton.BackgroundTransparency = 0.9
-HomeButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-HomeButton.BorderSizePixel = 0
-HomeButton.Font = Enum.Font.GothamSemibold
-HomeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HomeButton.Text = "🏠 Home"
-HomeButton.TextSize = 12 -- Reduced text size
-HomeButton.ZIndex = 2
-HomeButton.Parent = NavigationBar
-
-local HomeButtonSelect = Instance.new("Frame")
-HomeButtonSelect.Name = "HomeButtonSelect"
-HomeButtonSelect.Size = UDim2.new(1, 0, 0, 2) -- Reduced thickness
-HomeButtonSelect.Position = UDim2.new(0, 0, 1, -2) -- Adjusted position
-HomeButtonSelect.BackgroundColor3 = Color3.fromRGB(70, 200, 255)
-HomeButtonSelect.BorderSizePixel = 0
-HomeButtonSelect.ZIndex = 2
-HomeButtonSelect.Parent = HomeButton
-
--- Hacks Tab Button
-local HackButton = Instance.new("TextButton")
-HackButton.Name = "HackButton"
-HackButton.Size = UDim2.new(0.5, 0, 1, 0)
-HackButton.Position = UDim2.new(0.5, 0, 0, 0)
-HackButton.BackgroundTransparency = 0.9
-HackButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-HackButton.BorderSizePixel = 0
-HackButton.Font = Enum.Font.GothamSemibold
-HackButton.TextColor3 = Color3.fromRGB(190, 190, 190)
-HackButton.Text = "⚡ Hacks"
-HackButton.TextSize = 12 -- Reduced text size
-HackButton.ZIndex = 2
-HackButton.Parent = NavigationBar
-
-local HackButtonSelect = Instance.new("Frame")
-HackButtonSelect.Name = "HackButtonSelect"
-HackButtonSelect.Size = UDim2.new(1, 0, 0, 2) -- Reduced thickness
-HackButtonSelect.Position = UDim2.new(0, 0, 1, -2) -- Adjusted position
-HackButtonSelect.BackgroundColor3 = Color3.fromRGB(70, 200, 255)
-HackButtonSelect.BackgroundTransparency = 1
-HackButtonSelect.BorderSizePixel = 0
-HackButtonSelect.ZIndex = 2
-HackButtonSelect.Parent = HackButton
-
--- Content Container
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, 0, 1, -60) -- Adjusted for smaller bars
-ContentContainer.Position = UDim2.new(0, 0, 0, 60) -- Adjusted position
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.BorderSizePixel = 0
-ContentContainer.ClipsDescendants = true
-ContentContainer.Parent = MainContainer
-
--- HOME PAGE CONTENT
-local HomeContent = Instance.new("Frame")
-HomeContent.Name = "HomeContent"
-HomeContent.Size = UDim2.new(1, 0, 1, 0)
-HomeContent.BackgroundTransparency = 1
-HomeContent.BorderSizePixel = 0
-HomeContent.Visible = true
-HomeContent.Parent = ContentContainer
-
--- Time Display
-local TimeFrame = Instance.new("Frame")
-TimeFrame.Name = "TimeFrame"
-TimeFrame.Size = UDim2.new(0.9, 0, 0, 40) -- Reduced height
-TimeFrame.Position = UDim2.new(0.05, 0, 0, 10) -- Adjusted position
-TimeFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-TimeFrame.BackgroundTransparency = 0.4
-TimeFrame.BorderSizePixel = 0
-TimeFrame.Parent = HomeContent
-
-local TimeCorner = Instance.new("UICorner")
-TimeCorner.CornerRadius = UDim.new(0, 8) -- Reduced corner radius
-TimeCorner.Parent = TimeFrame
-
-local TimeIcon = Instance.new("TextLabel")
-TimeIcon.Name = "TimeIcon"
-TimeIcon.Size = UDim2.new(0, 20, 0, 20) -- Reduced size
-TimeIcon.Position = UDim2.new(0, 10, 0, 10) -- Adjusted position
-TimeIcon.BackgroundTransparency = 1
-TimeIcon.TextColor3 = Color3.fromRGB(120, 210, 255)
-TimeIcon.TextSize = 16 -- Reduced text size
-TimeIcon.Font = Enum.Font.GothamBold
-TimeIcon.Text = "⏰"
-TimeIcon.Parent = TimeFrame
-
-local TimeLabel = Instance.new("TextLabel")
-TimeLabel.Name = "TimeLabel"
-TimeLabel.Size = UDim2.new(0, 100, 0, 15) -- Reduced size
-TimeLabel.Position = UDim2.new(0, 35, 0, 5) -- Adjusted position
-TimeLabel.BackgroundTransparency = 1
-TimeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TimeLabel.TextSize = 10 -- Reduced text size
-TimeLabel.Font = Enum.Font.GothamSemibold
-TimeLabel.Text = "Current Time"
-TimeLabel.TextXAlignment = Enum.TextXAlignment.Left
-TimeLabel.Parent = TimeFrame
-
-local TimeDisplay = Instance.new("TextLabel")
-TimeDisplay.Name = "TimeDisplay"
-TimeDisplay.Size = UDim2.new(0, 100, 0, 20) -- Reduced size
-TimeDisplay.Position = UDim2.new(0, 35, 0, 20) -- Adjusted position
-TimeDisplay.BackgroundTransparency = 1
-TimeDisplay.TextColor3 = Color3.fromRGB(200, 230, 255)
-TimeDisplay.TextSize = 12 -- Reduced text size
-TimeDisplay.Font = Enum.Font.GothamBold
-TimeDisplay.Text = "00:00:00 AM"
-TimeDisplay.TextXAlignment = Enum.TextXAlignment.Left
-TimeDisplay.Parent = TimeFrame
-
-local DateDisplay = Instance.new("TextLabel")
-DateDisplay.Name = "DateDisplay"
-DateDisplay.Size = UDim2.new(0, 120, 0, 15) -- Reduced size
-DateDisplay.Position = UDim2.new(1, -125, 0, 12) -- Adjusted position
-DateDisplay.BackgroundTransparency = 1
-DateDisplay.TextColor3 = Color3.fromRGB(200, 230, 255)
-DateDisplay.TextSize = 9 -- Reduced text size
-DateDisplay.Font = Enum.Font.Gotham
-DateDisplay.Text = "April 25, 2025"
-DateDisplay.TextXAlignment = Enum.TextXAlignment.Right
-DateDisplay.Parent = TimeFrame
-
--- Player Profile
-local ProfileFrame = Instance.new("Frame")
-ProfileFrame.Name = "ProfileFrame"
-ProfileFrame.Size = UDim2.new(0.9, 0, 0, 70) -- Reduced height
-ProfileFrame.Position = UDim2.new(0.05, 0, 0, 60) -- Adjusted position
-ProfileFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-ProfileFrame.BackgroundTransparency = 0.4
-ProfileFrame.BorderSizePixel = 0
-ProfileFrame.Parent = HomeContent
-
-local ProfileCorner = Instance.new("UICorner")
-ProfileCorner.CornerRadius = UDim.new(0, 8) -- Reduced corner radius
-ProfileCorner.Parent = ProfileFrame
-
--- Avatar Circle Container
-local AvatarCircle = Instance.new("Frame")
-AvatarCircle.Name = "AvatarCircle"
-AvatarCircle.Size = UDim2.new(0, 50, 0, 50) -- Reduced size
-AvatarCircle.Position = UDim2.new(0, 10, 0, 10) -- Adjusted position
-AvatarCircle.BackgroundColor3 = Color3.fromRGB(60, 70, 90)
-AvatarCircle.BorderSizePixel = 0
-AvatarCircle.Parent = ProfileFrame
-
-local CircleCorner = Instance.new("UICorner")
-CircleCorner.CornerRadius = UDim.new(1, 0)
-CircleCorner.Parent = AvatarCircle
-
--- Avatar Image (placeholder)
-local AvatarImage = Instance.new("ImageLabel")
-AvatarImage.Name = "AvatarImage"
-AvatarImage.Size = UDim2.new(1, -4, 1, -4)
-AvatarImage.Position = UDim2.new(0, 2, 0, 2)
-AvatarImage.BackgroundTransparency = 1
-AvatarImage.Image = "rbxasset://textures/ui/GuiImagePlaceholder.png"
-AvatarImage.Parent = AvatarCircle
-
-local AvatarCorner = Instance.new("UICorner")
-AvatarCorner.CornerRadius = UDim.new(1, 0)
-AvatarCorner.Parent = AvatarImage
-
--- Username display
-local UsernameLabel = Instance.new("TextLabel")
-UsernameLabel.Name = "UsernameLabel"
-UsernameLabel.Size = UDim2.new(0, 140, 0, 20) -- Reduced size
-UsernameLabel.Position = UDim2.new(0, 70, 0, 10) -- Adjusted position
-UsernameLabel.BackgroundTransparency = 1
-UsernameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-UsernameLabel.TextSize = 12 -- Reduced text size
-UsernameLabel.Font = Enum.Font.GothamBold
-UsernameLabel.Text = "Username" -- Will be set dynamically
-UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-UsernameLabel.Parent = ProfileFrame
-
-local UserIdLabel = Instance.new("TextLabel")
-UserIdLabel.Name = "UserIdLabel"
-UserIdLabel.Size = UDim2.new(0, 140, 0, 15) -- Reduced size
-UserIdLabel.Position = UDim2.new(0, 70, 0, 30) -- Adjusted position
-UserIdLabel.BackgroundTransparency = 1
-UserIdLabel.TextColor3 = Color3.fromRGB(200, 230, 255)
-UserIdLabel.TextSize = 10 -- Reduced text size
-UserIdLabel.Font = Enum.Font.Gotham
-UserIdLabel.Text = "ID: 123456789" -- Will be set dynamically
-UserIdLabel.TextXAlignment = Enum.TextXAlignment.Left
-UserIdLabel.Parent = ProfileFrame
-
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Name = "StatusLabel"
-StatusLabel.Size = UDim2.new(0, 70, 0, 15) -- Reduced size
-StatusLabel.Position = UDim2.new(0, 70, 0, 48) -- Adjusted position
-StatusLabel.BackgroundColor3 = Color3.fromRGB(40, 180, 90)
-StatusLabel.BackgroundTransparency = 0.3
-StatusLabel.BorderSizePixel = 0
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.TextSize = 9 -- Reduced text size
-StatusLabel.Font = Enum.Font.GothamSemibold
-StatusLabel.Text = "✓ VIP Access"
-StatusLabel.Parent = ProfileFrame
-
-local StatusCorner = Instance.new("UICorner")
-StatusCorner.CornerRadius = UDim.new(0, 4) -- Reduced corner radius
-StatusCorner.Parent = StatusLabel
-
--- Game Info
-local GameInfoFrame = Instance.new("Frame")
-GameInfoFrame.Name = "GameInfoFrame"
-GameInfoFrame.Size = UDim2.new(0.9, 0, 0, 55) -- Reduced height
-GameInfoFrame.Position = UDim2.new(0.05, 0, 0, 140) -- Adjusted position
-GameInfoFrame.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-GameInfoFrame.BackgroundTransparency = 0.4
-GameInfoFrame.BorderSizePixel = 0
-GameInfoFrame.Parent = HomeContent
-
-local GameInfoCorner = Instance.new("UICorner")
-GameInfoCorner.CornerRadius = UDim.new(0, 8) -- Reduced corner radius
-GameInfoCorner.Parent = GameInfoFrame
-
-local GameIcon = Instance.new("TextLabel")
-GameIcon.Name = "GameIcon"
-GameIcon.Size = UDim2.new(0, 20, 0, 20) -- Reduced size
-GameIcon.Position = UDim2.new(0, 10, 0, 8) -- Adjusted position
-GameIcon.BackgroundTransparency = 1
-GameIcon.TextColor3 = Color3.fromRGB(120, 210, 255)
-GameIcon.TextSize = 16 -- Reduced text size
-GameIcon.Font = Enum.Font.GothamBold
-GameIcon.Text = "🎮"
-GameIcon.Parent = GameInfoFrame
-
-local GameLabel = Instance.new("TextLabel")
-GameLabel.Name = "GameLabel"
-GameLabel.Size = UDim2.new(0, 100, 0, 15) -- Reduced size
-GameLabel.Position = UDim2.new(0, 35, 0, 10) -- Adjusted position
-GameLabel.BackgroundTransparency = 1
-GameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-GameLabel.TextSize = 10 -- Reduced text size
-GameLabel.Font = Enum.Font.GothamSemibold
-GameLabel.Text = "Current Game"
-GameLabel.TextXAlignment = Enum.TextXAlignment.Left
-GameLabel.Parent = GameInfoFrame
-
-local GameName = Instance.new("TextLabel")
-GameName.Name = "GameName"
-GameName.Size = UDim2.new(1, -50, 0, 20) -- Reduced size
-GameName.Position = UDim2.new(0, 10, 0, 30) -- Adjusted position
-GameName.BackgroundTransparency = 1
-GameName.TextColor3 = Color3.fromRGB(200, 230, 255)
-GameName.TextSize = 10 -- Reduced text size
-GameName.Font = Enum.Font.Gotham
-GameName.Text = "Loading game info..."
-GameName.TextXAlignment = Enum.TextXAlignment.Left
-GameName.Parent = GameInfoFrame
-
--- HACK PAGE CONTENT
-local HackContent = Instance.new("Frame")
-HackContent.Name = "HackContent"
-HackContent.Size = UDim2.new(1, 0, 1, 0)
-HackContent.BackgroundTransparency = 1
-HackContent.BorderSizePixel = 0
-HackContent.Visible = false
-HackContent.Parent = ContentContainer
-
--- Scroll Frame for Hack Options
-local HackScroll = Instance.new("ScrollingFrame")
-HackScroll.Name = "HackScroll"
-HackScroll.Size = UDim2.new(0.9, 0, 1, -10) -- Adjusted size
-HackScroll.Position = UDim2.new(0.05, 0, 0, 5) -- Adjusted position
-HackScroll.BackgroundTransparency = 1
-HackScroll.BorderSizePixel = 0
-HackScroll.ScrollBarThickness = 3 -- Reduced scrollbar thickness
-HackScroll.ScrollBarImageColor3 = Color3.fromRGB(100, 120, 200)
-HackScroll.CanvasSize = UDim2.new(0, 0, 0, 250) -- Will be adjusted based on content
-HackScroll.ZIndex = 2
-HackScroll.Parent = HackContent
-
--- Teleport Section
-local TeleportSection = Instance.new("Frame")
-TeleportSection.Name = "TeleportSection"
-TeleportSection.Size = UDim2.new(1, -10, 0, 110) -- Reduced height
-TeleportSection.Position = UDim2.new(0, 5, 0, 5) -- Adjusted position
-TeleportSection.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-TeleportSection.BackgroundTransparency = 0.4
-TeleportSection.BorderSizePixel = 0
-TeleportSection.ZIndex = 2
-TeleportSection.Parent = HackScroll
-
-local SectionCorner = Instance.new("UICorner")
-SectionCorner.CornerRadius = UDim.new(0, 6) -- Reduced corner radius
-SectionCorner.Parent = TeleportSection
-
-local TeleportTitle = Instance.new("TextLabel")
-TeleportTitle.Name = "TeleportTitle"
-TeleportTitle.Size = UDim2.new(1, -20, 0, 20) -- Reduced size
-TeleportTitle.Position = UDim2.new(0, 10, 0, 5)
-TeleportTitle.BackgroundTransparency = 1
-TeleportTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleportTitle.TextSize = 12 -- Reduced text size
-TeleportTitle.Font = Enum.Font.GothamBold
-TeleportTitle.Text = "🌐 Teleportation"
-TeleportTitle.TextXAlignment = Enum.TextXAlignment.Left
-TeleportTitle.ZIndex = 3
-TeleportTitle.Parent = TeleportSection
-
--- Dropdown Frame
-local DropdownFrame = Instance.new("Frame")
-DropdownFrame.Name = "DropdownFrame"
-DropdownFrame.Size = UDim2.new(1, -20, 0, 25) -- Reduced height
-DropdownFrame.Position = UDim2.new(0, 10, 0, 30) -- Adjusted position
-DropdownFrame.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
-DropdownFrame.BorderSizePixel = 0
-DropdownFrame.ZIndex = 3
-DropdownFrame.Parent = TeleportSection
-
-local DropdownCorner = Instance.new("UICorner")
-DropdownCorner.CornerRadius = UDim.new(0, 4) -- Reduced corner radius
-DropdownCorner.Parent = DropdownFrame
-
--- Dropdown Button
-local DropdownButton = Instance.new("TextButton")
-DropdownButton.Name = "DropdownButton"
-DropdownButton.Size = UDim2.new(1, 0, 1, 0)
-DropdownButton.BackgroundTransparency = 1
-DropdownButton.Font = Enum.Font.Gotham
-DropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropdownButton.Text = "Select destination..."
-DropdownButton.TextSize = 10 -- Reduced text size
-DropdownButton.TextXAlignment = Enum.TextXAlignment.Left
-DropdownButton.ZIndex = 4
-DropdownButton.Parent = DropdownFrame
-
--- Dropdown Padding
-local Padding = Instance.new("UIPadding")
-Padding.PaddingLeft = UDim.new(0, 8) -- Adjusted padding
-Padding.Parent = DropdownButton
-
--- Dropdown Arrow
-local DropdownArrow = Instance.new("TextLabel")
-DropdownArrow.Name = "DropdownArrow"
-DropdownArrow.Size = UDim2.new(0, 20, 1, 0) -- Reduced width
-DropdownArrow.Position = UDim2.new(1, -20, 0, 0)
-DropdownArrow.BackgroundTransparency = 1
-DropdownArrow.TextColor3 = Color3.fromRGB(200, 200, 200)
-DropdownArrow.TextSize = 12 -- Reduced text size
-DropdownArrow.Font = Enum.Font.GothamBold
-DropdownArrow.Text = "▼"
-DropdownArrow.ZIndex = 4
-DropdownArrow.Parent = DropdownFrame
-
--- Dropdown List Container (separate from other UI elements)
-local DropdownListContainer = Instance.new("Frame")
-DropdownListContainer.Name = "DropdownListContainer"
-DropdownListContainer.Size = UDim2.new(1, -20, 0, 0) -- Height will be set when visible
-DropdownListContainer.Position = UDim2.new(0, 10, 0, 55) -- Position right below dropdown
-DropdownListContainer.BackgroundTransparency = 1
-DropdownListContainer.ClipsDescendants = true
-DropdownListContainer.ZIndex = 10 -- Higher zIndex to appear above other elements
-DropdownListContainer.Parent = TeleportSection
-
--- Dropdown List (initially hidden)
-local DropdownList = Instance.new("Frame")
-DropdownList.Name = "DropdownList"
-DropdownList.Size = UDim2.new(1, 0, 0, 75) -- Height for 3 options
-DropdownList.BackgroundColor3 = Color3.fromRGB(30, 35, 55)
-DropdownList.BorderSizePixel = 0
-DropdownList.Visible = false
-DropdownList.ZIndex = 20 -- Even higher to ensure visibility
-DropdownList.Parent = DropdownListContainer
-
-local DropdownListCorner = Instance.new("UICorner")
-DropdownListCorner.CornerRadius = UDim.new(0, 4) -- Reduced corner radius
-DropdownListCorner.Parent = DropdownList
-
--- Dropdown options list layout
-local OptionsLayout = Instance.new("UIListLayout")
-OptionsLayout.FillDirection = Enum.FillDirection.Vertical
-OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-OptionsLayout.Padding = UDim.new(0, 1)
-OptionsLayout.Parent = DropdownList
-
--- Create dropdown options
-local optionHeight = 25 -- Reduced height
-
--- Option 1
-local Option1 = Instance.new("TextButton")
-Option1.Name = "Option1"
-Option1.Size = UDim2.new(1, 0, 0, optionHeight - 1)
-Option1.BackgroundColor3 = Color3.fromRGB(40, 45, 70)
-Option1.BorderSizePixel = 0
-Option1.Font = Enum.Font.Gotham
-Option1.TextColor3 = Color3.fromRGB(255, 255, 255)
-Option1.Text = "Teleport to next quest"
-Option1.TextSize = 10 -- Reduced text size
-Option1.TextXAlignment = Enum.TextXAlignment.Left
-Option1.ZIndex = 21
-Option1.LayoutOrder = 1
-Option1.Parent = DropdownList
-
-local Option1Padding = Instance.new("UIPadding")
-Option1Padding.PaddingLeft = UDim.new(0, 8) -- Reduced padding
-Option1Padding.Parent = Option1
-
--- Option 2
-local Option2 =
-
-Lanjutkan dari local Option2 = ( jangan tulis ulang )
+-- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.M then
+        ScreenGui.Enabled = not ScreenGui.Enabled
+    end
+end)
