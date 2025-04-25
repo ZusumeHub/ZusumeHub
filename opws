@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local RS = game:GetService("RunService")
 
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -264,23 +265,23 @@ local ApplyCorner = Instance.new("UICorner")
 ApplyCorner.CornerRadius = UDim.new(0, 8)
 ApplyCorner.Parent = ApplyButton
 
--- AutoAttack Button (renamed from ToggleButton)
-local AutoAttackButton = Instance.new("TextButton")
-AutoAttackButton.Name = "AutoAttackButton"
-AutoAttackButton.Size = UDim2.new(0.8, 0, 0, 40)
-AutoAttackButton.Position = UDim2.new(0.1, 0, 0.65, 0)
-AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
-AutoAttackButton.BorderSizePixel = 0
-AutoAttackButton.Font = Enum.Font.GothamBold
-AutoAttackButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoAttackButton.Text = "AutoAttack: OFF"
-AutoAttackButton.TextSize = 14
-AutoAttackButton.Parent = ContentFrame
+-- Toggle Button - Changed name to AutoAttack
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "ToggleButton"
+ToggleButton.Size = UDim2.new(0.8, 0, 0, 40)
+ToggleButton.Position = UDim2.new(0.1, 0, 0.65, 0)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 70, 200)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.Text = "AutoAttack: OFF"
+ToggleButton.TextSize = 14
+ToggleButton.Parent = ContentFrame
 
--- Round the autoattack button
-local AutoAttackCorner = Instance.new("UICorner")
-AutoAttackCorner.CornerRadius = UDim.new(0, 8)
-AutoAttackCorner.Parent = AutoAttackButton
+-- Round the toggle button
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = ToggleButton
 
 -- Status Label
 local StatusLabel = Instance.new("TextLabel")
@@ -296,7 +297,7 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.Parent = ContentFrame
 
 -- Toggle Status
-local autoAttackStatus = false
+local toggleStatus = false
 
 -- Minimize Status
 local isMinimized = false
@@ -305,8 +306,13 @@ local originalSize = MainFrame.Size
 -- Selected teleport option
 local selectedOption = nil
 
--- Auto Attack Connection
+-- Auto attack connection
 local autoAttackConnection = nil
+
+-- Store visited PrimaryParts for Drop Supplies
+local visitedDropParts = {}
+local currentDropPartIndex = 0
+local allDropParts = {}
 
 -- Make GUI draggable
 local dragging
@@ -348,12 +354,6 @@ end)
 -- Close GUI function
 CloseButton.MouseButton1Click:Connect(function()
     ScreenGui.Enabled = false
-    
-    -- Clean up auto attack when closing GUI
-    if autoAttackConnection then
-        autoAttackConnection:Disconnect()
-        autoAttackConnection = nil
-    end
 end)
 
 -- Minimize function
@@ -373,132 +373,41 @@ MinimizeButton.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
 end)
 
--- ENHANCED: Function to check if a mob is alive using multiple methods
-local function isMobAlive(mobPrimaryPart)
-    -- Method 1: Check via MODEL path
-    if mobPrimaryPart and mobPrimaryPart:FindFirstChild("MODEL") then
-        local head = mobPrimaryPart.MODEL:FindFirstChild("Head")
-        if head then
-            local gui = head:FindFirstChild("GUI")
-            if gui and gui:FindFirstChild("GUI/UnitGUI") then
-                local frame = gui["GUI/UnitGUI"]:FindFirstChild("Frame")
-                if frame and frame:FindFirstChild("HP") then
-                    return frame.HP.Visible
-                end
-            end
-        end
-    end
-    
-    -- Method 2: Direct check via HumanoidRootPart path
-    if mobPrimaryPart and mobPrimaryPart:FindFirstChild("MODEL") then
-        local hrp = mobPrimaryPart.MODEL:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local gui = hrp:FindFirstChild("GUI")
-            if gui and gui:FindFirstChild("GUI/UnitGUI") then
-                local frame = gui["GUI/UnitGUI"]:FindFirstChild("Frame")
-                if frame and frame:FindFirstChild("HP") then
-                    return frame.HP.Visible
-                end
-            end
-        end
-    end
-    
-    return false
-end
-
--- Function to find the closest mob
-local function findClosestMob()
-    local closestMob = nil
-    local closestDistance = math.huge
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
-    
-    local hrp = character.HumanoidRootPart
-    
-    if workspace:FindFirstChild("Units") then
-        for _, unit in pairs(workspace.Units:GetChildren()) do
-            if unit:IsA("BasePart") and unit ~= hrp and isMobAlive(unit) then
-                local distance = (unit.Position - hrp.Position).Magnitude
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestMob = unit
-                end
-            end
-        end
-    end
-    
-    return closestMob
-end
-
--- Auto Attack Function
+-- Function to execute AutoAttack
 local function performAutoAttack()
-    if not autoAttackStatus then return end
-    
-    local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
-    
-    local hrp = character.HumanoidRootPart
-    local closestMob = findClosestMob()
-    
-    if closestMob then
-        -- Create the args table with the required structure
-        local args = {
-            [1] = {
-                ["Type"] = "Hit",
-                ["From"] = Vector3.new(hrp.Position.X, hrp.Position.Y, hrp.Position.Z),
-                ["Slot"] = "Light",
-                ["UID"] = closestMob.Name -- The unique ID from the unit in workspace.Units
-            }
+    local args = {
+        [1] = {
+            ["Type"] = "InFight"
         }
-        
-        -- Fire the remote event to perform attack
-        game:GetService("ReplicatedStorage").Remote.CharacterRE:FireServer(unpack(args))
-        
-        StatusLabel.Text = "Attacking: " .. closestMob.Name
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
-    else
-        StatusLabel.Text = "No targets found"
-        StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    end
+    }
+    
+    game:GetService("ReplicatedStorage").Remote.CharacterRE:FireServer(unpack(args))
 end
 
--- AutoAttack toggle function
-AutoAttackButton.MouseButton1Click:Connect(function()
-    autoAttackStatus = not autoAttackStatus
+-- Toggle AutoAttack function
+ToggleButton.MouseButton1Click:Connect(function()
+    toggleStatus = not toggleStatus
     
-    if autoAttackStatus then
-        AutoAttackButton.Text = "AutoAttack: ON"
-        AutoAttackButton.BackgroundColor3 = Color3.fromRGB(70, 200, 70)
+    if toggleStatus then
+        ToggleButton.Text = "AutoAttack: ON"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(70, 200, 70)
         
-        -- Start the auto attack loop
-        if autoAttackConnection then
-            autoAttackConnection:Disconnect()
-        end
-        
-        -- Run the auto attack function repeatedly
-        autoAttackConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            performAutoAttack()
+        -- Start AutoAttack loop with 0.3 second interval
+        autoAttackConnection = RS.Heartbeat:Connect(function()
+            if toggleStatus then
+                performAutoAttack()
+                wait(0.3)
+            end
         end)
-        
-        StatusLabel.Text = "Auto Attack enabled"
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
     else
-        AutoAttackButton.Text = "AutoAttack: OFF"
-        AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+        ToggleButton.Text = "AutoAttack: OFF"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 70, 200)
         
-        -- Stop the auto attack loop
+        -- Disconnect the AutoAttack loop
         if autoAttackConnection then
             autoAttackConnection:Disconnect()
             autoAttackConnection = nil
         end
-        
-        StatusLabel.Text = "Auto Attack disabled"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        
-        -- Reset status color after delay
-        wait(2)
-        StatusLabel.Text = "Ready"
-        StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
 end)
 
@@ -538,7 +447,6 @@ Option2.MouseButton1Click:Connect(function()
     StatusLabel.Text = "Selected: " .. selectedOption
 end)
 
--- New Option3 click handler for Drop Supplies
 Option3.MouseButton1Click:Connect(function()
     selectedOption = "Teleport to Drop Supplies"
     DropdownButton.Text = selectedOption
@@ -546,20 +454,64 @@ Option3.MouseButton1Click:Connect(function()
     DropdownArrow.Text = "▼"
     isDropdownOpen = false
     StatusLabel.Text = "Selected: " .. selectedOption
+    
+    -- Refresh the Drop parts list when this option is selected
+    refreshDropPartsList()
 end)
 
--- Function to find PrimaryPart in Drop folder
-local function findDropPrimaryPart()
+-- Function to find all PrimaryParts in Drop folder
+local function getAllDropParts()
+    local parts = {}
     local dropFolder = workspace:FindFirstChild("Drop")
+    
     if dropFolder and dropFolder:IsA("Folder") then
-        -- Find the PrimaryPart within Drop folder
         for _, child in pairs(dropFolder:GetChildren()) do
             if child:IsA("BasePart") and child.Name ~= "Drop" then
-                return child
+                table.insert(parts, child)
             end
         end
     end
-    return nil
+    
+    return parts
+end
+
+-- Function to refresh the Drop parts list
+local function refreshDropPartsList()
+    allDropParts = getAllDropParts()
+    visitedDropParts = {}
+    currentDropPartIndex = 0
+end
+
+-- Function to get the next unvisited Drop part
+local function getNextDropPart()
+    if #allDropParts == 0 then
+        refreshDropPartsList()
+        if #allDropParts == 0 then
+            return nil -- No parts found
+        end
+    end
+    
+    -- If we've visited all parts, reset the visited list
+    if #visitedDropParts >= #allDropParts then
+        visitedDropParts = {}
+        currentDropPartIndex = 0
+    end
+    
+    -- Find a part we haven't visited yet
+    currentDropPartIndex = (currentDropPartIndex % #allDropParts) + 1
+    local part = allDropParts[currentDropPartIndex]
+    
+    -- Check if we've already visited this part
+    for _, visitedPart in ipairs(visitedDropParts) do
+        if visitedPart == part then
+            -- Try the next part
+            return getNextDropPart()
+        end
+    end
+    
+    -- Mark this part as visited
+    table.insert(visitedDropParts, part)
+    return part
 end
 
 -- Apply button function
@@ -581,4 +533,67 @@ ApplyButton.MouseButton1Click:Connect(function()
                 end
             else
                 StatusLabel.Text = "Error: Quest location not found"
-                StatusLabel.TextColor3 = Color3.fromRGB(255, 10
+                StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+            end
+        elseif selectedOption == "Teleport to training skill" then
+            -- Teleport to training skill location
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2013.29, -193.87, 80.82)
+                StatusLabel.Text = "Teleported to training skill"
+                StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+            end
+        elseif selectedOption == "Teleport to Drop Supplies" then
+            -- Get the next unvisited drop part
+            local nextPart = getNextDropPart()
+            
+            if nextPart then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    -- Get the PrimaryPart's CFrame and add 5 to the Y position
+                    local dropCFrame = nextPart.CFrame
+                    local newPosition = Vector3.new(dropCFrame.X, dropCFrame.Y + 5, dropCFrame.Z)
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(newPosition)
+                    StatusLabel.Text = "Teleported to Drop Supplies (" .. currentDropPartIndex .. "/" .. #allDropParts .. ")"
+                    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+                end
+            else
+                StatusLabel.Text = "Error: No Drop Supplies found"
+                StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+            end
+        end
+    else
+        StatusLabel.Text = "Please select a destination"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+    end
+    
+    -- Restore button color after a short delay
+    wait(0.2)
+    ApplyButton.BackgroundColor3 = originalColor
+    
+    -- Reset status label color after delay
+    wait(2)
+    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+end)
+
+-- Initialize Drop parts list on script start
+refreshDropPartsList()
+
+-- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.M then
+        ScreenGui.Enabled = not ScreenGui.Enabled
+    end
+end)
+
+-- Clean up when the script stops running
+local function cleanUp()
+    if autoAttackConnection then
+        autoAttackConnection:Disconnect()
+    end
+end
+
+-- Clean up connections when the ScreenGui is destroyed
+ScreenGui.AncestryChanged:Connect(function(_, parent)
+    if not parent then
+        cleanUp()
+    end
+end)
