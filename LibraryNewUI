@@ -120,19 +120,6 @@ YouTubeLabel.Parent = MainFrame
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
 
--- Status Label (inside ContentFrame, position will be set by main script)
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Name = "StatusLabel"
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0.05, 0, 0, 0) -- Default position, will be adjusted
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-StatusLabel.TextSize = 12
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.Text = "Ready"
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
-StatusLabel.Parent = ContentFrame
-
 -- Function to create a section (label + separator)
 function TeleportGUILibrary.createSection(sectionName, positionY)
     local sectionLabel = Instance.new("TextLabel")
@@ -245,9 +232,6 @@ end
 
 -- Expose ContentFrame for adding sections
 TeleportGUILibrary.ContentFrame = ContentFrame
-
--- Expose StatusLabel for updating status
-TeleportGUILibrary.StatusLabel = StatusLabel
 
 -- Expose a function to update CanvasSize
 function TeleportGUILibrary.updateCanvasSize(contentHeight)
