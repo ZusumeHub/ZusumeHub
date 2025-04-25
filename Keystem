@@ -490,7 +490,7 @@ if showGUI then
         KeyLogo.Name = "KeyLogo"
         KeyLogo.Parent = ContentFrame
         KeyLogo.BackgroundTransparency = 1
-        KeyLogo.Position = UDim2.new(0.5, -15, 0, 0)
+        KeyLogo.Position = UDim2.new(0.5, -15, 0, -5)
         KeyLogo.Size = UDim2.new(0, 30, 0, 30)
         KeyLogo.Image = "rbxassetid://8037747483" -- Key icon
         KeyLogo.ImageColor3 = COLORS.Accent
@@ -502,7 +502,7 @@ if showGUI then
         KeyInput.BackgroundColor3 = COLORS.InputBackground
         KeyInput.BackgroundTransparency = 0
         KeyInput.BorderSizePixel = 0
-        KeyInput.Position = UDim2.new(0.1, 0, 0, 35)
+        KeyInput.Position = UDim2.new(0.1, 0, 0, 25)
         KeyInput.Size = UDim2.new(0.8, -35, 0, 30)
         KeyInput.Font = FONT
         KeyInput.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
@@ -524,7 +524,7 @@ if showGUI then
         GetKeyButton.Parent = ContentFrame
         GetKeyButton.BackgroundColor3 = COLORS.ButtonIdle
         GetKeyButton.BackgroundTransparency = 0
-        GetKeyButton.Position = UDim2.new(0.1, 0, 0, 70)
+        GetKeyButton.Position = UDim2.new(0.1, 0, 0, 60)
         GetKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
         GetKeyButton.Font = FONT
         GetKeyButton.Text = "Get Key"
@@ -541,7 +541,7 @@ if showGUI then
         CheckKeyButton.Parent = ContentFrame
         CheckKeyButton.BackgroundColor3 = COLORS.ButtonIdle
         CheckKeyButton.BackgroundTransparency = 0
-        CheckKeyButton.Position = UDim2.new(0.1, 0, 0, 105)
+        CheckKeyButton.Position = UDim2.new(0.1, 0, 0, 95)
         CheckKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
         CheckKeyButton.Font = FONT
         CheckKeyButton.Text = "Check Key"
@@ -572,7 +572,7 @@ if showGUI then
         PasteButton.Parent = ContentFrame
         PasteButton.BackgroundColor3 = COLORS.TopBar
         PasteButton.BackgroundTransparency = 0
-        PasteButton.Position = UDim2.new(0.9, -5, 0, 35)
+        PasteButton.Position = UDim2.new(0.9, -5, 0, 25)
         PasteButton.Size = UDim2.new(0, 30, 0, 30)
         PasteButton.Font = FONT
         PasteButton.Text = "📋"
