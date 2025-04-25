@@ -1,2 +1,346 @@
-[ Zusume Hub v3 Key System] 
--- Key= "v3"
+local service = 3432;--Set your Platoboost Id 
+local secret = "55acd596-9e84-4dbd-934e-9def6297d4d3"; --Set Your Platoboost Api key
+local useNonce = true; 
+local onMessage = function(message) game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = message; }) end;
+local mainScript = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/opws";
+
+repeat task.wait(1) until game:IsLoaded() and game.Players.LocalPlayer;
+
+-- Save/Load key functions
+local function saveKey(key)
+    if writefile then
+        writefile("platoboost_key.txt", key)
+    else
+        if syn and syn.queue_on_teleport then
+            syn.queue_on_teleport('_G.savedKey = "'..key..'"')
+        elseif queue_on_teleport then
+            queue_on_teleport('_G.savedKey = "'..key..'"')
+        end
+    end
+end
+
+local function loadSavedKey()
+    local key = ""
+    if readfile and pcall(function() readfile("platoboost_key.txt") end) then
+        key = readfile("platoboost_key.txt")
+    end
+    if key == "" and _G.savedKey then
+        key = _G.savedKey
+    end
+    return key
+end
+
+local requestSending = false;
+local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request or (syn and syn.request) or (http and http.request), string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
+local cachedLink, cachedTime = "", 0;
+local HttpService = game:GetService("HttpService")
+
+function lEncode(data)
+    return HttpService:JSONEncode(data)
+end
+function lDecode(data)
+    return HttpService:JSONDecode(data)
+end
+local function lDigest(input)
+    local inputStr = tostring(input)    
+    local hash = {}
+    for i = 1, #inputStr do
+        table.insert(hash, string.byte(inputStr, i))
+    end
+    local hashHex = ""
+    for _, byte in ipairs(hash) do
+        hashHex = hashHex .. string.format("%02x", byte)
+    end    
+    return hashHex
+end
+local host = "https://api.platoboost.com";
+pcall(function()
+    fRequest({
+        Url = host .. "/public/connectivity",
+        Method = "GET"
+    })
+end)
+
+function cacheLink()
+    if cachedTime + (10*60) < fOsTime() then
+        local success, response = pcall(function()
+            return fRequest({
+                Url = host .. "/public/start",
+                Method = "POST",
+                Body = lEncode({
+                    service = service,
+                    identifier = lDigest(fGetHwid())
+                }),
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                }
+            })
+        end)
+
+        if success and response.StatusCode == 200 then
+            local decoded = lDecode(response.Body);
+            if decoded.success then
+                cachedLink = decoded.data.url;
+                cachedTime = fOsTime();
+                return true, cachedLink;
+            else
+                onMessage(decoded.message);
+            end
+        end
+    end
+    return true, cachedLink;
+end
+
+cacheLink();
+
+local generateNonce = function()
+    local str = ""
+    for _ = 1, 16 do
+        str = str .. fStringChar(fMathFloor(fMathRandom() * (122 - 97 + 1)) + 97)
+    end
+    return str
+end
+
+for _ = 1, 5 do
+    if generateNonce() == generateNonce() then
+        error("Platoboost nonce error.");
+    end
+end
+
+local copyLink = function()
+    local success, link = cacheLink();    
+    if success then
+        if fSetClipboard then
+            fSetClipboard(link);
+            onMessage("Link copied to clipboard!")
+        else
+            onMessage("Visit: " .. link)
+        end
+    end
+end
+
+local redeemKey = function(key)
+    local nonce = generateNonce();
+    local endpoint = host .. "/public/redeem/" .. fToString(service);
+    local body = {
+        identifier = lDigest(fGetHwid()),
+        key = key
+    }
+    if useNonce then body.nonce = nonce end
+
+    local success, response = pcall(function()
+        return fRequest({
+            Url = endpoint,
+            Method = "POST",
+            Body = lEncode(body),
+            Headers = {
+                ["Content-Type"] = "application/json"
+            }
+        })
+    end)
+
+    if success and response.StatusCode == 200 then
+        local decoded = lDecode(response.Body);
+        if decoded.success then
+            if decoded.data.valid then
+                if useNonce and decoded.data.hash ~= lDigest("true" .. "-" .. nonce .. "-" .. secret) then
+                    onMessage("Integrity check failed.");
+                    return false;
+                end    
+                saveKey(key)
+                return true;
+            end
+        else
+            onMessage(decoded.message);
+        end
+    end
+    return false;
+end
+
+local verifyKey = function(key)
+    if requestSending then return false end
+    requestSending = true;
+
+    local nonce = generateNonce();
+    local endpoint = host .. "/public/whitelist/" .. service .. "?identifier=" .. lDigest(fGetHwid()) .. "&key=" .. key
+    if useNonce then endpoint = endpoint .. "&nonce=" .. nonce end
+    
+    local success, response = pcall(function()
+        return fRequest({Url = endpoint, Method = "GET"})
+    end)
+
+    requestSending = false;
+    if success and response.StatusCode == 200 then
+        local decoded = lDecode(response.Body);
+        if decoded.success then
+            if decoded.data.valid then
+                saveKey(key)
+                return true;
+            else
+                return redeemKey(key);
+            end
+        else
+            onMessage(decoded.message);
+        end
+    end
+    return false;
+end
+
+-- Attempt to verify saved key first
+local showGUI = true
+local savedKey = loadSavedKey()
+if savedKey and savedKey ~= "" then
+    onMessage("Verifying saved key...")
+    if verifyKey(savedKey) then
+        onMessage("Key verified! Loading...")
+        loadstring(game:HttpGet(mainScript))()
+        showGUI = false
+    else
+        onMessage("Invalid saved key")
+    end
+end
+
+if showGUI then
+    task.spawn(function()
+        local UserInputService = game:GetService("UserInputService")
+        local TweenService = game:GetService("TweenService")
+        
+        local ScreenGui = Instance.new("ScreenGui")
+        local Frame = Instance.new("Frame")
+        local Topbar = Instance.new("Frame")
+        local Exit = Instance.new("TextButton")
+        local minimize = Instance.new("TextButton")
+        local Frame_2 = Instance.new("Frame")
+        local Getkey = Instance.new("TextButton")
+        local Checkkey = Instance.new("TextButton")
+        local TextBox = Instance.new("TextBox")
+        local StatusLabel = Instance.new("TextLabel")
+        
+        -- GUI Setup
+        ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        ScreenGui.ResetOnSpawn = false
+        if syn and syn.protect_gui then 
+            syn.protect_gui(ScreenGui)
+            ScreenGui.Parent = gethui()
+        else
+            ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+        end
+
+        Frame.Parent = ScreenGui
+        Frame.BackgroundColor3 = Color3.fromRGB(76, 76, 76)
+        Frame.BorderSizePixel = 0
+        Frame.Position = UDim2.new(0.4, 0, 0.4, 0)
+        Frame.Size = UDim2.new(0, 180, 0, 120)
+        Frame.Active = true
+
+        Topbar.Parent = Frame
+        Topbar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        Topbar.Size = UDim2.new(1, 0, 0, 20)
+
+        Exit.Parent = Topbar
+        Exit.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        Exit.Position = UDim2.new(1, -25, 0, 0)
+        Exit.Size = UDim2.new(0, 25, 1, 0)
+        Exit.Text = "X"
+
+        minimize.Parent = Topbar
+        minimize.BackgroundColor3 = Color3.fromRGB(85, 255, 0)
+        minimize.Position = UDim2.new(1, -50, 0, 0)
+        minimize.Size = UDim2.new(0, 25, 1, 0)
+        minimize.Text = "-"
+
+        Frame_2.Parent = Frame
+        Frame_2.BackgroundTransparency = 1
+        Frame_2.Position = UDim2.new(0, 0, 0.167, 0)
+        Frame_2.Size = UDim2.new(1, 0, 1, -20)
+
+        TextBox.Parent = Frame_2
+        TextBox.BackgroundColor3 = Color3.fromRGB(139, 139, 139)
+        TextBox.Position = UDim2.new(0.05, 0, 0.1, 0)
+        TextBox.Size = UDim2.new(0.9, 0, 0, 25)
+        TextBox.PlaceholderText = "Input Key"
+
+        Getkey.Parent = Frame_2
+        Getkey.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        Getkey.Position = UDim2.new(0.1, 0, 0.4, 0)
+        Getkey.Size = UDim2.new(0.8, 0, 0, 20)
+        Getkey.Text = "Get Key"
+
+        Checkkey.Parent = Frame_2
+        Checkkey.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        Checkkey.Position = UDim2.new(0.1, 0, 0.6, 0)
+        Checkkey.Size = UDim2.new(0.8, 0, 0, 20)
+        Checkkey.Text = "Check Key"
+
+        StatusLabel.Parent = Frame_2
+        StatusLabel.BackgroundTransparency = 1
+        StatusLabel.Position = UDim2.new(0.05, 0, 0.8, 0)
+        StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
+        StatusLabel.Text = ""
+        StatusLabel.TextScaled = true
+
+        -- Interactions
+        local dragging, dragInput, dragStart
+        Topbar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                game:GetService("RunService").Heartbeat:Connect(function()
+                    if dragging then
+                        Frame.Position = Frame.Position + UDim2.new(0, input.Position.X - dragStart.X, 0, input.Position.Y - dragStart.Y)
+                    end
+                end)
+            end
+        end)
+
+        Topbar.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+            end
+        end)
+
+        Exit.MouseButton1Click:Connect(function()
+            ScreenGui:Destroy()
+        end)
+
+        minimize.MouseButton1Click:Connect(function()
+            Frame_2.Visible = not Frame_2.Visible
+            Frame.Size = Frame_2.Visible and UDim2.new(0, 180, 0, 120) or UDim2.new(0, 180, 0, 20)
+        end)
+
+        Getkey.MouseButton1Click:Connect(function()
+            copyLink()
+            StatusLabel.Text = "Link copied!"
+            StatusLabel.TextColor3 = Color3.new(0, 0.5, 1)
+        end)
+
+        Checkkey.MouseButton1Click:Connect(function()
+            if TextBox.Text == "" then
+                StatusLabel.Text = "Enter key first!"
+                StatusLabel.TextColor3 = Color3.new(1, 0, 0)
+                return
+            end
+            
+            StatusLabel.Text = "Checking..."
+            StatusLabel.TextColor3 = Color3.new(1, 1, 0)
+            
+            if verifyKey(TextBox.Text) then
+                StatusLabel.Text = "Success! Loading..."
+                StatusLabel.TextColor3 = Color3.new(0, 1, 0)
+                loadstring(game:HttpGet(mainScript))()
+                ScreenGui:Destroy()
+            else
+                StatusLabel.Text = "Invalid key!"
+                StatusLabel.TextColor3 = Color3.new(1, 0, 0)
+            end
+        end)
+
+        -- Mobile adjustments
+        if UserInputService.TouchEnabled then
+            Frame.Size = UDim2.new(0, 200, 0, 140)
+            TextBox.Size = UDim2.new(0.9, 0, 0, 30)
+            Getkey.Size = UDim2.new(0.9, 0, 0, 30)
+            Checkkey.Size = UDim2.new(0.9, 0, 0, 30)
+        end
+    end)
+end
