@@ -262,6 +262,7 @@ if showGUI then
             
             NotifGui.Name = "XenoNotification"
             NotifGui.DisplayOrder = 999
+            NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
             
             NotifFrame.Name = "NotifFrame"
             NotifFrame.Parent = NotifGui
@@ -270,6 +271,7 @@ if showGUI then
             NotifFrame.Size = UDim2.new(0, 280, 0, 60)
             NotifFrame.BackgroundTransparency = 0.1
             NotifFrame.BorderSizePixel = 0
+            NotifFrame.ZIndex = 100
             
             UICorner.Parent = NotifFrame
             UICorner.CornerRadius = CORNER_RADIUS
@@ -286,12 +288,14 @@ if showGUI then
             NotifText.TextWrapped = true
             NotifText.TextXAlignment = Enum.TextXAlignment.Left
             NotifText.TextYAlignment = Enum.TextYAlignment.Top
+            NotifText.ZIndex = 101
             
             StatusBar.Name = "StatusBar"
             StatusBar.Parent = NotifFrame
             StatusBar.BackgroundColor3 = notifColor
             StatusBar.Position = UDim2.new(0, 10, 1, -8)
             StatusBar.Size = UDim2.new(1, -20, 0, 3)
+            StatusBar.ZIndex = 101
             
             StatusBarCorner.Parent = StatusBar
             StatusBarCorner.CornerRadius = UDim.new(1, 0)
@@ -328,9 +332,9 @@ if showGUI then
         local UICorner_GetKey = Instance.new("UICorner")
         local CheckKeyButton = Instance.new("TextButton")
         local UICorner_CheckKey = Instance.new("UICorner")
-        local StatusLabel = Instance.new("TextLabel")
         local UIStroke = Instance.new("UIStroke")
         local UIGradient = Instance.new("UIGradient")
+        local StatusLabel = Instance.new("TextLabel")
         
         -- Configure the GUI
         pcall(function()
@@ -346,6 +350,7 @@ if showGUI then
         
         KeySystemGui.Name = "XenoKeySystem"
         KeySystemGui.DisplayOrder = 999
+        KeySystemGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         KeySystemGui.ResetOnSpawn = false
         
         -- Shadow
@@ -360,16 +365,19 @@ if showGUI then
         Shadow.ImageTransparency = 0.65
         Shadow.ScaleType = Enum.ScaleType.Slice
         Shadow.SliceCenter = Rect.new(95, 95, 205, 205)
+        Shadow.ZIndex = 1
         
         -- Main frame
         MainFrame.Name = "MainFrame"
         MainFrame.Parent = Shadow
         MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
         MainFrame.BackgroundColor3 = COLORS.Frame
+        MainFrame.BackgroundTransparency = 0
         MainFrame.BorderSizePixel = 0
         MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
         MainFrame.Size = UDim2.new(0, 300, 0, 180)
-        MainFrame.ClipsDescendants = true -- Enable clipping to keep content inside
+        MainFrame.ClipsDescendants = true
+        MainFrame.ZIndex = 2
         
         UICorner_Top.Parent = MainFrame
         UICorner_Top.CornerRadius = CORNER_RADIUS
@@ -403,7 +411,9 @@ if showGUI then
         TopBar.Name = "TopBar"
         TopBar.Parent = MainFrame
         TopBar.BackgroundColor3 = COLORS.TopBar
+        TopBar.BackgroundTransparency = 0
         TopBar.Size = UDim2.new(1, 0, 0, 30)
+        TopBar.ZIndex = 3
         
         UICorner_Top.Parent = TopBar
         UICorner_Top.CornerRadius = CORNER_RADIUS
@@ -412,9 +422,11 @@ if showGUI then
         FrameCornerFix.Name = "CornerFix"
         FrameCornerFix.Parent = TopBar
         FrameCornerFix.BackgroundColor3 = COLORS.TopBar
+        FrameCornerFix.BackgroundTransparency = 0
         FrameCornerFix.BorderSizePixel = 0
         FrameCornerFix.Position = UDim2.new(0, 0, 0.5, 0)
         FrameCornerFix.Size = UDim2.new(1, 0, 0.5, 0)
+        FrameCornerFix.ZIndex = 3
         
         TitleText.Name = "TitleText"
         TitleText.Parent = TopBar
@@ -426,6 +438,7 @@ if showGUI then
         TitleText.TextColor3 = COLORS.Text
         TitleText.TextSize = 16
         TitleText.TextXAlignment = Enum.TextXAlignment.Left
+        TitleText.ZIndex = 4
         
         ExitButton.Name = "ExitButton"
         ExitButton.Parent = TopBar
@@ -436,6 +449,7 @@ if showGUI then
         ExitButton.Text = "×"
         ExitButton.TextColor3 = COLORS.Error
         ExitButton.TextSize = 18
+        ExitButton.ZIndex = 4
         
         MinimizeButton.Name = "MinimizeButton"
         MinimizeButton.Parent = TopBar
@@ -446,15 +460,18 @@ if showGUI then
         MinimizeButton.Text = "-"
         MinimizeButton.TextColor3 = COLORS.Warning
         MinimizeButton.TextSize = 18
+        MinimizeButton.ZIndex = 4
         
         -- Content
         ContentFrame.Name = "ContentFrame"
         ContentFrame.Parent = MainFrame
         ContentFrame.BackgroundColor3 = COLORS.Frame
+        ContentFrame.BackgroundTransparency = 0
         ContentFrame.BorderSizePixel = 0
         ContentFrame.Position = UDim2.new(0, 0, 0, 30)
         ContentFrame.Size = UDim2.new(1, 0, 1, -30)
-        ContentFrame.ClipsDescendants = true -- Keep elements properly contained
+        ContentFrame.ClipsDescendants = true
+        ContentFrame.ZIndex = 3
         
         UICorner_Content.Parent = ContentFrame
         UICorner_Content.CornerRadius = CORNER_RADIUS
@@ -463,26 +480,30 @@ if showGUI then
         ContentCornerFix.Name = "CornerFix"
         ContentCornerFix.Parent = ContentFrame
         ContentCornerFix.BackgroundColor3 = COLORS.Frame
+        ContentCornerFix.BackgroundTransparency = 0
         ContentCornerFix.BorderSizePixel = 0
         ContentCornerFix.Position = UDim2.new(0, 0, 0, -5)
         ContentCornerFix.Size = UDim2.new(1, 0, 0, 10)
+        ContentCornerFix.ZIndex = 3
         
         -- Logo (optional key icon)
         KeyLogo.Name = "KeyLogo"
         KeyLogo.Parent = ContentFrame
         KeyLogo.BackgroundTransparency = 1
-        KeyLogo.Position = UDim2.new(0.5, -20, 0, 10)
-        KeyLogo.Size = UDim2.new(0, 40, 0, 40)
+        KeyLogo.Position = UDim2.new(0.5, -15, 0, 5)
+        KeyLogo.Size = UDim2.new(0, 30, 0, 30)
         KeyLogo.Image = "rbxassetid://8037747483" -- Key icon
         KeyLogo.ImageColor3 = COLORS.Accent
+        KeyLogo.ZIndex = 4
         
         -- Key input
         KeyInput.Name = "KeyInput"
         KeyInput.Parent = ContentFrame
         KeyInput.BackgroundColor3 = COLORS.InputBackground
+        KeyInput.BackgroundTransparency = 0
         KeyInput.BorderSizePixel = 0
-        KeyInput.Position = UDim2.new(0.1, 0, 0, 60)
-        KeyInput.Size = UDim2.new(0.8, -30, 0, 30) -- Adjusted width to make room for paste button
+        KeyInput.Position = UDim2.new(0.1, 0, 0, 40)
+        KeyInput.Size = UDim2.new(0.8, -35, 0, 30)
         KeyInput.Font = FONT
         KeyInput.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
         KeyInput.PlaceholderText = "Enter your key here..."
@@ -490,6 +511,8 @@ if showGUI then
         KeyInput.TextColor3 = COLORS.Text
         KeyInput.TextSize = 14
         KeyInput.ClearTextOnFocus = false
+        KeyInput.AnchorPoint = Vector2.new(0, 0)
+        KeyInput.ZIndex = 4
         
         UICorner_Input.Parent = KeyInput
         UICorner_Input.CornerRadius = UDim.new(0, 4)
@@ -498,13 +521,16 @@ if showGUI then
         GetKeyButton.Name = "GetKeyButton"
         GetKeyButton.Parent = ContentFrame
         GetKeyButton.BackgroundColor3 = COLORS.ButtonIdle
-        GetKeyButton.Position = UDim2.new(0.1, 0, 0, 100)
+        GetKeyButton.BackgroundTransparency = 0
+        GetKeyButton.Position = UDim2.new(0.1, 0, 0, 80)
         GetKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
         GetKeyButton.Font = FONT
         GetKeyButton.Text = "Get Key"
         GetKeyButton.TextColor3 = COLORS.Text
         GetKeyButton.TextSize = 14
         GetKeyButton.AutoButtonColor = false
+        GetKeyButton.AnchorPoint = Vector2.new(0, 0)
+        GetKeyButton.ZIndex = 4
         
         UICorner_GetKey.Parent = GetKeyButton
         UICorner_GetKey.CornerRadius = UDim.new(0, 4)
@@ -512,13 +538,16 @@ if showGUI then
         CheckKeyButton.Name = "CheckKeyButton"
         CheckKeyButton.Parent = ContentFrame
         CheckKeyButton.BackgroundColor3 = COLORS.ButtonIdle
-        CheckKeyButton.Position = UDim2.new(0.1, 0, 0, 140)
+        CheckKeyButton.BackgroundTransparency = 0
+        CheckKeyButton.Position = UDim2.new(0.1, 0, 0, 120)
         CheckKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
         CheckKeyButton.Font = FONT
         CheckKeyButton.Text = "Check Key"
         CheckKeyButton.TextColor3 = COLORS.Text
         CheckKeyButton.TextSize = 14
         CheckKeyButton.AutoButtonColor = false
+        CheckKeyButton.AnchorPoint = Vector2.new(0, 0)
+        CheckKeyButton.ZIndex = 4
         
         UICorner_CheckKey.Parent = CheckKeyButton
         UICorner_CheckKey.CornerRadius = UDim.new(0, 4)
@@ -527,19 +556,21 @@ if showGUI then
         StatusLabel.Name = "StatusLabel"
         StatusLabel.Parent = MainFrame
         StatusLabel.BackgroundTransparency = 1
-        StatusLabel.Position = UDim2.new(0, 0, 1, 5)
-        StatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        StatusLabel.Position = UDim2.new(0, 10, 1, -25)
+        StatusLabel.Size = UDim2.new(1, -20, 0, 20)
         StatusLabel.Font = FONT
         StatusLabel.Text = ""
         StatusLabel.TextColor3 = COLORS.Text
         StatusLabel.TextSize = 12
+        StatusLabel.ZIndex = 4
         
-        -- Add a clipboard paste button for convenience
+        -- Add a clipboard paste button
         local PasteButton = Instance.new("TextButton")
         PasteButton.Name = "PasteButton"
         PasteButton.Parent = ContentFrame
         PasteButton.BackgroundColor3 = COLORS.TopBar
-        PasteButton.Position = UDim2.new(0.9, 0, 0, 60)
+        PasteButton.BackgroundTransparency = 0
+        PasteButton.Position = UDim2.new(0.9, -5, 0, 40)
         PasteButton.Size = UDim2.new(0, 30, 0, 30)
         PasteButton.Font = FONT
         PasteButton.Text = "📋"
@@ -547,6 +578,7 @@ if showGUI then
         PasteButton.TextSize = 14
         PasteButton.ZIndex = 5
         PasteButton.AutoButtonColor = false
+        PasteButton.AnchorPoint = Vector2.new(0, 0)
         
         local PasteCorner = Instance.new("UICorner")
         PasteCorner.CornerRadius = UDim.new(0, 4)
@@ -624,7 +656,6 @@ if showGUI then
         end)
         
         PasteButton.MouseButton1Click:Connect(function()
-            -- Attempt to get clipboard contents
             local success, clipboardContent = pcall(function()
                 if getclipboard then
                     return getclipboard()
@@ -642,34 +673,49 @@ if showGUI then
             end
         end)
         
-        -- Exit and minimize button functionality with proper UI handling
+        -- Exit button functionality
         ExitButton.MouseButton1Click:Connect(function()
             TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0.5, 0, 1.5, 0)}):Play()
             wait(0.5)
             KeySystemGui:Destroy()
         end)
         
+        -- Minimize button functionality
         local minimized = false
         MinimizeButton.MouseButton1Click:Connect(function()
             minimized = not minimized
             if minimized then
-                -- When minimizing, first hide the content
+                TweenService:Create(ContentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+                    Transparency = 1,
+                    Position = UDim2.new(0, 0, 0, 30)
+                }):Play()
+                wait(0.2)
                 ContentFrame.Visible = false
-                -- Then animate the frame size
-                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 300, 0, 30)}):Play()
-                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 350, 0, 60)}):Play()
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 300, 0, 30)
+                }):Play()
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 350, 0, 60)
+                }):Play()
+                StatusLabel.Visible = false
             else
-                -- When expanding, first resize the frame
-                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 300, 0, 180)}):Play()
-                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 350, 0, 210)}):Play()
-                
-                -- Wait for animation to complete before showing content
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 300, 0, 180)
+                }):Play()
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 350, 0, 210)
+                }):Play()
                 wait(0.4)
                 ContentFrame.Visible = true
+                ContentFrame.Transparency = 0
+                TweenService:Create(ContentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+                    Transparency = 0
+                }):Play()
+                StatusLabel.Visible = true
             end
         end)
         
--- Create tooltips function
+        -- Create tooltips function
         local function createTooltip(parent, text)
             local Tooltip = Instance.new("Frame")
             local TooltipText = Instance.new("TextLabel")
@@ -678,11 +724,12 @@ if showGUI then
             Tooltip.Name = "Tooltip"
             Tooltip.Parent = KeySystemGui
             Tooltip.BackgroundColor3 = COLORS.TopBar
+            Tooltip.BackgroundTransparency = 0
             Tooltip.BorderSizePixel = 0
             Tooltip.Position = UDim2.new(0, 0, 0, 0)
-            Tooltip.Size = UDim2.new(0, 0, 0, 0)  -- Start with zero size
+            Tooltip.Size = UDim2.new(0, 0, 0, 0)
             Tooltip.ZIndex = 100
-            Tooltip.AutomaticSize = Enum.AutomaticSize.XY  -- Allow automatic sizing
+            Tooltip.AutomaticSize = Enum.AutomaticSize.XY
             Tooltip.Visible = false
             
             TooltipCorner.CornerRadius = UDim.new(0, 4)
@@ -698,20 +745,17 @@ if showGUI then
             TooltipText.TextColor3 = COLORS.Text
             TooltipText.TextSize = 12
             TooltipText.ZIndex = 101
-            TooltipText.AutomaticSize = Enum.AutomaticSize.XY  -- Allow automatic sizing
+            TooltipText.AutomaticSize = Enum.AutomaticSize.XY
             
-            -- Show tooltip on hover
             parent.MouseEnter:Connect(function()
                 Tooltip.Position = UDim2.new(0, UserInputService:GetMouseLocation().X + 15, 0, UserInputService:GetMouseLocation().Y - 15)
                 Tooltip.Visible = true
             end)
             
-            -- Hide tooltip when not hovering
             parent.MouseLeave:Connect(function()
                 Tooltip.Visible = false
             end)
             
-            -- Update tooltip position during mouse movement
             parent.MouseMoved:Connect(function()
                 if Tooltip.Visible then
                     Tooltip.Position = UDim2.new(0, UserInputService:GetMouseLocation().X + 15, 0, UserInputService:GetMouseLocation().Y - 15)
@@ -721,12 +765,11 @@ if showGUI then
             return Tooltip
         end
         
-        -- Add tooltips to buttons
         createTooltip(GetKeyButton, "Get a key from the website")
         createTooltip(CheckKeyButton, "Verify your key")
         createTooltip(PasteButton, "Paste from clipboard")
         
-        -- Fix the dragging functionality
+        -- Desktop dragging functionality
         local isDragging = false
         local dragStart = nil
         local startPos = nil
@@ -759,106 +802,40 @@ if showGUI then
             end
         end)
         
-        -- FIX 1: Ensure contents are properly contained within the MainFrame when minimized
-        -- Modify the MinimizeButton.MouseButton1Click event to properly handle all UI elements
+        -- Mobile dragging functionality
+        local isTouchDragging = false
+        local touchStart = nil
+        local touchStartPos = nil
         
-        local minimized = false
-        MinimizeButton.MouseButton1Click:Connect(function()
-            minimized = not minimized
-            if minimized then
-                -- When minimizing, properly hide all content
-                TweenService:Create(ContentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                    Transparency = 1,
-                    Position = UDim2.new(0, 0, 0, 30) -- Keep position for animation
-                }):Play()
-                
-                -- Wait briefly for content to fade
-                wait(0.2)
-                
-                -- Now hide the ContentFrame and all its children
-                ContentFrame.Visible = false
-                
-                -- Animate the frame size reduction
-                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
-                    Size = UDim2.new(0, 300, 0, 30)
-                }):Play()
-                
-                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
-                    Size = UDim2.new(0, 350, 0, 60)
-                }):Play()
-                
-                -- Hide status label when minimized
-                StatusLabel.Visible = false
-            else
-                -- When expanding, first resize the frame
-                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
-                    Size = UDim2.new(0, 300, 0, 180)
-                }):Play()
-                
-                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
-                    Size = UDim2.new(0, 350, 0, 210)
-                }):Play()
-                
-                -- Wait for animation to complete before showing content
-                wait(0.4)
-                
-                -- Now show the ContentFrame and animate its transparency
-                ContentFrame.Visible = true
-                ContentFrame.Transparency = 1
-                
-                TweenService:Create(ContentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
-                    Transparency = 0
-                }):Play()
-                
-                -- Show status label again
-                StatusLabel.Visible = true
+        TopBar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch then
+                isTouchDragging = true
+                touchStart = input.Position
+                touchStartPos = Shadow.Position
             end
         end)
         
-        -- FIX 2: Adjust ContentFrame and its child elements to ensure they stay within bounds
-        -- Set proper ClipsDescendants property
-        MainFrame.ClipsDescendants = true
-        ContentFrame.ClipsDescendants = true
-        
-        -- Adjust StatusLabel position to be inside MainFrame bounds
-        StatusLabel.Position = UDim2.new(0, 10, 1, -25)
-        StatusLabel.Size = UDim2.new(1, -20, 0, 20)
-        
-        -- Ensure buttons have proper position even when window is resized
-        GetKeyButton.Position = UDim2.new(0.1, 0, 0, 100)
-        GetKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
-        GetKeyButton.AnchorPoint = Vector2.new(0, 0)
-        
-        CheckKeyButton.Position = UDim2.new(0.1, 0, 0, 140)
-        CheckKeyButton.Size = UDim2.new(0.8, 0, 0, 30) 
-        CheckKeyButton.AnchorPoint = Vector2.new(0, 0)
-        
-        -- Fix the key input field to ensure it stays within bounds
-        KeyInput.Position = UDim2.new(0.1, 0, 0, 60)
-        KeyInput.Size = UDim2.new(0.8, -35, 0, 30)
-        KeyInput.AnchorPoint = Vector2.new(0, 0)
-        
-        -- Properly position paste button to align with the key input
-        PasteButton.Position = UDim2.new(0.9, -5, 0, 60)
-        PasteButton.Size = UDim2.new(0, 30, 0, 30)
-        PasteButton.AnchorPoint = Vector2.new(0, 0)
-        
-        -- Set a proper initial key from saved key if available
-        if savedKey and savedKey ~= "" then
-            KeyInput.Text = savedKey
-        end
-        
-        -- Add pulse animation to the UI gradient for visual appeal
-        spawn(function()
-            local count = 0
-            while KeySystemGui.Parent do
-                count = count + 1
-                UIGradient.Offset = Vector2.new(count / 100 % 1, 0)
-                wait()
+        UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch and isTouchDragging then
+                local delta = input.Position - touchStart
+                TweenService:Create(Shadow, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {
+                    Position = UDim2.new(
+                        touchStartPos.X.Scale,
+                        touchStartPos.X.Offset + delta.X,
+                        touchStartPos.Y.Scale,
+                        touchStartPos.Y.Offset + delta.Y
+                    )
+                }):Play()
             end
         end)
         
-        -- Create a loading indicator for key verification
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.Touch then
+                isTouchDragging = false
+            end
+        end)
+        
+        -- Loading indicator
         local LoadingFrame = Instance.new("Frame")
         local LoadingIcon = Instance.new("ImageLabel")
         local LoadingText = Instance.new("TextLabel")
@@ -878,7 +855,7 @@ if showGUI then
         LoadingIcon.BackgroundTransparency = 1
         LoadingIcon.Position = UDim2.new(0.5, 0, 0.4, 0)
         LoadingIcon.Size = UDim2.new(0, 30, 0, 30)
-        LoadingIcon.Image = "rbxassetid://4911211264" -- Loading spinner image
+        LoadingIcon.Image = "rbxassetid://4911211264"
         LoadingIcon.ZIndex = 11
         
         LoadingText.Name = "LoadingText"
@@ -893,7 +870,6 @@ if showGUI then
         LoadingText.TextSize = 14
         LoadingText.ZIndex = 11
         
-        -- Add rotation animation to the loading icon
         spawn(function()
             local rotationSpeed = 5
             while KeySystemGui.Parent do 
@@ -904,8 +880,7 @@ if showGUI then
             end
         end)
         
-        -- Update the check key function to use loading animation
-        local originalCheckKeyFunction = CheckKeyButton.MouseButton1Click
+        -- Update check key function with loading animation
         CheckKeyButton.MouseButton1Click:Connect(function()
             if KeyInput.Text == "" then
                 StatusLabel.Text = "Please enter a key first!"
@@ -914,10 +889,7 @@ if showGUI then
                 return
             end
             
-            -- Show loading animation
             LoadingFrame.Visible = true
-            
-            -- Short delay to allow animation to show
             wait(0.1)
             
             if verifyKey(KeyInput.Text) then
@@ -926,11 +898,9 @@ if showGUI then
                 StatusLabel.TextColor3 = COLORS.Success
                 createNotification("Key verified successfully! Loading script...", "success")
                 
-                -- Successful animation
                 TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Success}):Play()
                 wait(1)
                 
-                -- Close GUI and load script
                 TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0.5, 0, 1.5, 0)}):Play()
                 wait(0.5)
                 KeySystemGui:Destroy()
@@ -942,24 +912,26 @@ if showGUI then
                 StatusLabel.TextColor3 = COLORS.Error
                 createNotification("Invalid key. Please check your key or get a new one.", "error")
                 
-                -- Error animation
                 local originalColor = MainFrame.BackgroundColor3
                 TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Error}):Play()
                 wait(0.1)
                 TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = originalColor}):Play()
             end
         end)
-    end)
-
-    -- Let the main script run after GUI is set up
-    if savedKey and savedKey ~= "" then
-        onMessage("Verifying saved key...")
-        if verifyKey(savedKey) then
-            onMessage("Key verified! Loading...")
-            loadstring(game:HttpGet(mainScript))()
-            showGUI = false
-        else
-            onMessage("Invalid saved key")
+        
+        -- Set initial key from saved key
+        if savedKey and savedKey ~= "" then
+            KeyInput.Text = savedKey
         end
-    end
+        
+        -- Pulse animation for UI gradient
+        spawn(function()
+            local count = 0
+            while KeySystemGui.Parent do
+                count = count + 1
+                UIGradient.Offset = Vector2.new(count / 100 % 1, 0)
+                wait()
+            end
+        end)
+    end)
 end
