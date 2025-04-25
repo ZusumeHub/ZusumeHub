@@ -314,7 +314,21 @@ if showGUI then
             end)
         end
         
+        -- Destroy existing GUI if it exists
+        local function destroyExistingGUI()
+            local possibleParents = {CoreGui, gethui and gethui() or nil, game.Players.LocalPlayer:WaitForChild("PlayerGui")}
+            for _, parent in ipairs(possibleParents) do
+                if parent then
+                    local existingGui = parent:FindFirstChild("XenoKeySystem")
+                    if existingGui then
+                        existingGui:Destroy()
+                    end
+                end
+            end
+        end
+        
         -- Create main GUI
+        destroyExistingGUI() -- Call to destroy any existing GUI before creating a new one
         local KeySystemGui = Instance.new("ScreenGui")
         local Shadow = Instance.new("ImageLabel")
         local MainFrame = Instance.new("Frame")
@@ -654,7 +668,7 @@ if showGUI then
                 TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Error}):Play()
                 wait(0.1)
                 TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = originalColor}):Play()
-            end
+            end)
         end)
         
         PasteButton.MouseButton1Click:Connect(function()
