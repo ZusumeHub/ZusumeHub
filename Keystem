@@ -1,28 +1,39 @@
 local service = 3432; --Set your Platoboost Id 
 local secret = "55acd596-9e84-4dbd-934e-9def6297d4d3"; --Set Your Platoboost Api key
 local useNonce = true; 
-local onMessage = function(message) game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = message; }) end;
+local onMessage = function(message) 
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = "[XenoKeySystem] " .. message; })
+    end)
+end
+
 local mainScript = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/opws";
 
+-- Wait for game to load
 repeat task.wait(1) until game:IsLoaded() and game.Players.LocalPlayer;
 
 -- Save/Load key functions
 local function saveKey(key)
     if writefile then
-        writefile("platoboost_key.txt", key)
+        pcall(function()
+            writefile("platoboost_key.txt", key)
+        end)
     else
-        if syn and syn.queue_on_teleport then
-            syn.queue_on_teleport('_G.savedKey = "'..key..'"')
-        elseif queue_on_teleport then
-            queue_on_teleport('_G.savedKey = "'..key..'"')
+        if (syn and syn.queue_on_teleport) or queue_on_teleport then
+            local queueFunc = syn and syn.queue_on_teleport or queue_on_teleport
+            pcall(function()
+                queueFunc('_G.savedKey = "'..key..'"')
+            end)
         end
     end
 end
 
 local function loadSavedKey()
     local key = ""
-    if readfile and pcall(function() readfile("platoboost_key.txt") end) then
-        key = readfile("platoboost_key.txt")
+    if readfile then
+        pcall(function()
+            key = readfile("platoboost_key.txt")
+        end)
     end
     if key == "" and _G.savedKey then
         key = _G.savedKey
@@ -31,7 +42,10 @@ local function loadSavedKey()
 end
 
 local requestSending = false;
-local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request or (syn and syn.request) or (http and http.request), string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
+local fSetClipboard = setclipboard or toclipboard
+local fRequest = request or http_request or (syn and syn.request) or (http and http.request)
+local fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor = string.char, tostring, string.sub, os.time, math.random, math.floor
+local fGetHwid = gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
 local cachedLink, cachedTime = "", 0;
 local HttpService = game:GetService("HttpService")
 
@@ -54,15 +68,23 @@ local function lDigest(input)
     return hashHex
 end
 local host = "https://api.platoboost.com";
-pcall(function()
-    fRequest({
-        Url = host .. "/public/connectivity",
-        Method = "GET"
-    })
-end)
+if fRequest then
+    pcall(function()
+        fRequest({
+            Url = host .. "/public/connectivity",
+            Method = "GET"
+        })
+    end)
+else
+    onMessage("Warning: HTTP requests are not supported in this exploit.")
+end
 
 function cacheLink()
     if cachedTime + (10*60) < fOsTime() then
+        if not fRequest then
+            onMessage("Error: Cannot fetch link, HTTP requests not supported.")
+            return false, ""
+        end
         local success, response = pcall(function()
             return fRequest({
                 Url = host .. "/public/start",
@@ -86,6 +108,8 @@ function cacheLink()
             else
                 onMessage(decoded.message);
             end
+        else
+            onMessage("Error: Failed to fetch key link.")
         end
     end
     return true, cachedLink;
@@ -111,8 +135,10 @@ local copyLink = function()
     local success, link = cacheLink();    
     if success then
         if fSetClipboard then
-            fSetClipboard(link);
-            onMessage("Link copied to clipboard!")
+            pcall(function()
+                fSetClipboard(link)
+                onMessage("Link copied to clipboard!")
+            end)
         else
             onMessage("Visit: " .. link)
         end
@@ -120,6 +146,10 @@ local copyLink = function()
 end
 
 local redeemKey = function(key)
+    if not fRequest then
+        onMessage("Error: Cannot redeem key, HTTP requests not supported.")
+        return false
+    end
     local nonce = generateNonce();
     local endpoint = host .. "/public/redeem/" .. fToString(service);
     local body = {
@@ -159,6 +189,10 @@ end
 
 local verifyKey = function(key)
     if requestSending then return false end
+    if not fRequest then
+        onMessage("Error: Cannot verify key, HTTP requests not supported.")
+        return false
+    end
     requestSending = true;
 
     local nonce = generateNonce();
@@ -249,20 +283,28 @@ if showGUI then
             local StatusBarCorner = Instance.new("UICorner")
             
             -- Configure notification GUI
+            NotifGui.Name = "XenoNotification"
+            NotifGui.DisplayOrder = 999
+            NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            
+            local parentSuccess = false
             pcall(function()
                 if syn and syn.protect_gui then
                     syn.protect_gui(NotifGui)
                     NotifGui.Parent = CoreGui
+                    parentSuccess = true
                 elseif gethui then
                     NotifGui.Parent = gethui()
+                    parentSuccess = true
                 else
                     NotifGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+                    parentSuccess = true
                 end
             end)
-            
-            NotifGui.Name = "XenoNotification"
-            NotifGui.DisplayOrder = 999
-            NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            if not parentSuccess then
+                onMessage("Error: Failed to parent notification GUI.")
+                return
+            end
             
             NotifFrame.Name = "NotifFrame"
             NotifFrame.Parent = NotifGui
@@ -316,13 +358,21 @@ if showGUI then
         
         -- Destroy existing GUI if it exists
         local function destroyExistingGUI()
-            local possibleParents = {CoreGui, gethui and gethui() or nil, game.Players.LocalPlayer:WaitForChild("PlayerGui")}
+            local possibleParents = {CoreGui}
+            if gethui then
+                table.insert(possibleParents, gethui())
+            end
+            table.insert(possibleParents, game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+            
             for _, parent in ipairs(possibleParents) do
                 if parent then
-                    local existingGui = parent:FindFirstChild("XenoKeySystem")
-                    if existingGui then
-                        existingGui:Destroy()
-                    end
+                    pcall(function()
+                        local existingGui = parent:FindFirstChild("XenoKeySystem")
+                        if existingGui then
+                            existingGui:Destroy()
+                            onMessage("Debug: Destroyed existing GUI instance.")
+                        end
+                    end)
                 end
             end
         end
@@ -351,21 +401,32 @@ if showGUI then
         local StatusLabel = Instance.new("TextLabel")
         
         -- Configure the GUI
-        pcall(function()
-            if syn and syn.protect_gui then
-                syn.protect_gui(KeySystemGui)
-                KeySystemGui.Parent = CoreGui
-            elseif gethui then
-                KeySystemGui.Parent = gethui()
-            else
-                KeySystemGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-            end
-        end)
-        
         KeySystemGui.Name = "XenoKeySystem"
         KeySystemGui.DisplayOrder = 999
         KeySystemGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         KeySystemGui.ResetOnSpawn = false
+        
+        local parentSuccess = false
+        pcall(function()
+            if syn and syn.protect_gui then
+                syn.protect_gui(KeySystemGui)
+                KeySystemGui.Parent = CoreGui
+                parentSuccess = true
+                onMessage("Debug: GUI parented to CoreGui using syn.protect_gui.")
+            elseif gethui then
+                KeySystemGui.Parent = gethui()
+                parentSuccess = true
+                onMessage("Debug: GUI parented to gethui().")
+            else
+                KeySystemGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+                parentSuccess = true
+                onMessage("Debug: GUI parented to PlayerGui.")
+            end
+        end)
+        if not parentSuccess then
+            onMessage("Error: Failed to parent KeySystemGui.")
+            return
+        end
         
         -- Shadow
         Shadow.Name = "Shadow"
@@ -668,7 +729,7 @@ if showGUI then
                 TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Error}):Play()
                 wait(0.1)
                 TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = originalColor}):Play()
-            end)
+            end
         end)
         
         PasteButton.MouseButton1Click:Connect(function()
@@ -678,14 +739,14 @@ if showGUI then
                 elseif readclipboard then
                     return readclipboard()
                 end
-                return ""
+                return nil
             end)
             
-            if success and clipboardContent and clipboardContent ~= "" then
+            if success and clipboardContent then
                 KeyInput.Text = clipboardContent
                 createNotification("Pasted from clipboard!", "success")
             else
-                createNotification("Unable to access clipboard.", "error")
+                createNotification("Clipboard access not supported in this exploit.", "error")
             end
         end)
         
