@@ -240,18 +240,21 @@ function TeleportGUILibrary.updateCanvasSize(contentHeight)
 end
 
 -- Make GUI draggable (both vertically and horizontally)
-local dragging
+local dragging = false
 local dragInput
 local dragStart
 local startPos
+local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
 
+-- Function to update drag position
 local function updateDrag(input)
     local delta = input.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
+-- Dragging for PC (Mouse)
 TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
@@ -265,7 +268,7 @@ TopBar.InputBegan:Connect(function(input)
 end)
 
 TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
         dragInput = input
     end
 end)
@@ -275,6 +278,47 @@ UIS.InputChanged:Connect(function(input)
         updateDrag(input)
     end
 end)
+
+-- Dragging for Mobile (Touch)
+if isMobile then
+    local touchConnection
+    local touchEndedConnection
+
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+
+            -- Prevent camera movement by consuming the touch input
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+
+            -- Handle touch movement
+            touchConnection = UIS.TouchMoved:Connect(function(touchInput)
+                if touchInput == input and dragging then
+                    updateDrag(touchInput)
+                end
+            end)
+
+            -- Clean up when touch ends
+            touchEndedConnection = UIS.TouchEnded:Connect(function(touchInput)
+                if touchInput == input then
+                    dragging = false
+                    if touchConnection then
+                        touchConnection:Disconnect()
+                    end
+                    if touchEndedConnection then
+                        touchEndedConnection:Disconnect()
+                    end
+                end
+            end)
+        end
+    end)
+end
 
 -- Minimize Status
 local isMinimized = false
