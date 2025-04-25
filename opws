@@ -42,7 +42,7 @@ Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Quest Teleporter"
+Title.Text = "you noob Sv_Azidan lol"
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
