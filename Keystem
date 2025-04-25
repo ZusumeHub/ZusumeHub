@@ -1,15 +1,37 @@
-
-local service = 3432;--Set your Platoboost Id 
+local service = 3432; --Set your Platoboost Id 
 local secret = "55acd596-9e84-4dbd-934e-9def6297d4d3"; --Set Your Platoboost Api key
 local useNonce = true; 
-local onMessage = function(message)  game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = message; }) end;
+local onMessage = function(message) game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = message; }) end;
+local mainScript = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/opws";
 
+repeat task.wait(1) until game:IsLoaded() and game.Players.LocalPlayer;
 
-repeat task.wait(1) until game:IsLoaded() or game.Players.LocalPlayer;
+-- Save/Load key functions
+local function saveKey(key)
+    if writefile then
+        writefile("platoboost_key.txt", key)
+    else
+        if syn and syn.queue_on_teleport then
+            syn.queue_on_teleport('_G.savedKey = "'..key..'"')
+        elseif queue_on_teleport then
+            queue_on_teleport('_G.savedKey = "'..key..'"')
+        end
+    end
+end
 
+local function loadSavedKey()
+    local key = ""
+    if readfile and pcall(function() readfile("platoboost_key.txt") end) then
+        key = readfile("platoboost_key.txt")
+    end
+    if key == "" and _G.savedKey then
+        key = _G.savedKey
+    end
+    return key
+end
 
 local requestSending = false;
-local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request, string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
+local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request or (syn and syn.request) or (http and http.request), string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
 local cachedLink, cachedTime = "", 0;
 local HttpService = game:GetService("HttpService")
 
@@ -20,70 +42,54 @@ function lDecode(data)
     return HttpService:JSONDecode(data)
 end
 local function lDigest(input)
-    local inputStr = tostring(input)
-    
-    
+    local inputStr = tostring(input)    
     local hash = {}
     for i = 1, #inputStr do
         table.insert(hash, string.byte(inputStr, i))
     end
-
     local hashHex = ""
     for _, byte in ipairs(hash) do
         hashHex = hashHex .. string.format("%02x", byte)
-    end
-    
+    end    
     return hashHex
 end
 local host = "https://api.platoboost.com";
-local hostResponse = fRequest({
-    Url = host .. "/public/connectivity",
-    Method = "GET"
-});
-if hostResponse.StatusCode ~= 200 or hostResponse.StatusCode ~= 429 then
-    host = "https://api.platoboost.net";
-end
+pcall(function()
+    fRequest({
+        Url = host .. "/public/connectivity",
+        Method = "GET"
+    })
+end)
 
 function cacheLink()
     if cachedTime + (10*60) < fOsTime() then
-        local response = fRequest({
-            Url = host .. "/public/start",
-            Method = "POST",
-            Body = lEncode({
-                service = service,
-                identifier = lDigest(fGetHwid())
-            }),
-            Headers = {
-                ["Content-Type"] = "application/json"
-            }
-        });
+        local success, response = pcall(function()
+            return fRequest({
+                Url = host .. "/public/start",
+                Method = "POST",
+                Body = lEncode({
+                    service = service,
+                    identifier = lDigest(fGetHwid())
+                }),
+                Headers = {
+                    ["Content-Type"] = "application/json"
+                }
+            })
+        end)
 
-        if response.StatusCode == 200 then
+        if success and response.StatusCode == 200 then
             local decoded = lDecode(response.Body);
-
-            if decoded.success == true then
+            if decoded.success then
                 cachedLink = decoded.data.url;
                 cachedTime = fOsTime();
                 return true, cachedLink;
             else
                 onMessage(decoded.message);
-                return false, decoded.message;
             end
-        elseif response.StatusCode == 429 then
-            local msg = "you are being rate limited, please wait 20 seconds and try again.";
-            onMessage(msg);
-            return false, msg;
         end
-
-        local msg = "Failed to cache link.";
-        onMessage(msg);
-        return false, msg;
-    else
-        return true, cachedLink;
     end
+    return true, cachedLink;
 end
-
-
 
 cacheLink();
 
@@ -95,338 +101,865 @@ local generateNonce = function()
     return str
 end
 
-
 for _ = 1, 5 do
-    local oNonce = generateNonce();
-    task.wait(0.2)
-    if generateNonce() == oNonce then
-        local msg = "platoboost nonce error.";
-        onMessage(msg);
-        error(msg);
+    if generateNonce() == generateNonce() then
+        error("Platoboost nonce error.");
     end
 end
 
 local copyLink = function()
-    local success, link = cacheLink();
-    
+    local success, link = cacheLink();    
     if success then
-        print("SetClipBoard")
-        fSetClipboard(link);
+        if fSetClipboard then
+            fSetClipboard(link);
+            onMessage("Link copied to clipboard!")
+        else
+            onMessage("Visit: " .. link)
+        end
     end
 end
 
 local redeemKey = function(key)
     local nonce = generateNonce();
     local endpoint = host .. "/public/redeem/" .. fToString(service);
-
     local body = {
         identifier = lDigest(fGetHwid()),
         key = key
     }
+    if useNonce then body.nonce = nonce end
 
-    if useNonce then
-        body.nonce = nonce;
-    end
+    local success, response = pcall(function()
+        return fRequest({
+            Url = endpoint,
+            Method = "POST",
+            Body = lEncode(body),
+            Headers = {
+                ["Content-Type"] = "application/json"
+            }
+        })
+    end)
 
-    local response = fRequest({
-        Url = endpoint,
-        Method = "POST",
-        Body = lEncode(body),
-        Headers = {
-            ["Content-Type"] = "application/json"
-        }
-    });
-
-    if response.StatusCode == 200 then
+    if success and response.StatusCode == 200 then
         local decoded = lDecode(response.Body);
-        if decoded.success == true then
-            if decoded.data.valid == true then
-                if useNonce then
-                    if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
-                        return true;
-                    else
-                        onMessage("failed to verify integrity.");
-                        return false;
-                    end    
-                else
-                    return true;
-                end
-            else
-                onMessage("key is invalid.");
-                return false;
+        if decoded.success then
+            if decoded.data.valid then
+                if useNonce and decoded.data.hash ~= lDigest("true" .. "-" .. nonce .. "-" .. secret) then
+                    onMessage("Integrity check failed.");
+                    return false;
+                end    
+                saveKey(key)
+                return true;
             end
         else
-            if fStringSub(decoded.message, 1, 27) == "unique constraint violation" then
-                onMessage("you already have an active key, please wait for it to expire before redeeming it.");
-                return false;
-            else
-                onMessage(decoded.message);
-                return false;
-            end
+            onMessage(decoded.message);
         end
-    elseif response.StatusCode == 429 then
-        onMessage("you are being rate limited, please wait 20 seconds and try again.");
-        return false;
-    else
-        onMessage("server returned an invalid status code, please try again later.");
-        return false; 
     end
+    return false;
 end
-
 
 local verifyKey = function(key)
-    if requestSending == true then
-        onMessage("a request is already being sent, please slow down.");
-        return false;
-    else
-        requestSending = true;
-    end
+    if requestSending then return false end
+    requestSending = true;
 
     local nonce = generateNonce();
-    local endpoint = host .. "/public/whitelist/" .. fToString(service) .. "?identifier=" .. lDigest(fGetHwid()) .. "&key=" .. key;
-
-    if useNonce then
-        endpoint = endpoint .. "&nonce=" .. nonce;
-    end
-    local response = fRequest({
-        Url = endpoint,
-        Method = "GET",
-    });
+    local endpoint = host .. "/public/whitelist/" .. service .. "?identifier=" .. lDigest(fGetHwid()) .. "&key=" .. key
+    if useNonce then endpoint = endpoint .. "&nonce=" .. nonce end
+    
+    local success, response = pcall(function()
+        return fRequest({Url = endpoint, Method = "GET"})
+    end)
 
     requestSending = false;
-
-    if response.StatusCode == 200 then
+    if success and response.StatusCode == 200 then
         local decoded = lDecode(response.Body);
-        if decoded.success == true then
-            if decoded.data.valid == true then
-                if useNonce then
-                    return true;
-                else
-                    return true;
-                end
+        if decoded.success then
+            if decoded.data.valid then
+                saveKey(key)
+                return true;
             else
-                if fStringSub(key, 1, 4) == "FREE_" then
-                    return redeemKey(key);
-                else
-                    onMessage("key is invalid.");
-                    return false;
-                end
+                return redeemKey(key);
             end
         else
             onMessage(decoded.message);
-            return false;
         end
-    elseif response.StatusCode == 429 then
-        onMessage("you are being rate limited, please wait 20 seconds and try again.");
-        return false;
+    end
+    return false;
+end
+
+-- Attempt to verify saved key first
+local showGUI = true
+local savedKey = loadSavedKey()
+if savedKey and savedKey ~= "" then
+    onMessage("Verifying saved key...")
+    if verifyKey(savedKey) then
+        onMessage("Key verified! Loading...")
+        loadstring(game:HttpGet(mainScript))()
+        showGUI = false
     else
-        onMessage("server returned an invalid status code, please try again later.");
-        return false;
+        onMessage("Invalid saved key")
     end
 end
 
-
-local getFlag = function(name)
-    local nonce = generateNonce();
-    local endpoint = host .. "/public/flag/" .. fToString(service) .. "?name=" .. name;
-
-    if useNonce then
-        endpoint = endpoint .. "&nonce=" .. nonce;
-    end
-
-    local response = fRequest({
-        Url = endpoint,
-        Method = "GET",
-    });
-
-    if response.StatusCode == 200 then
-        local decoded = lDecode(response.Body);
-        if decoded.success == true then
-            if useNonce then
-                if decoded.data.hash == lDigest(fToString(decoded.data.value) .. "-" .. nonce .. "-" .. secret) then
-                    return decoded.data.value;
-                else
-                    onMessage("failed to verify integrity.");
-                    return nil;
-                end
-            else
-                return decoded.data.value;
-            end
-        else
-            onMessage(decoded.message);
-            return nil;
-        end
-    else
-        return nil;
-    end
-end
-
-task.spawn(function()
-    local ScreenGui = Instance.new("ScreenGui")
-    local Frame = Instance.new("Frame")
-    local Topbar = Instance.new("Frame")
-    local Exit = Instance.new("TextButton")
-    local minimize = Instance.new("TextButton")
-    local Frame_2 = Instance.new("Frame")
-    local Getkey = Instance.new("TextButton")
-    local Checkkey = Instance.new("TextButton")
-    local TextBox = Instance.new("TextBox")
-    local TextLabel = Instance.new("TextLabel")
-    
-
-    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    Frame.Parent = ScreenGui
-    Frame.BackgroundColor3 = Color3.fromRGB(76, 76, 76)
-    Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Frame.BorderSizePixel = 0
-    Frame.Position = UDim2.new(0.286729872, 0, 0.295880139, 0)
-    Frame.Size = UDim2.new(0, 359, 0, 217)
-    
-    Topbar.Name = "Topbar"
-    Topbar.Parent = Frame
-    Topbar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Topbar.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Topbar.BorderSizePixel = 0
-    Topbar.Size = UDim2.new(0, 359, 0, 27)
-    
-    Exit.Name = "Exit"
-    Exit.Parent = Topbar
-    Exit.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    Exit.BackgroundTransparency = 0.300
-    Exit.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Exit.BorderSizePixel = 0
-    Exit.Position = UDim2.new(0.905292451, 0, 0.111111112, 0)
-    Exit.Size = UDim2.new(0, 25, 0, 20)
-    Exit.Font = Enum.Font.SourceSans
-    Exit.Text = "X"
-    Exit.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Exit.TextScaled = true
-    Exit.TextSize = 14.000
-    Exit.TextWrapped = true
-    
-    minimize.Name = "minimize"
-    minimize.Parent = Topbar
-    minimize.BackgroundColor3 = Color3.fromRGB(85, 255, 0)
-    minimize.BackgroundTransparency = 0.300
-    minimize.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    minimize.BorderSizePixel = 0
-    minimize.Position = UDim2.new(0.810584962, 0, 0.111111112, 0)
-    minimize.Size = UDim2.new(0, 25, 0, 20)
-    minimize.Font = Enum.Font.SourceSans
-    minimize.Text = "-"
-    minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
-    minimize.TextScaled = true
-    minimize.TextSize = 14.000
-    minimize.TextWrapped = true
-    
-    Frame_2.Parent = Frame
-    Frame_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    Frame_2.BackgroundTransparency = 1.000
-    Frame_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Frame_2.BorderSizePixel = 0
-    Frame_2.Position = UDim2.new(0, 0, 0.124423966, 0)
-    Frame_2.Size = UDim2.new(0, 359, 0, 189)
-    
-    Getkey.Name = "Getkey"
-    Getkey.Parent = Frame_2
-    Getkey.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Getkey.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Getkey.BorderSizePixel = 0
-    Getkey.Position = UDim2.new(0.317548752, 0, 0.523809552, 0)
-    Getkey.Size = UDim2.new(0, 130, 0, 32)
-    Getkey.Font = Enum.Font.SourceSans
-    Getkey.Text = "Getkey"
-    Getkey.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Getkey.TextScaled = true
-    Getkey.TextSize = 14.000
-    Getkey.TextWrapped = true
-    
-    Checkkey.Name = "Checkkey"
-    Checkkey.Parent = Frame_2
-    Checkkey.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    Checkkey.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    Checkkey.BorderSizePixel = 0
-    Checkkey.Position = UDim2.new(0.317548752, 0, 0.767195761, 0)
-    Checkkey.Size = UDim2.new(0, 130, 0, 32)
-    Checkkey.Font = Enum.Font.SourceSans
-    Checkkey.Text = "CheckKey"
-    Checkkey.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Checkkey.TextScaled = true
-    Checkkey.TextSize = 14.000
-    Checkkey.TextWrapped = true
-    
-    TextBox.Parent = Frame_2
-    TextBox.BackgroundColor3 = Color3.fromRGB(139, 139, 139)
-    TextBox.BackgroundTransparency = 0.600
-    TextBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    TextBox.BorderSizePixel = 0
-    TextBox.Position = UDim2.new(0.0779944286, 0, 0.137566134, 0)
-    TextBox.Size = UDim2.new(0, 304, 0, 42)
-    TextBox.Font = Enum.Font.SourceSans
-    TextBox.Text = ""
-    TextBox.TextTransparency = 1
-    TextBox.TextColor3 = Color3.fromRGB(0, 0, 0)
-    TextBox.TextScaled = true
-    TextBox.TextSize = 14.000
-    TextBox.TextWrapped = true
-    
-    TextLabel.Parent = Frame_2
-    TextLabel.BackgroundColor3 = Color3.fromRGB(211, 211, 211)
-    TextLabel.BackgroundTransparency = 1.000
-    TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
-    TextLabel.BorderSizePixel = 0
-    TextLabel.Position = UDim2.new(0.0779944286, 0, 0.137566134, 0)
-    TextLabel.Size = UDim2.new(0, 304, 0, 42)
-    TextLabel.ZIndex = 2
-    TextLabel.Font = Enum.Font.SourceSans
-    TextLabel.Text = "In Put Your Key"
-    TextLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-    TextLabel.TextScaled = true
-    TextLabel.TextSize = 14.000
-    TextLabel.TextStrokeTransparency = 0.830
-    TextLabel.TextTransparency = 0.550
-    TextLabel.TextWrapped = true
-    
-    
-    
-    
-    TextBox:GetPropertyChangedSignal("Text"):Connect(function(text)
-        if TextBox.Text == "" then
-            TextLabel.Text =  "In Put Your Key"
-        else
-            TextLabel.Text = TextBox.Text
-        end
-    end)
-    
-    Checkkey.MouseButton1Down:Connect(function() 
-        if TextBox and TextBox.Text then
+if showGUI then
+    -- Enhanced GUI for Xeno and other executors
+    task.spawn(function()
+        -- Services
+        local Players = game:GetService("Players")
+        local UserInputService = game:GetService("UserInputService")
+        local TweenService = game:GetService("TweenService")
+        local RunService = game:GetService("RunService")
+        local CoreGui = game:GetService("CoreGui")
+        local LocalPlayer = Players.LocalPlayer
+        
+        -- Constants
+        local FONT = Enum.Font.GothamBold
+        local TWEEN_TIME = 0.3
+        local CORNER_RADIUS = UDim.new(0, 6)
+        local GRADIENT_ROTATION = 45
+        local STROKE_THICKNESS = 1.5
+        
+        -- Colors
+        local COLORS = {
+            Background = Color3.fromRGB(25, 25, 30),
+            Frame = Color3.fromRGB(35, 35, 40),
+            TopBar = Color3.fromRGB(40, 40, 45),
+            Accent = Color3.fromRGB(114, 137, 218), -- Discord blue
+            Text = Color3.fromRGB(255, 255, 255),
+            InputBackground = Color3.fromRGB(50, 50, 55),
+            ButtonIdle = Color3.fromRGB(114, 137, 218),
+            ButtonHover = Color3.fromRGB(129, 152, 233),
+            ButtonClick = Color3.fromRGB(99, 122, 203),
+            Success = Color3.fromRGB(87, 242, 135),
+            Error = Color3.fromRGB(255, 89, 89),
+            Warning = Color3.fromRGB(255, 201, 79),
+        }
+        
+        -- Create a custom notification function
+        local function createNotification(message, type)
+            local notifColor = COLORS.Accent
+            if type == "success" then notifColor = COLORS.Success
+            elseif type == "error" then notifColor = COLORS.Error
+            elseif type == "warning" then notifColor = COLORS.Warning end
             
-            local Verify = verifyKey(TextBox.Text)
-            if Verify then
-                loadstring(game:HttpGet("https://pastebin.com/raw/DTrES0c6"))()
+            local NotifGui = Instance.new("ScreenGui")
+            local NotifFrame = Instance.new("Frame")
+            local NotifText = Instance.new("TextLabel")
+            local UICorner = Instance.new("UICorner")
+            local StatusBar = Instance.new("Frame")
+            local StatusBarCorner = Instance.new("UICorner")
+            
+            -- Configure notification GUI
+            pcall(function()
+                if syn and syn.protect_gui then
+                    syn.protect_gui(NotifGui)
+                    NotifGui.Parent = CoreGui
+                elseif gethui then
+                    NotifGui.Parent = gethui()
+                else
+                    NotifGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+                end
+            end)
+            
+            NotifGui.Name = "XenoNotification"
+            NotifGui.DisplayOrder = 999
+            
+            NotifFrame.Name = "NotifFrame"
+            NotifFrame.Parent = NotifGui
+            NotifFrame.BackgroundColor3 = COLORS.Frame
+            NotifFrame.Position = UDim2.new(1, 10, 0.8, 0)
+            NotifFrame.Size = UDim2.new(0, 280, 0, 60)
+            NotifFrame.BackgroundTransparency = 0.1
+            NotifFrame.BorderSizePixel = 0
+            
+            UICorner.Parent = NotifFrame
+            UICorner.CornerRadius = CORNER_RADIUS
+            
+            NotifText.Name = "NotifText"
+            NotifText.Parent = NotifFrame
+            NotifText.BackgroundTransparency = 1
+            NotifText.Position = UDim2.new(0, 10, 0, 5)
+            NotifText.Size = UDim2.new(1, -20, 1, -15)
+            NotifText.Font = FONT
+            NotifText.Text = message
+            NotifText.TextColor3 = COLORS.Text
+            NotifText.TextSize = 16
+            NotifText.TextWrapped = true
+            NotifText.TextXAlignment = Enum.TextXAlignment.Left
+            NotifText.TextYAlignment = Enum.TextYAlignment.Top
+            
+            StatusBar.Name = "StatusBar"
+            StatusBar.Parent = NotifFrame
+            StatusBar.BackgroundColor3 = notifColor
+            StatusBar.Position = UDim2.new(0, 10, 1, -8)
+            StatusBar.Size = UDim2.new(1, -20, 0, 3)
+            
+            StatusBarCorner.Parent = StatusBar
+            StatusBarCorner.CornerRadius = UDim.new(1, 0)
+            
+            -- Animate notification
+            TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
+            
+            -- Create countdown tween
+            local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
+            statusTween:Play()
+            
+            statusTween.Completed:Connect(function()
+                TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, 10, 0.8, 0)}):Play()
+                wait(0.5)
+                NotifGui:Destroy()
+            end)
+        end
+        
+        -- Create main GUI
+        local KeySystemGui = Instance.new("ScreenGui")
+        local Shadow = Instance.new("ImageLabel")
+        local MainFrame = Instance.new("Frame")
+        local TopBar = Instance.new("Frame")
+        local UICorner_Top = Instance.new("UICorner")
+        local TitleText = Instance.new("TextLabel")
+        local ExitButton = Instance.new("TextButton")
+        local MinimizeButton = Instance.new("TextButton")
+        local ContentFrame = Instance.new("Frame")
+        local UICorner_Content = Instance.new("UICorner")
+        local KeyLogo = Instance.new("ImageLabel")
+        local KeyInput = Instance.new("TextBox")
+        local UICorner_Input = Instance.new("UICorner")
+        local GetKeyButton = Instance.new("TextButton")
+        local UICorner_GetKey = Instance.new("UICorner")
+        local CheckKeyButton = Instance.new("TextButton")
+        local UICorner_CheckKey = Instance.new("UICorner")
+        local StatusLabel = Instance.new("TextLabel")
+        local UIStroke = Instance.new("UIStroke")
+        local UIGradient = Instance.new("UIGradient")
+        
+        -- Configure the GUI
+        pcall(function()
+            if syn and syn.protect_gui then
+                syn.protect_gui(KeySystemGui)
+                KeySystemGui.Parent = CoreGui
+            elseif gethui then
+                KeySystemGui.Parent = gethui()
             else
-                print("Key Is in valid")
-            end 
-        end	
-    end)
-    
-    Getkey.MouseButton1Down:Connect(function() 
-        copyLink()
-    end)
-    
-    Exit.MouseButton1Down:Connect(function()
-        if ScreenGui then
-            ScreenGui:Destroy()
+                KeySystemGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+            end
+        end)
+        
+        KeySystemGui.Name = "XenoKeySystem"
+        KeySystemGui.DisplayOrder = 999
+        KeySystemGui.ResetOnSpawn = false
+        
+        -- Shadow
+        Shadow.Name = "Shadow"
+        Shadow.Parent = KeySystemGui
+        Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+        Shadow.BackgroundTransparency = 1
+        Shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+        Shadow.Size = UDim2.new(0, 350, 0, 210)
+        Shadow.Image = "rbxassetid://7912134082"
+        Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+        Shadow.ImageTransparency = 0.65
+        Shadow.ScaleType = Enum.ScaleType.Slice
+        Shadow.SliceCenter = Rect.new(95, 95, 205, 205)
+        
+        -- Main frame
+        MainFrame.Name = "MainFrame"
+        MainFrame.Parent = Shadow
+        MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        MainFrame.BackgroundColor3 = COLORS.Frame
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        MainFrame.Size = UDim2.new(0, 300, 0, 180)
+        MainFrame.ClipsDescendants = true -- Enable clipping to keep content inside
+        
+        UICorner_Top.Parent = MainFrame
+        UICorner_Top.CornerRadius = CORNER_RADIUS
+        
+        -- Frame stroke with gradient
+        UIStroke.Parent = MainFrame
+        UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        UIStroke.Color = COLORS.Accent
+        UIStroke.Thickness = STROKE_THICKNESS
+        UIStroke.Transparency = 0.4
+        
+        UIGradient.Parent = UIStroke
+        UIGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(114, 137, 218)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(160, 100, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(114, 137, 218))
+        })
+        UIGradient.Rotation = GRADIENT_ROTATION
+        
+        -- Create gradient rotation animation
+        task.spawn(function()
+            local rotation = GRADIENT_ROTATION
+            while true do
+                rotation = (rotation + 1) % 360
+                UIGradient.Rotation = rotation
+                RunService.Heartbeat:Wait()
+            end
+        end)
+        
+        -- Top bar
+        TopBar.Name = "TopBar"
+        TopBar.Parent = MainFrame
+        TopBar.BackgroundColor3 = COLORS.TopBar
+        TopBar.Size = UDim2.new(1, 0, 0, 30)
+        
+        UICorner_Top.Parent = TopBar
+        UICorner_Top.CornerRadius = CORNER_RADIUS
+        
+        local FrameCornerFix = Instance.new("Frame")
+        FrameCornerFix.Name = "CornerFix"
+        FrameCornerFix.Parent = TopBar
+        FrameCornerFix.BackgroundColor3 = COLORS.TopBar
+        FrameCornerFix.BorderSizePixel = 0
+        FrameCornerFix.Position = UDim2.new(0, 0, 0.5, 0)
+        FrameCornerFix.Size = UDim2.new(1, 0, 0.5, 0)
+        
+        TitleText.Name = "TitleText"
+        TitleText.Parent = TopBar
+        TitleText.BackgroundTransparency = 1
+        TitleText.Position = UDim2.new(0, 10, 0, 0)
+        TitleText.Size = UDim2.new(1, -60, 1, 0)
+        TitleText.Font = FONT
+        TitleText.Text = "Xeno Key System"
+        TitleText.TextColor3 = COLORS.Text
+        TitleText.TextSize = 16
+        TitleText.TextXAlignment = Enum.TextXAlignment.Left
+        
+        ExitButton.Name = "ExitButton"
+        ExitButton.Parent = TopBar
+        ExitButton.BackgroundTransparency = 1
+        ExitButton.Position = UDim2.new(1, -25, 0, 0)
+        ExitButton.Size = UDim2.new(0, 25, 1, 0)
+        ExitButton.Font = FONT
+        ExitButton.Text = "×"
+        ExitButton.TextColor3 = COLORS.Error
+        ExitButton.TextSize = 18
+        
+        MinimizeButton.Name = "MinimizeButton"
+        MinimizeButton.Parent = TopBar
+        MinimizeButton.BackgroundTransparency = 1
+        MinimizeButton.Position = UDim2.new(1, -50, 0, 0)
+        MinimizeButton.Size = UDim2.new(0, 25, 1, 0)
+        MinimizeButton.Font = FONT
+        MinimizeButton.Text = "-"
+        MinimizeButton.TextColor3 = COLORS.Warning
+        MinimizeButton.TextSize = 18
+        
+        -- Content
+        ContentFrame.Name = "ContentFrame"
+        ContentFrame.Parent = MainFrame
+        ContentFrame.BackgroundColor3 = COLORS.Frame
+        ContentFrame.BorderSizePixel = 0
+        ContentFrame.Position = UDim2.new(0, 0, 0, 30)
+        ContentFrame.Size = UDim2.new(1, 0, 1, -30)
+        ContentFrame.ClipsDescendants = true -- Keep elements properly contained
+        
+        UICorner_Content.Parent = ContentFrame
+        UICorner_Content.CornerRadius = CORNER_RADIUS
+        
+        local ContentCornerFix = Instance.new("Frame")
+        ContentCornerFix.Name = "CornerFix"
+        ContentCornerFix.Parent = ContentFrame
+        ContentCornerFix.BackgroundColor3 = COLORS.Frame
+        ContentCornerFix.BorderSizePixel = 0
+        ContentCornerFix.Position = UDim2.new(0, 0, 0, -5)
+        ContentCornerFix.Size = UDim2.new(1, 0, 0, 10)
+        
+        -- Logo (optional key icon)
+        KeyLogo.Name = "KeyLogo"
+        KeyLogo.Parent = ContentFrame
+        KeyLogo.BackgroundTransparency = 1
+        KeyLogo.Position = UDim2.new(0.5, -20, 0, 10)
+        KeyLogo.Size = UDim2.new(0, 40, 0, 40)
+        KeyLogo.Image = "rbxassetid://8037747483" -- Key icon
+        KeyLogo.ImageColor3 = COLORS.Accent
+        
+        -- Key input
+        KeyInput.Name = "KeyInput"
+        KeyInput.Parent = ContentFrame
+        KeyInput.BackgroundColor3 = COLORS.InputBackground
+        KeyInput.BorderSizePixel = 0
+        KeyInput.Position = UDim2.new(0.1, 0, 0, 60)
+        KeyInput.Size = UDim2.new(0.8, -30, 0, 30) -- Adjusted width to make room for paste button
+        KeyInput.Font = FONT
+        KeyInput.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
+        KeyInput.PlaceholderText = "Enter your key here..."
+        KeyInput.Text = ""
+        KeyInput.TextColor3 = COLORS.Text
+        KeyInput.TextSize = 14
+        KeyInput.ClearTextOnFocus = false
+        
+        UICorner_Input.Parent = KeyInput
+        UICorner_Input.CornerRadius = UDim.new(0, 4)
+        
+        -- Buttons
+        GetKeyButton.Name = "GetKeyButton"
+        GetKeyButton.Parent = ContentFrame
+        GetKeyButton.BackgroundColor3 = COLORS.ButtonIdle
+        GetKeyButton.Position = UDim2.new(0.1, 0, 0, 100)
+        GetKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
+        GetKeyButton.Font = FONT
+        GetKeyButton.Text = "Get Key"
+        GetKeyButton.TextColor3 = COLORS.Text
+        GetKeyButton.TextSize = 14
+        GetKeyButton.AutoButtonColor = false
+        
+        UICorner_GetKey.Parent = GetKeyButton
+        UICorner_GetKey.CornerRadius = UDim.new(0, 4)
+        
+        CheckKeyButton.Name = "CheckKeyButton"
+        CheckKeyButton.Parent = ContentFrame
+        CheckKeyButton.BackgroundColor3 = COLORS.ButtonIdle
+        CheckKeyButton.Position = UDim2.new(0.1, 0, 0, 140)
+        CheckKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
+        CheckKeyButton.Font = FONT
+        CheckKeyButton.Text = "Check Key"
+        CheckKeyButton.TextColor3 = COLORS.Text
+        CheckKeyButton.TextSize = 14
+        CheckKeyButton.AutoButtonColor = false
+        
+        UICorner_CheckKey.Parent = CheckKeyButton
+        UICorner_CheckKey.CornerRadius = UDim.new(0, 4)
+        
+        -- Status text
+        StatusLabel.Name = "StatusLabel"
+        StatusLabel.Parent = MainFrame
+        StatusLabel.BackgroundTransparency = 1
+        StatusLabel.Position = UDim2.new(0, 0, 1, 5)
+        StatusLabel.Size = UDim2.new(1, 0, 0, 20)
+        StatusLabel.Font = FONT
+        StatusLabel.Text = ""
+        StatusLabel.TextColor3 = COLORS.Text
+        StatusLabel.TextSize = 12
+        
+        -- Add a clipboard paste button for convenience
+        local PasteButton = Instance.new("TextButton")
+        PasteButton.Name = "PasteButton"
+        PasteButton.Parent = ContentFrame
+        PasteButton.BackgroundColor3 = COLORS.TopBar
+        PasteButton.Position = UDim2.new(0.9, 0, 0, 60)
+        PasteButton.Size = UDim2.new(0, 30, 0, 30)
+        PasteButton.Font = FONT
+        PasteButton.Text = "📋"
+        PasteButton.TextColor3 = COLORS.Text
+        PasteButton.TextSize = 14
+        PasteButton.ZIndex = 5
+        PasteButton.AutoButtonColor = false
+        
+        local PasteCorner = Instance.new("UICorner")
+        PasteCorner.CornerRadius = UDim.new(0, 4)
+        PasteCorner.Parent = PasteButton
+        
+        -- Make buttons interactive
+        local function setupButtonEffects(button)
+            button.MouseEnter:Connect(function()
+                TweenService:Create(button, TweenInfo.new(TWEEN_TIME), {BackgroundColor3 = COLORS.ButtonHover}):Play()
+            end)
+            
+            button.MouseLeave:Connect(function()
+                TweenService:Create(button, TweenInfo.new(TWEEN_TIME), {BackgroundColor3 = COLORS.ButtonIdle}):Play()
+            end)
+            
+            button.MouseButton1Down:Connect(function()
+                TweenService:Create(button, TweenInfo.new(TWEEN_TIME/2), {BackgroundColor3 = COLORS.ButtonClick}):Play()
+            end)
+            
+            button.MouseButton1Up:Connect(function()
+                TweenService:Create(button, TweenInfo.new(TWEEN_TIME/2), {BackgroundColor3 = COLORS.ButtonHover}):Play()
+            end)
         end
-    end)
-    
-    
-    minimize.MouseButton1Down:Connect(function()
-        if ScreenGui then
-            ScreenGui.Enabled = false
+        
+        setupButtonEffects(GetKeyButton)
+        setupButtonEffects(CheckKeyButton)
+        setupButtonEffects(PasteButton)
+        
+        -- Button functionality
+        GetKeyButton.MouseButton1Click:Connect(function()
+            copyLink()
+            StatusLabel.Text = "Link copied to clipboard!"
+            StatusLabel.TextColor3 = COLORS.Success
+            createNotification("Key link copied to clipboard! Visit the website to get your key.", "success")
+        end)
+        
+        CheckKeyButton.MouseButton1Click:Connect(function()
+            if KeyInput.Text == "" then
+                StatusLabel.Text = "Please enter a key first!"
+                StatusLabel.TextColor3 = COLORS.Error
+                createNotification("Please enter a key first!", "error")
+                return
+            end
+            
+            StatusLabel.Text = "Checking key..."
+            StatusLabel.TextColor3 = COLORS.Warning
+            createNotification("Checking your key...", "warning")
+            
+            if verifyKey(KeyInput.Text) then
+                StatusLabel.Text = "Success! Key verified."
+                StatusLabel.TextColor3 = COLORS.Success
+                createNotification("Key verified successfully! Loading script...", "success")
+                
+                -- Successful animation
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Success}):Play()
+                wait(1)
+                
+                -- Close GUI and load script
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0.5, 0, 1.5, 0)}):Play()
+                wait(0.5)
+                KeySystemGui:Destroy()
+                
+                loadstring(game:HttpGet(mainScript))()
+            else
+                StatusLabel.Text = "Invalid key. Please try again."
+                StatusLabel.TextColor3 = COLORS.Error
+                createNotification("Invalid key. Please check your key or get a new one.", "error")
+                
+                -- Error animation
+                local originalColor = MainFrame.BackgroundColor3
+                TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Error}):Play()
+                wait(0.1)
+                TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = originalColor}):Play()
+            end
+        end)
+        
+        PasteButton.MouseButton1Click:Connect(function()
+            -- Attempt to get clipboard contents
+            local success, clipboardContent = pcall(function()
+                if getclipboard then
+                    return getclipboard()
+                elseif readclipboard then
+                    return readclipboard()
+                end
+                return ""
+            end)
+            
+            if success and clipboardContent and clipboardContent ~= "" then
+                KeyInput.Text = clipboardContent
+                createNotification("Pasted from clipboard!", "success")
+            else
+                createNotification("Unable to access clipboard.", "error")
+            end
+        end)
+        
+        -- Exit and minimize button functionality with proper UI handling
+        ExitButton.MouseButton1Click:Connect(function()
+            TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0.5, 0, 1.5, 0)}):Play()
+            wait(0.5)
+            KeySystemGui:Destroy()
+        end)
+        
+        local minimized = false
+        MinimizeButton.MouseButton1Click:Connect(function()
+            minimized = not minimized
+            if minimized then
+                -- When minimizing, first hide the content
+                ContentFrame.Visible = false
+                -- Then animate the frame size
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 300, 0, 30)}):Play()
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 350, 0, 60)}):Play()
+            else
+                -- When expanding, first resize the frame
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 300, 0, 180)}):Play()
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Size = UDim2.new(0, 350, 0, 210)}):Play()
+                
+                -- Wait for animation to complete before showing content
+                wait(0.4)
+                ContentFrame.Visible = true
+            end
+        end)
+        
+-- Create tooltips function
+        local function createTooltip(parent, text)
+            local Tooltip = Instance.new("Frame")
+            local TooltipText = Instance.new("TextLabel")
+            local TooltipCorner = Instance.new("UICorner")
+            
+            Tooltip.Name = "Tooltip"
+            Tooltip.Parent = KeySystemGui
+            Tooltip.BackgroundColor3 = COLORS.TopBar
+            Tooltip.BorderSizePixel = 0
+            Tooltip.Position = UDim2.new(0, 0, 0, 0)
+            Tooltip.Size = UDim2.new(0, 0, 0, 0)  -- Start with zero size
+            Tooltip.ZIndex = 100
+            Tooltip.AutomaticSize = Enum.AutomaticSize.XY  -- Allow automatic sizing
+            Tooltip.Visible = false
+            
+            TooltipCorner.CornerRadius = UDim.new(0, 4)
+            TooltipCorner.Parent = Tooltip
+            
+            TooltipText.Name = "TooltipText"
+            TooltipText.Parent = Tooltip
+            TooltipText.BackgroundTransparency = 1
+            TooltipText.Position = UDim2.new(0, 5, 0, 5)
+            TooltipText.Size = UDim2.new(0, 0, 0, 0)
+            TooltipText.Font = FONT
+            TooltipText.Text = text
+            TooltipText.TextColor3 = COLORS.Text
+            TooltipText.TextSize = 12
+            TooltipText.ZIndex = 101
+            TooltipText.AutomaticSize = Enum.AutomaticSize.XY  -- Allow automatic sizing
+            
+            -- Show tooltip on hover
+            parent.MouseEnter:Connect(function()
+                Tooltip.Position = UDim2.new(0, UserInputService:GetMouseLocation().X + 15, 0, UserInputService:GetMouseLocation().Y - 15)
+                Tooltip.Visible = true
+            end)
+            
+            -- Hide tooltip when not hovering
+            parent.MouseLeave:Connect(function()
+                Tooltip.Visible = false
+            end)
+            
+            -- Update tooltip position during mouse movement
+            parent.MouseMoved:Connect(function()
+                if Tooltip.Visible then
+                    Tooltip.Position = UDim2.new(0, UserInputService:GetMouseLocation().X + 15, 0, UserInputService:GetMouseLocation().Y - 15)
+                end
+            end)
+            
+            return Tooltip
         end
+        
+        -- Add tooltips to buttons
+        createTooltip(GetKeyButton, "Get a key from the website")
+        createTooltip(CheckKeyButton, "Verify your key")
+        createTooltip(PasteButton, "Paste from clipboard")
+        
+        -- Fix the dragging functionality
+        local isDragging = false
+        local dragStart = nil
+        local startPos = nil
+        
+        TopBar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                isDragging = true
+                dragStart = input.Position
+                startPos = Shadow.Position
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement and isDragging then
+                local delta = input.Position - dragStart
+                TweenService:Create(Shadow, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {
+                    Position = UDim2.new(
+                        startPos.X.Scale,
+                        startPos.X.Offset + delta.X,
+                        startPos.Y.Scale,
+                        startPos.Y.Offset + delta.Y
+                    )
+                }):Play()
+            end
+        end)
+        
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                isDragging = false
+            end
+        end)
+        
+        -- FIX 1: Ensure contents are properly contained within the MainFrame when minimized
+        -- Modify the MinimizeButton.MouseButton1Click event to properly handle all UI elements
+        
+        local minimized = false
+        MinimizeButton.MouseButton1Click:Connect(function()
+            minimized = not minimized
+            if minimized then
+                -- When minimizing, properly hide all content
+                TweenService:Create(ContentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+                    Transparency = 1,
+                    Position = UDim2.new(0, 0, 0, 30) -- Keep position for animation
+                }):Play()
+                
+                -- Wait briefly for content to fade
+                wait(0.2)
+                
+                -- Now hide the ContentFrame and all its children
+                ContentFrame.Visible = false
+                
+                -- Animate the frame size reduction
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 300, 0, 30)
+                }):Play()
+                
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 350, 0, 60)
+                }):Play()
+                
+                -- Hide status label when minimized
+                StatusLabel.Visible = false
+            else
+                -- When expanding, first resize the frame
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 300, 0, 180)
+                }):Play()
+                
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {
+                    Size = UDim2.new(0, 350, 0, 210)
+                }):Play()
+                
+                -- Wait for animation to complete before showing content
+                wait(0.4)
+                
+                -- Now show the ContentFrame and animate its transparency
+                ContentFrame.Visible = true
+                ContentFrame.Transparency = 1
+                
+                TweenService:Create(ContentFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint), {
+                    Transparency = 0
+                }):Play()
+                
+                -- Show status label again
+                StatusLabel.Visible = true
+            end
+        end)
+        
+        -- FIX 2: Adjust ContentFrame and its child elements to ensure they stay within bounds
+        -- Set proper ClipsDescendants property
+        MainFrame.ClipsDescendants = true
+        ContentFrame.ClipsDescendants = true
+        
+        -- Adjust StatusLabel position to be inside MainFrame bounds
+        StatusLabel.Position = UDim2.new(0, 10, 1, -25)
+        StatusLabel.Size = UDim2.new(1, -20, 0, 20)
+        
+        -- Ensure buttons have proper position even when window is resized
+        GetKeyButton.Position = UDim2.new(0.1, 0, 0, 100)
+        GetKeyButton.Size = UDim2.new(0.8, 0, 0, 30)
+        GetKeyButton.AnchorPoint = Vector2.new(0, 0)
+        
+        CheckKeyButton.Position = UDim2.new(0.1, 0, 0, 140)
+        CheckKeyButton.Size = UDim2.new(0.8, 0, 0, 30) 
+        CheckKeyButton.AnchorPoint = Vector2.new(0, 0)
+        
+        -- Fix the key input field to ensure it stays within bounds
+        KeyInput.Position = UDim2.new(0.1, 0, 0, 60)
+        KeyInput.Size = UDim2.new(0.8, -35, 0, 30)
+        KeyInput.AnchorPoint = Vector2.new(0, 0)
+        
+        -- Properly position paste button to align with the key input
+        PasteButton.Position = UDim2.new(0.9, -5, 0, 60)
+        PasteButton.Size = UDim2.new(0, 30, 0, 30)
+        PasteButton.AnchorPoint = Vector2.new(0, 0)
+        
+        -- Set a proper initial key from saved key if available
+        if savedKey and savedKey ~= "" then
+            KeyInput.Text = savedKey
+        end
+        
+        -- Add pulse animation to the UI gradient for visual appeal
+        spawn(function()
+            local count = 0
+            while KeySystemGui.Parent do
+                count = count + 1
+                UIGradient.Offset = Vector2.new(count / 100 % 1, 0)
+                wait()
+            end
+        end)
+        
+        -- Create a loading indicator for key verification
+        local LoadingFrame = Instance.new("Frame")
+        local LoadingIcon = Instance.new("ImageLabel")
+        local LoadingText = Instance.new("TextLabel")
+        
+        LoadingFrame.Name = "LoadingFrame"
+        LoadingFrame.Parent = MainFrame
+        LoadingFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        LoadingFrame.BackgroundTransparency = 0.5
+        LoadingFrame.BorderSizePixel = 0
+        LoadingFrame.Size = UDim2.new(1, 0, 1, 0)
+        LoadingFrame.ZIndex = 10
+        LoadingFrame.Visible = false
+        
+        LoadingIcon.Name = "LoadingIcon"
+        LoadingIcon.Parent = LoadingFrame
+        LoadingIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+        LoadingIcon.BackgroundTransparency = 1
+        LoadingIcon.Position = UDim2.new(0.5, 0, 0.4, 0)
+        LoadingIcon.Size = UDim2.new(0, 30, 0, 30)
+        LoadingIcon.Image = "rbxassetid://4911211264" -- Loading spinner image
+        LoadingIcon.ZIndex = 11
+        
+        LoadingText.Name = "LoadingText"
+        LoadingText.Parent = LoadingFrame
+        LoadingText.AnchorPoint = Vector2.new(0.5, 0)
+        LoadingText.BackgroundTransparency = 1
+        LoadingText.Position = UDim2.new(0.5, 0, 0.6, 0)
+        LoadingText.Size = UDim2.new(0.8, 0, 0, 20)
+        LoadingText.Font = FONT
+        LoadingText.Text = "Verifying key..."
+        LoadingText.TextColor3 = COLORS.Text
+        LoadingText.TextSize = 14
+        LoadingText.ZIndex = 11
+        
+        -- Add rotation animation to the loading icon
+        spawn(function()
+            local rotationSpeed = 5
+            while KeySystemGui.Parent do 
+                if LoadingFrame.Visible then
+                    LoadingIcon.Rotation = (LoadingIcon.Rotation + rotationSpeed) % 360
+                end
+                RunService.Heartbeat:Wait()
+            end
+        end)
+        
+        -- Update the check key function to use loading animation
+        local originalCheckKeyFunction = CheckKeyButton.MouseButton1Click
+        CheckKeyButton.MouseButton1Click:Connect(function()
+            if KeyInput.Text == "" then
+                StatusLabel.Text = "Please enter a key first!"
+                StatusLabel.TextColor3 = COLORS.Error
+                createNotification("Please enter a key first!", "error")
+                return
+            end
+            
+            -- Show loading animation
+            LoadingFrame.Visible = true
+            
+            -- Short delay to allow animation to show
+            wait(0.1)
+            
+            if verifyKey(KeyInput.Text) then
+                LoadingFrame.Visible = false
+                StatusLabel.Text = "Success! Key verified."
+                StatusLabel.TextColor3 = COLORS.Success
+                createNotification("Key verified successfully! Loading script...", "success")
+                
+                -- Successful animation
+                TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Success}):Play()
+                wait(1)
+                
+                -- Close GUI and load script
+                TweenService:Create(Shadow, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(0.5, 0, 1.5, 0)}):Play()
+                wait(0.5)
+                KeySystemGui:Destroy()
+                
+                loadstring(game:HttpGet(mainScript))()
+            else
+                LoadingFrame.Visible = false
+                StatusLabel.Text = "Invalid key. Please try again."
+                StatusLabel.TextColor3 = COLORS.Error
+                createNotification("Invalid key. Please check your key or get a new one.", "error")
+                
+                -- Error animation
+                local originalColor = MainFrame.BackgroundColor3
+                TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = COLORS.Error}):Play()
+                wait(0.1)
+                TweenService:Create(MainFrame, TweenInfo.new(0.1, Enum.EasingStyle.Quint), {BackgroundColor3 = originalColor}):Play()
+            end
+        end)
     end)
-    
-end)
+
+    -- Let the main script run after GUI is set up
+    if savedKey and savedKey ~= "" then
+        onMessage("Verifying saved key...")
+        if verifyKey(savedKey) then
+            onMessage("Key verified! Loading...")
+            loadstring(game:HttpGet(mainScript))()
+            showGUI = false
+        else
+            onMessage("Invalid saved key")
+        end
+    end
+end
