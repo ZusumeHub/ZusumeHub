@@ -1,61 +1,46 @@
-local service = 3432; -- Set your Platoboost Id 
-local secret = "55acd596-9e84-4dbd-934e-9def6297d4d3"; -- Set Your Platoboost Api key
-local useNonce = true;
-local scriptUrl = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/opws"; -- Target script to execute
-local onMessage = function(message) game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = message; }) end;
-local savedKeyPath = "platoboost_key.dat"; -- File path for saved key
+
+local service = 3432;--Set your Platoboost Id 
+local secret = "55acd596-9e84-4dbd-934e-9def6297d4d3"; --Set Your Platoboost Api key
+local useNonce = true; 
+local onMessage = function(message)  game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", { Text = message; }) end;
+
 
 repeat task.wait(1) until game:IsLoaded() or game.Players.LocalPlayer;
 
+
 local requestSending = false;
-local fSetClipboard = setclipboard or toclipboard;
-local fRequest = request or http_request or (syn and syn.request);
-local fStringChar = string.char;
-local fToString = tostring;
-local fStringSub = string.sub;
-local fOsTime = os.time;
-local fMathRandom = math.random;
-local fMathFloor = math.floor;
-local fGetHwid = gethwid or function() return game:GetService("Players").LocalPlayer.UserId end;
-local fReadFile = readfile or function(path) return pcall(function() return readfile(path) end) end;
-local fWriteFile = writefile or function(path, content) return pcall(function() writefile(path, content) end) end;
-local fIsFile = isfile or function(path) return pcall(function() return isfile(path) end) end;
+local fSetClipboard, fRequest, fStringChar, fToString, fStringSub, fOsTime, fMathRandom, fMathFloor, fGetHwid = setclipboard or toclipboard, request or http_request, string.char, tostring, string.sub, os.time, math.random, math.floor, gethwid or function() return game:GetService("Players").LocalPlayer.UserId end
 local cachedLink, cachedTime = "", 0;
-local HttpService = game:GetService("HttpService");
-local screenGui = nil;
+local HttpService = game:GetService("HttpService")
 
 function lEncode(data)
-    return HttpService:JSONEncode(data);
+    return HttpService:JSONEncode(data)
 end
-
 function lDecode(data)
-    return HttpService:JSONDecode(data);
+    return HttpService:JSONDecode(data)
 end
-
 local function lDigest(input)
-    local inputStr = tostring(input);
+    local inputStr = tostring(input)
     
-    local hash = {};
+    
+    local hash = {}
     for i = 1, #inputStr do
-        table.insert(hash, string.byte(inputStr, i));
+        table.insert(hash, string.byte(inputStr, i))
     end
 
-    local hashHex = "";
+    local hashHex = ""
     for _, byte in ipairs(hash) do
-        hashHex = hashHex .. string.format("%02x", byte);
+        hashHex = hashHex .. string.format("%02x", byte)
     end
     
-    return hashHex;
+    return hashHex
 end
-
--- Initialize API host
 local host = "https://api.platoboost.com";
 local hostResponse = fRequest({
     Url = host .. "/public/connectivity",
     Method = "GET"
 });
-
-if hostResponse.StatusCode ~= 200 and hostResponse.StatusCode ~= 429 then
+if hostResponse.StatusCode ~= 200 or hostResponse.StatusCode ~= 429 then
     host = "https://api.platoboost.net";
 end
 
@@ -85,7 +70,7 @@ function cacheLink()
                 return false, decoded.message;
             end
         elseif response.StatusCode == 429 then
-            local msg = "You are being rate limited, please wait 20 seconds and try again.";
+            local msg = "you are being rate limited, please wait 20 seconds and try again.";
             onMessage(msg);
             return false, msg;
         end
@@ -98,23 +83,24 @@ function cacheLink()
     end
 end
 
--- Initialize
+
+
 cacheLink();
 
 local generateNonce = function()
-    local str = "";
+    local str = ""
     for _ = 1, 16 do
-        str = str .. fStringChar(fMathFloor(fMathRandom() * (122 - 97 + 1)) + 97);
+        str = str .. fStringChar(fMathFloor(fMathRandom() * (122 - 97 + 1)) + 97)
     end
-    return str;
+    return str
 end
 
--- Anti-tamper check
+
 for _ = 1, 5 do
     local oNonce = generateNonce();
     task.wait(0.2)
     if generateNonce() == oNonce then
-        local msg = "PlatoBoost nonce error.";
+        local msg = "platoboost nonce error.";
         onMessage(msg);
         error(msg);
     end
@@ -124,34 +110,9 @@ local copyLink = function()
     local success, link = cacheLink();
     
     if success then
-        print("SetClipBoard");
+        print("SetClipBoard")
         fSetClipboard(link);
-        return link;
     end
-    return nil;
-end
-
-local saveKeyToFile = function(key, expireTime)
-    local data = {
-        key = key,
-        expires = expireTime
-    };
-    local success = fWriteFile(savedKeyPath, lEncode(data));
-    return success;
-end
-
-local loadKeyFromFile = function()
-    local success, fileData = fIsFile(savedKeyPath);
-    if success then
-        success, fileData = fReadFile(savedKeyPath);
-        if success then
-            local data = lDecode(fileData);
-            if data and data.key and data.expires and data.expires > fOsTime() then
-                return data.key, data.expires;
-            end
-        end
-    end
-    return nil, nil;
 end
 
 local redeemKey = function(key)
@@ -161,7 +122,7 @@ local redeemKey = function(key)
     local body = {
         identifier = lDigest(fGetHwid()),
         key = key
-    };
+    }
 
     if useNonce then
         body.nonce = nonce;
@@ -182,45 +143,41 @@ local redeemKey = function(key)
             if decoded.data.valid == true then
                 if useNonce then
                     if decoded.data.hash == lDigest("true" .. "-" .. nonce .. "-" .. secret) then
-                        -- Save the key with expiration time (24 hours from now)
-                        local expireTime = fOsTime() + (24 * 60 * 60);
-                        saveKeyToFile(key, expireTime);
-                        return true, expireTime;
+                        return true;
                     else
-                        onMessage("Failed to verify integrity.");
-                        return false, nil;
+                        onMessage("failed to verify integrity.");
+                        return false;
                     end    
                 else
-                    local expireTime = fOsTime() + (24 * 60 * 60);
-                    saveKeyToFile(key, expireTime);
-                    return true, expireTime;
+                    return true;
                 end
             else
-                onMessage("Key is invalid.");
-                return false, nil;
+                onMessage("key is invalid.");
+                return false;
             end
         else
             if fStringSub(decoded.message, 1, 27) == "unique constraint violation" then
-                onMessage("You already have an active key, please wait for it to expire before redeeming it.");
-                return false, nil;
+                onMessage("you already have an active key, please wait for it to expire before redeeming it.");
+                return false;
             else
                 onMessage(decoded.message);
-                return false, nil;
+                return false;
             end
         end
     elseif response.StatusCode == 429 then
-        onMessage("You are being rate limited, please wait 20 seconds and try again.");
-        return false, nil;
+        onMessage("you are being rate limited, please wait 20 seconds and try again.");
+        return false;
     else
-        onMessage("Server returned an invalid status code, please try again later.");
-        return false, nil; 
+        onMessage("server returned an invalid status code, please try again later.");
+        return false; 
     end
 end
 
+
 local verifyKey = function(key)
     if requestSending == true then
-        onMessage("A request is already being sent, please slow down.");
-        return false, nil;
+        onMessage("a request is already being sent, please slow down.");
+        return false;
     else
         requestSending = true;
     end
@@ -242,30 +199,32 @@ local verifyKey = function(key)
         local decoded = lDecode(response.Body);
         if decoded.success == true then
             if decoded.data.valid == true then
-                -- Save the key with expiration time
-                local expireTime = fOsTime() + (24 * 60 * 60);
-                saveKeyToFile(key, expireTime);
-                return true, expireTime;
+                if useNonce then
+                    return true;
+                else
+                    return true;
+                end
             else
                 if fStringSub(key, 1, 4) == "FREE_" then
                     return redeemKey(key);
                 else
-                    onMessage("Key is invalid.");
-                    return false, nil;
+                    onMessage("key is invalid.");
+                    return false;
                 end
             end
         else
             onMessage(decoded.message);
-            return false, nil;
+            return false;
         end
     elseif response.StatusCode == 429 then
-        onMessage("You are being rate limited, please wait 20 seconds and try again.");
-        return false, nil;
+        onMessage("you are being rate limited, please wait 20 seconds and try again.");
+        return false;
     else
-        onMessage("Server returned an invalid status code, please try again later.");
-        return false, nil;
+        onMessage("server returned an invalid status code, please try again later.");
+        return false;
     end
 end
+
 
 local getFlag = function(name)
     local nonce = generateNonce();
@@ -287,7 +246,7 @@ local getFlag = function(name)
                 if decoded.data.hash == lDigest(fToString(decoded.data.value) .. "-" .. nonce .. "-" .. secret) then
                     return decoded.data.value;
                 else
-                    onMessage("Failed to verify integrity.");
+                    onMessage("failed to verify integrity.");
                     return nil;
                 end
             else
@@ -302,350 +261,172 @@ local getFlag = function(name)
     end
 end
 
--- Check if we have a saved key and load the script if it's valid
-local savedKey, expireTime = loadKeyFromFile();
-if savedKey then
-    print("Found saved key that expires in " .. tostring(expireTime - fOsTime()) .. " seconds");
-    local keyValid, _ = verifyKey(savedKey);
-    if keyValid then
-        print("Saved key verified successfully! Loading script...");
-        loadstring(game:HttpGet(scriptUrl))();
-        return; -- Exit early, no need to show GUI
-    else
-        print("Saved key is invalid or expired. Showing key input GUI.");
-    end
-end
-
--- Create the GUI if no saved key or saved key is invalid
 task.spawn(function()
-    -- Create GUI
-    if screenGui then
-        screenGui:Destroy();
-    end
+    local ScreenGui = Instance.new("ScreenGui")
+    local Frame = Instance.new("Frame")
+    local Topbar = Instance.new("Frame")
+    local Exit = Instance.new("TextButton")
+    local minimize = Instance.new("TextButton")
+    local Frame_2 = Instance.new("Frame")
+    local Getkey = Instance.new("TextButton")
+    local Checkkey = Instance.new("TextButton")
+    local TextBox = Instance.new("TextBox")
+    local TextLabel = Instance.new("TextLabel")
     
-    screenGui = Instance.new("ScreenGui");
-    screenGui.Name = "PlatoBoostKeySystem";
-    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui");
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
+
+    ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    local mainFrame = Instance.new("Frame");
-    mainFrame.Name = "MainFrame";
-    mainFrame.Parent = screenGui;
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30);
-    mainFrame.BorderColor3 = Color3.fromRGB(60, 60, 255);
-    mainFrame.BorderSizePixel = 2;
-    mainFrame.Position = UDim2.new(0.5, -180, 0.5, -120);
-    mainFrame.Size = UDim2.new(0, 360, 0, 240);
-    mainFrame.ClipsDescendants = true;
+    Frame.Parent = ScreenGui
+    Frame.BackgroundColor3 = Color3.fromRGB(76, 76, 76)
+    Frame.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Frame.BorderSizePixel = 0
+    Frame.Position = UDim2.new(0.286729872, 0, 0.295880139, 0)
+    Frame.Size = UDim2.new(0, 359, 0, 217)
     
-    -- Add dropshadow
-    local uiGradient = Instance.new("UIGradient");
-    uiGradient.Parent = mainFrame;
-    uiGradient.Rotation = 45;
-    uiGradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, 0),
-        NumberSequenceKeypoint.new(1, 0.15)
-    });
+    Topbar.Name = "Topbar"
+    Topbar.Parent = Frame
+    Topbar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Topbar.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Topbar.BorderSizePixel = 0
+    Topbar.Size = UDim2.new(0, 359, 0, 27)
     
-    -- Top bar
-    local topBar = Instance.new("Frame");
-    topBar.Name = "TopBar";
-    topBar.Parent = mainFrame;
-    topBar.BackgroundColor3 = Color3.fromRGB(15, 15, 20);
-    topBar.BorderColor3 = Color3.fromRGB(0, 0, 0);
-    topBar.BorderSizePixel = 0;
-    topBar.Size = UDim2.new(1, 0, 0, 30);
+    Exit.Name = "Exit"
+    Exit.Parent = Topbar
+    Exit.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    Exit.BackgroundTransparency = 0.300
+    Exit.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Exit.BorderSizePixel = 0
+    Exit.Position = UDim2.new(0.905292451, 0, 0.111111112, 0)
+    Exit.Size = UDim2.new(0, 25, 0, 20)
+    Exit.Font = Enum.Font.SourceSans
+    Exit.Text = "X"
+    Exit.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Exit.TextScaled = true
+    Exit.TextSize = 14.000
+    Exit.TextWrapped = true
     
-    -- Add title
-    local titleLabel = Instance.new("TextLabel");
-    titleLabel.Name = "TitleLabel";
-    titleLabel.Parent = topBar;
-    titleLabel.BackgroundTransparency = 1;
-    titleLabel.Position = UDim2.new(0, 10, 0, 0);
-    titleLabel.Size = UDim2.new(0, 200, 1, 0);
-    titleLabel.Font = Enum.Font.GothamBold;
-    titleLabel.Text = "PlatoBoost Key System";
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
-    titleLabel.TextSize = 16;
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left;
+    minimize.Name = "minimize"
+    minimize.Parent = Topbar
+    minimize.BackgroundColor3 = Color3.fromRGB(85, 255, 0)
+    minimize.BackgroundTransparency = 0.300
+    minimize.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    minimize.BorderSizePixel = 0
+    minimize.Position = UDim2.new(0.810584962, 0, 0.111111112, 0)
+    minimize.Size = UDim2.new(0, 25, 0, 20)
+    minimize.Font = Enum.Font.SourceSans
+    minimize.Text = "-"
+    minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
+    minimize.TextScaled = true
+    minimize.TextSize = 14.000
+    minimize.TextWrapped = true
     
-    -- Exit button
-    local exitButton = Instance.new("TextButton");
-    exitButton.Name = "ExitButton";
-    exitButton.Parent = topBar;
-    exitButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60);
-    exitButton.BorderSizePixel = 0;
-    exitButton.Position = UDim2.new(1, -30, 0, 5);
-    exitButton.Size = UDim2.new(0, 20, 0, 20);
-    exitButton.Font = Enum.Font.GothamBold;
-    exitButton.Text = "X";
-    exitButton.TextColor3 = Color3.fromRGB(255, 255, 255);
-    exitButton.TextSize = 14;
+    Frame_2.Parent = Frame
+    Frame_2.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Frame_2.BackgroundTransparency = 1.000
+    Frame_2.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Frame_2.BorderSizePixel = 0
+    Frame_2.Position = UDim2.new(0, 0, 0.124423966, 0)
+    Frame_2.Size = UDim2.new(0, 359, 0, 189)
     
-    -- Minimize button
-    local minimizeButton = Instance.new("TextButton");
-    minimizeButton.Name = "MinimizeButton";
-    minimizeButton.Parent = topBar;
-    minimizeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 255);
-    minimizeButton.BorderSizePixel = 0;
-    minimizeButton.Position = UDim2.new(1, -60, 0, 5);
-    minimizeButton.Size = UDim2.new(0, 20, 0, 20);
-    minimizeButton.Font = Enum.Font.GothamBold;
-    minimizeButton.Text = "-";
-    minimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255);
-    minimizeButton.TextSize = 16;
+    Getkey.Name = "Getkey"
+    Getkey.Parent = Frame_2
+    Getkey.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Getkey.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Getkey.BorderSizePixel = 0
+    Getkey.Position = UDim2.new(0.317548752, 0, 0.523809552, 0)
+    Getkey.Size = UDim2.new(0, 130, 0, 32)
+    Getkey.Font = Enum.Font.SourceSans
+    Getkey.Text = "Getkey"
+    Getkey.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Getkey.TextScaled = true
+    Getkey.TextSize = 14.000
+    Getkey.TextWrapped = true
     
-    -- Content frame
-    local contentFrame = Instance.new("Frame");
-    contentFrame.Name = "ContentFrame";
-    contentFrame.Parent = mainFrame;
-    contentFrame.BackgroundTransparency = 1;
-    contentFrame.Position = UDim2.new(0, 0, 0, 30);
-    contentFrame.Size = UDim2.new(1, 0, 1, -30);
+    Checkkey.Name = "Checkkey"
+    Checkkey.Parent = Frame_2
+    Checkkey.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    Checkkey.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    Checkkey.BorderSizePixel = 0
+    Checkkey.Position = UDim2.new(0.317548752, 0, 0.767195761, 0)
+    Checkkey.Size = UDim2.new(0, 130, 0, 32)
+    Checkkey.Font = Enum.Font.SourceSans
+    Checkkey.Text = "CheckKey"
+    Checkkey.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Checkkey.TextScaled = true
+    Checkkey.TextSize = 14.000
+    Checkkey.TextWrapped = true
     
-    -- Title description
-    local descriptionLabel = Instance.new("TextLabel");
-    descriptionLabel.Name = "DescriptionLabel";
-    descriptionLabel.Parent = contentFrame;
-    descriptionLabel.BackgroundTransparency = 1;
-    descriptionLabel.Position = UDim2.new(0, 30, 0, 10);
-    descriptionLabel.Size = UDim2.new(1, -60, 0, 20);
-    descriptionLabel.Font = Enum.Font.Gotham;
-    descriptionLabel.Text = "Enter your key to access the script";
-    descriptionLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
-    descriptionLabel.TextSize = 14;
+    TextBox.Parent = Frame_2
+    TextBox.BackgroundColor3 = Color3.fromRGB(139, 139, 139)
+    TextBox.BackgroundTransparency = 0.600
+    TextBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    TextBox.BorderSizePixel = 0
+    TextBox.Position = UDim2.new(0.0779944286, 0, 0.137566134, 0)
+    TextBox.Size = UDim2.new(0, 304, 0, 42)
+    TextBox.Font = Enum.Font.SourceSans
+    TextBox.Text = ""
+    TextBox.TextTransparency = 1
+    TextBox.TextColor3 = Color3.fromRGB(0, 0, 0)
+    TextBox.TextScaled = true
+    TextBox.TextSize = 14.000
+    TextBox.TextWrapped = true
     
-    -- Key input box
-    local keyBox = Instance.new("TextBox");
-    keyBox.Name = "KeyBox";
-    keyBox.Parent = contentFrame;
-    keyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 45);
-    keyBox.BorderColor3 = Color3.fromRGB(60, 60, 255);
-    keyBox.BorderSizePixel = 1;
-    keyBox.Position = UDim2.new(0, 30, 0, 40);
-    keyBox.Size = UDim2.new(1, -60, 0, 40);
-    keyBox.Font = Enum.Font.Gotham;
-    keyBox.PlaceholderText = "Enter your key here...";
-    keyBox.Text = "";
-    keyBox.TextColor3 = Color3.fromRGB(255, 255, 255);
-    keyBox.TextSize = 14;
-    keyBox.ClearTextOnFocus = false;
+    TextLabel.Parent = Frame_2
+    TextLabel.BackgroundColor3 = Color3.fromRGB(211, 211, 211)
+    TextLabel.BackgroundTransparency = 1.000
+    TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+    TextLabel.BorderSizePixel = 0
+    TextLabel.Position = UDim2.new(0.0779944286, 0, 0.137566134, 0)
+    TextLabel.Size = UDim2.new(0, 304, 0, 42)
+    TextLabel.ZIndex = 2
+    TextLabel.Font = Enum.Font.SourceSans
+    TextLabel.Text = "In Put Your Key"
+    TextLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
+    TextLabel.TextScaled = true
+    TextLabel.TextSize = 14.000
+    TextLabel.TextStrokeTransparency = 0.830
+    TextLabel.TextTransparency = 0.550
+    TextLabel.TextWrapped = true
     
-    -- Status label
-    local statusLabel = Instance.new("TextLabel");
-    statusLabel.Name = "StatusLabel";
-    statusLabel.Parent = contentFrame;
-    statusLabel.BackgroundTransparency = 1;
-    statusLabel.Position = UDim2.new(0, 30, 0, 90);
-    statusLabel.Size = UDim2.new(1, -60, 0, 20);
-    statusLabel.Font = Enum.Font.GothamBold;
-    statusLabel.Text = "";
-    statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
-    statusLabel.TextSize = 14;
     
-    -- Get Key button
-    local getKeyButton = Instance.new("TextButton");
-    getKeyButton.Name = "GetKeyButton";
-    getKeyButton.Parent = contentFrame;
-    getKeyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 255);
-    getKeyButton.BorderSizePixel = 0;
-    getKeyButton.Position = UDim2.new(0, 30, 0, 120);
-    getKeyButton.Size = UDim2.new(0.5, -45, 0, 40);
-    getKeyButton.Font = Enum.Font.GothamBold;
-    getKeyButton.Text = "GET KEY";
-    getKeyButton.TextColor3 = Color3.fromRGB(255, 255, 255);
-    getKeyButton.TextSize = 16;
     
-    -- Check Key button
-    local checkKeyButton = Instance.new("TextButton");
-    checkKeyButton.Name = "CheckKeyButton";
-    checkKeyButton.Parent = contentFrame;
-    checkKeyButton.BackgroundColor3 = Color3.fromRGB(60, 255, 60);
-    checkKeyButton.BorderSizePixel = 0;
-    checkKeyButton.Position = UDim2.new(0.5, 15, 0, 120);
-    checkKeyButton.Size = UDim2.new(0.5, -45, 0, 40);
-    checkKeyButton.Font = Enum.Font.GothamBold;
-    checkKeyButton.Text = "CHECK KEY";
-    checkKeyButton.TextColor3 = Color3.fromRGB(0, 0, 0);
-    checkKeyButton.TextSize = 16;
     
-    -- Add UI corner to buttons
-    for _, button in pairs({getKeyButton, checkKeyButton, exitButton, minimizeButton}) do
-        local uiCorner = Instance.new("UICorner");
-        uiCorner.CornerRadius = UDim.new(0, 4);
-        uiCorner.Parent = button;
-    end
-    
-    -- Add UI corner to input box
-    local boxCorner = Instance.new("UICorner");
-    boxCorner.CornerRadius = UDim.new(0, 4);
-    boxCorner.Parent = keyBox;
-    
-    -- Add UI corner to main frame
-    local frameCorner = Instance.new("UICorner");
-    frameCorner.CornerRadius = UDim.new(0, 6);
-    frameCorner.Parent = mainFrame;
-    
-    -- Footer text
-    local footerLabel = Instance.new("TextLabel");
-    footerLabel.Name = "FooterLabel";
-    footerLabel.Parent = contentFrame;
-    footerLabel.BackgroundTransparency = 1;
-    footerLabel.Position = UDim2.new(0, 0, 1, -30);
-    footerLabel.Size = UDim2.new(1, 0, 0, 20);
-    footerLabel.Font = Enum.Font.Gotham;
-    footerLabel.Text = "Optimized for Xeno Executor";
-    footerLabel.TextColor3 = Color3.fromRGB(150, 150, 150);
-    footerLabel.TextSize = 12;
-    
-    -- Make frame draggable
-    local isDragging = false;
-    local dragInput;
-    local dragStart;
-    local startPos;
-    
-    local function updateDrag(input)
-        local delta = input.Position - dragStart;
-        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y);
-    end
-    
-    topBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isDragging = true;
-            dragStart = input.Position;
-            startPos = mainFrame.Position;
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    isDragging = false;
-                end
-            end)
-        end
-    end)
-    
-    topBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input;
-        end
-    end)
-    
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if input == dragInput and isDragging then
-            updateDrag(input);
-        end
-    end)
-    
-    -- Button functionality
-    checkKeyButton.MouseButton1Click:Connect(function()
-        if keyBox.Text == "" then
-            statusLabel.Text = "Please enter a key!";
-            statusLabel.TextColor3 = Color3.fromRGB(255, 60, 60);
-            return;
-        end
-        
-        statusLabel.Text = "Checking key...";
-        statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255);
-        
-        local verify, expireTime = verifyKey(keyBox.Text);
-        if verify then
-            statusLabel.Text = "Correct key! Loading script...";
-            statusLabel.TextColor3 = Color3.fromRGB(60, 255, 60);
-            
-            -- Animate success
-            for i = 1, 5 do
-                keyBox.BorderColor3 = Color3.fromRGB(60, 255, 60);
-                task.wait(0.1);
-                keyBox.BorderColor3 = Color3.fromRGB(60, 60, 255);
-                task.wait(0.1);
-            end
-            
-            task.wait(1);
-            screenGui:Destroy();
-            loadstring(game:HttpGet(scriptUrl))();
+    TextBox:GetPropertyChangedSignal("Text"):Connect(function(text)
+        if TextBox.Text == "" then
+            TextLabel.Text =  "In Put Your Key"
         else
-            statusLabel.Text = "Incorrect key!";
-            statusLabel.TextColor3 = Color3.fromRGB(255, 60, 60);
-            
-            -- Animate failure
-            for i = 1, 3 do
-                keyBox.BorderColor3 = Color3.fromRGB(255, 60, 60);
-                task.wait(0.1);
-                keyBox.BorderColor3 = Color3.fromRGB(60, 60, 255);
-                task.wait(0.1);
-            end
+            TextLabel.Text = TextBox.Text
         end
     end)
     
-    getKeyButton.MouseButton1Click:Connect(function()
-        local link = copyLink();
-        if link then
-            statusLabel.Text = "Link copied to clipboard!";
-            statusLabel.TextColor3 = Color3.fromRGB(60, 255, 60);
+    Checkkey.MouseButton1Down:Connect(function() 
+        if TextBox and TextBox.Text then
             
-            -- Open link if supported
-            if syn and syn.open_url then
-                syn.open_url(link);
-            elseif Xeno and Xeno.open_url then
-                Xeno.open_url(link);
-            end
-        else
-            statusLabel.Text = "Failed to get link!";
-            statusLabel.TextColor3 = Color3.fromRGB(255, 60, 60);
+            local Verify = verifyKey(TextBox.Text)
+            if Verify then
+                loadstring(game:HttpGet("https://pastebin.com/raw/DTrES0c6"))()
+            else
+                print("Key Is in valid")
+            end 
+        end	
+    end)
+    
+    Getkey.MouseButton1Down:Connect(function() 
+        copyLink()
+    end)
+    
+    Exit.MouseButton1Down:Connect(function()
+        if ScreenGui then
+            ScreenGui:Destroy()
         end
     end)
     
-    exitButton.MouseButton1Click:Connect(function()
-        screenGui:Destroy();
+    
+    minimize.MouseButton1Down:Connect(function()
+        if ScreenGui then
+            ScreenGui.Enabled = false
+        end
     end)
     
-    minimizeButton.MouseButton1Click:Connect(function()
-        screenGui.Enabled = false;
-        
-        -- Create a small button to restore the GUI
-        local restoreGui = Instance.new("ScreenGui");
-        restoreGui.Name = "RestorePlatoBoostGUI";
-        restoreGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui");
-        
-        local restoreButton = Instance.new("TextButton");
-        restoreButton.Name = "RestoreButton";
-        restoreButton.Parent = restoreGui;
-        restoreButton.Position = UDim2.new(0, 10, 0, 10);
-        restoreButton.Size = UDim2.new(0, 180, 0, 30);
-        restoreButton.BackgroundColor3 = Color3.fromRGB(25, 25, 30);
-        restoreButton.BorderColor3 = Color3.fromRGB(60, 60, 255);
-        restoreButton.BorderSizePixel = 2;
-        restoreButton.Font = Enum.Font.GothamBold;
-        restoreButton.Text = "Restore Key System";
-        restoreButton.TextColor3 = Color3.fromRGB(255, 255, 255);
-        restoreButton.TextSize = 14;
-        
-        local buttonCorner = Instance.new("UICorner");
-        buttonCorner.CornerRadius = UDim.new(0, 4);
-        buttonCorner.Parent = restoreButton;
-        
-        restoreButton.MouseButton1Click:Connect(function()
-            screenGui.Enabled = true;
-            restoreGui:Destroy();
-        end);
-    end);
-    
-    -- Add hover effects
-    local function addButtonHoverEffect(button, originalColor)
-        button.MouseEnter:Connect(function()
-            button.BackgroundColor3 = Color3.fromRGB(
-                math.min(originalColor.R * 1.2 * 255, 255),
-                math.min(originalColor.G * 1.2 * 255, 255),
-                math.min(originalColor.B * 1.2 * 255, 255)
-            );
-        end);
-        
-        button.MouseLeave:Connect(function()
-            button.BackgroundColor3 = originalColor;
-        end);
-    end
-    
-    addButtonHoverEffect(getKeyButton, Color3.fromRGB(60, 60, 255));
-    addButtonHoverEffect(checkKeyButton, Color3.fromRGB(60, 255, 60));
-    addButtonHoverEffect(exitButton, Color3.fromRGB(255, 60, 60));
-    addButtonHoverEffect(minimizeButton, Color3.fromRGB(60, 60, 255));
-end);
+end)
