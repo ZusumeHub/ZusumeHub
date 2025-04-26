@@ -160,7 +160,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     return sectionLabel, separator
 end
 
--- Function to create custom checkbox with auto-apply
+-- Function to create custom checkbox with auto-apply (Option 1: Checkbox on left, Label on right)
 function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name .. "Container"
@@ -172,7 +172,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxBG = Instance.new("Frame")
     checkboxBG.Name = "Background"
     checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(0, 0, 0.5, -10)
+    checkboxBG.Position = UDim2.new(0, 0, 0.5, -10) -- Checkbox on the left
     checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     checkboxBG.BorderSizePixel = 0
     checkboxBG.Parent = checkboxContainer
@@ -198,7 +198,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxLabel = Instance.new("TextLabel")
     checkboxLabel.Name = "Label"
     checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 28, 0, 0)
+    checkboxLabel.Position = UDim2.new(0, 28, 0, 0) -- Label to the right of the checkbox (20px width + 8px gap)
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
@@ -245,58 +245,58 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     return checkboxContainer, function() return checked end
 end
 
--- Updated Text Input Function
+-- Updated Text Input Function (Option 1: Input on left, Label on right)
 function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
     -- Container for the whole input element
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = name .. "Container"
-    inputContainer.Size = UDim2.new(0.9, 0, 0, 30) -- Slightly larger than checkbox (28px) for better visual balance
+    inputContainer.Size = UDim2.new(0.9, 0, 0, 30)
     inputContainer.Position = position
     inputContainer.BackgroundTransparency = 1
     inputContainer.Parent = parent
     
-    -- Label (aligned to the left like checkbox)
-    local inputLabel = Instance.new("TextLabel")
-    inputLabel.Name = "Label"
-    inputLabel.Size = UDim2.new(0, 150, 1, 0) -- Matches the width of checkbox label for alignment
-    inputLabel.Position = UDim2.new(0, 0, 0, 0) -- Positioned on the left
-    inputLabel.BackgroundTransparency = 1
-    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    inputLabel.TextSize = 14 -- Matches checkbox label size
-    inputLabel.Font = FONT -- Same font as the rest of the UI
-    inputLabel.Text = labelText
-    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
-    inputLabel.Parent = inputContainer
-    
-    -- Input Box Background (smaller and more precise)
+    -- Input Box Background (on the left)
     local inputBG = Instance.new("Frame")
     inputBG.Name = "Background"
-    inputBG.Size = UDim2.new(0, 60, 0, 24) -- Smaller width (60px) and height (24px) for a cleaner look
-    inputBG.Position = UDim2.new(0, 155, 0.5, -12) -- Positioned to the right of the label, vertically centered
+    inputBG.Size = UDim2.new(0, 60, 0, 24)
+    inputBG.Position = UDim2.new(0, 0, 0.5, -12) -- Input on the left
     inputBG.BackgroundColor3 = COLORS.Input
     inputBG.BorderSizePixel = 0
     inputBG.Parent = inputContainer
     
     -- Round the corners of the input box
     local inputCorner = Instance.new("UICorner")
-    inputCorner.CornerRadius = UDim.new(0, 5) -- Matches the checkbox corner radius
+    inputCorner.CornerRadius = UDim.new(0, 5)
     inputCorner.Parent = inputBG
     
     -- The actual TextBox
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
-    textBox.Size = UDim2.new(0.9, 0, 0.8, 0) -- Slightly smaller than the background for padding
-    textBox.Position = UDim2.new(0.05, 0, 0.1, 0) -- Centered within the background
+    textBox.Size = UDim2.new(0.9, 0, 0.8, 0)
+    textBox.Position = UDim2.new(0.05, 0, 0.1, 0)
     textBox.BackgroundTransparency = 1
     textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textBox.TextSize = 14 -- Matches the label and checkbox font size
-    textBox.Font = FONT -- Same font as the rest of the UI
+    textBox.TextSize = 14
+    textBox.Font = FONT
     textBox.Text = tostring(defaultValue)
     textBox.PlaceholderText = "Enter value..."
     textBox.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
     textBox.TextXAlignment = Enum.TextXAlignment.Center
     textBox.ClearTextOnFocus = false
     textBox.Parent = inputBG
+    
+    -- Label (to the right of the input)
+    local inputLabel = Instance.new("TextLabel")
+    inputLabel.Name = "Label"
+    inputLabel.Size = UDim2.new(0, 150, 1, 0)
+    inputLabel.Position = UDim2.new(0, 68, 0, 0) -- Label to the right (60px width + 8px gap)
+    inputLabel.BackgroundTransparency = 1
+    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    inputLabel.TextSize = 14
+    inputLabel.Font = FONT
+    inputLabel.Text = labelText
+    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
+    inputLabel.Parent = inputContainer
     
     -- Store the current value
     local currentValue = defaultValue
@@ -319,13 +319,11 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
         
         if enterPressed then
             local newValue = textBox.Text
-            -- Try to convert to number if possible
             local numValue = tonumber(newValue)
             if numValue then
                 newValue = numValue
             end
             
-            -- Only call onChange if the value actually changed
             if newValue ~= currentValue then
                 currentValue = newValue
                 if onChange then
@@ -333,12 +331,10 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
                 end
             end
         else
-            -- Revert to current value if user didn't press enter
             textBox.Text = tostring(currentValue)
         end
     end)
     
-    -- Return the container and functions to get/set the value
     return inputContainer, {
         getValue = function() return currentValue end,
         setValue = function(value)
@@ -369,7 +365,6 @@ function TeleportGUILibrary.createNotification(message, type)
     local StatusBar = Instance.new("Frame")
     local StatusBarCorner = Instance.new("UICorner")
     
-    -- Configure notification GUI
     NotifGui.Name = "TeleportNotification"
     NotifGui.DisplayOrder = 999
     NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -429,10 +424,8 @@ function TeleportGUILibrary.createNotification(message, type)
     StatusBarCorner.Parent = StatusBar
     StatusBarCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Animate notification
     TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
     
-    -- Create countdown tween
     local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
     statusTween:Play()
     
@@ -459,21 +452,18 @@ local dragStart
 local startPos
 local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
 
--- Function to update drag position
 local function updateDrag(input)
     local delta = input.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
--- Function to disable camera movement
 local function disableCamera(actionName, inputState, inputObject)
     if dragging then
-        return Enum.ContextActionResult.Sink -- Consume the input to prevent camera movement
+        return Enum.ContextActionResult.Sink
     end
     return Enum.ContextActionResult.Pass
 end
 
--- Dragging for PC (Mouse)
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -500,12 +490,10 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
--- Dragging for Mobile (Touch)
 if isMobile then
     local touchConnection
     local touchEndedConnection
 
-    -- Bind action to disable camera movement during drag
     ContextActionService:BindAction("DisableCameraMovement", disableCamera, false, Enum.UserInputType.Touch)
 
     TopBar.InputBegan:Connect(function(input)
@@ -514,14 +502,12 @@ if isMobile then
             dragStart = input.Position
             startPos = MainFrame.Position
 
-            -- Handle touch movement
             touchConnection = UIS.TouchMoved:Connect(function(touchInput)
                 if touchInput == input and dragging then
                     updateDrag(touchInput)
                 end
             end)
 
-            -- Clean up when touch ends
             touchEndedConnection = UIS.TouchEnded:Connect(function(touchInput)
                 if touchInput == input then
                     dragging = false
@@ -536,7 +522,6 @@ if isMobile then
         end
     end)
 
-    -- Unbind the action when the GUI is destroyed
     ScreenGui.AncestryChanged:Connect(function()
         if not ScreenGui:IsDescendantOf(game) then
             ContextActionService:UnbindAction("DisableCameraMovement")
@@ -548,12 +533,10 @@ end
 local isMinimized = false
 local originalSize = MainFrame.Size
 
--- Close GUI function
 CloseButton.MouseButton1Click:Connect(function()
     ScreenGui.Enabled = false
 end)
 
--- Minimize function
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
         MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
@@ -570,7 +553,6 @@ MinimizeButton.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
 end)
 
--- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
 UIS.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.M then
         ScreenGui.Enabled = not ScreenGui.Enabled
