@@ -245,51 +245,52 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     return checkboxContainer, function() return checked end
 end
 
--- NEW FEATURE: Text Input with label
+-- Updated Text Input Function
 function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
     -- Container for the whole input element
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = name .. "Container"
-    inputContainer.Size = UDim2.new(0.9, 0, 0, 32)
+    inputContainer.Size = UDim2.new(0.9, 0, 0, 30) -- Slightly larger than checkbox (28px) for better visual balance
     inputContainer.Position = position
     inputContainer.BackgroundTransparency = 1
     inputContainer.Parent = parent
     
-    -- Label
+    -- Label (aligned to the left like checkbox)
     local inputLabel = Instance.new("TextLabel")
     inputLabel.Name = "Label"
-    inputLabel.Size = UDim2.new(0.5, -10, 1, 0)
+    inputLabel.Size = UDim2.new(0, 150, 1, 0) -- Matches the width of checkbox label for alignment
+    inputLabel.Position = UDim2.new(0, 0, 0, 0) -- Positioned on the left
     inputLabel.BackgroundTransparency = 1
     inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    inputLabel.TextSize = 14
-    inputLabel.Font = FONT
+    inputLabel.TextSize = 14 -- Matches checkbox label size
+    inputLabel.Font = FONT -- Same font as the rest of the UI
     inputLabel.Text = labelText
     inputLabel.TextXAlignment = Enum.TextXAlignment.Left
     inputLabel.Parent = inputContainer
     
-    -- Input Box Background
+    -- Input Box Background (smaller and more precise)
     local inputBG = Instance.new("Frame")
     inputBG.Name = "Background"
-    inputBG.Size = UDim2.new(0.5, 0, 0, 25)
-    inputBG.Position = UDim2.new(0.5, 0, 0.5, -12.5)
+    inputBG.Size = UDim2.new(0, 60, 0, 24) -- Smaller width (60px) and height (24px) for a cleaner look
+    inputBG.Position = UDim2.new(0, 155, 0.5, -12) -- Positioned to the right of the label, vertically centered
     inputBG.BackgroundColor3 = COLORS.Input
     inputBG.BorderSizePixel = 0
     inputBG.Parent = inputContainer
     
     -- Round the corners of the input box
     local inputCorner = Instance.new("UICorner")
-    inputCorner.CornerRadius = UDim.new(0, 5)
+    inputCorner.CornerRadius = UDim.new(0, 5) -- Matches the checkbox corner radius
     inputCorner.Parent = inputBG
     
     -- The actual TextBox
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
-    textBox.Size = UDim2.new(0.9, 0, 1, 0)
-    textBox.Position = UDim2.new(0.05, 0, 0, 0)
+    textBox.Size = UDim2.new(0.9, 0, 0.8, 0) -- Slightly smaller than the background for padding
+    textBox.Position = UDim2.new(0.05, 0, 0.1, 0) -- Centered within the background
     textBox.BackgroundTransparency = 1
     textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textBox.TextSize = 14
-    textBox.Font = FONT
+    textBox.TextSize = 14 -- Matches the label and checkbox font size
+    textBox.Font = FONT -- Same font as the rest of the UI
     textBox.Text = tostring(defaultValue)
     textBox.PlaceholderText = "Enter value..."
     textBox.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
