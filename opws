@@ -67,9 +67,6 @@ local suppliesAutofarmLoop = nil
 local targetFoundTime = 0
 local targetDelaySeconds = 0.5
 
-local isAutoStoryActive = false
-local autoStoryConnection = nil
-
 local walkSpeedValue = 32
 local walkSpeedInput = nil
 
@@ -519,7 +516,7 @@ local function startAutoFloor()
                     Text = "Auto Harvest stopped with Auto Floor!",
                     Duration = 5
                 })
-            end
+            }
             resetHumanoidRootPartSize()
             return
         end
@@ -579,7 +576,7 @@ local function startAutoFloor()
             if timeWithoutTarget >= 3 and sizeModified2 then
                 resetHumanoidRootPartSize()
                 sizeModified2 = false
-                TeleportGUILibrary.createNotification("Reset character size - no targets found for 3 seconds", "warning")
+                TeleportGUILibrary createNotification("Reset character size - no targets found for 3 seconds", "warning")
             end
             if currentTime - lastNotificationTime2 >= 5 then
                 TeleportGUILibrary.createNotification("No targets found nearby", "warning")
@@ -614,37 +611,6 @@ local function stopAutoFloor()
         autoFloorCheckbox:SetState(false)
     end
     TeleportGUILibrary.createNotification("Auto Floor stopped", "warning")
-end
-
--- Function to start Auto Story
-local function startAutoStory()
-    if autoStoryConnection then
-        return
-    end
-    isAutoStoryActive = true
-    autoStoryConnection = RunService.Heartbeat:Connect(function()
-        if not isAutoStoryActive then
-            if autoStoryConnection then
-                autoStoryConnection:Disconnect()
-                autoStoryConnection = nil
-            end
-            return
-        end
-        pressKey(Enum.KeyCode.F)
-        pressKey(Enum.KeyCode.E)
-        wait(0.5)
-        pressKey(Enum.KeyCode.E)
-        wait(0.5)
-    end)
-end
-
--- Function to stop Auto Story
-local function stopAutoStory()
-    isAutoStoryActive = false
-    if autoStoryConnection then
-        autoStoryConnection:Disconnect()
-        autoStoryConnection = nil
-    end
 end
 
 -- Function to apply WalkSpeed with limits
@@ -733,7 +699,7 @@ autofarmCheckbox, getAutofarmState = TeleportGUILibrary.createCheckbox(
     "AutofarmCheckbox",
     "Autofarm Nearest",
     UDim2.new(0.05, 0, 0, 40),
-    ContentFrame,
+    Content proverbial,
     function(checked)
         isAutofarming = checked
         if checked then
@@ -784,27 +750,8 @@ autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
     end
 )
 
--- Checkbox: Auto Story
-local autoStoryCheckbox, getAutoStoryState
-autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
-    "AutoStoryCheckbox",
-    "Auto Story",
-    UDim2.new(0.05, 0, 0, 130),
-    ContentFrame,
-    function(checked)
-        isAutoStoryActive = checked
-        if checked then
-            TeleportGUILibrary.createNotification("Auto Story enabled!", "success")
-            startAutoStory()
-        else
-            TeleportGUILibrary.createNotification("Auto Story disabled!", "warning")
-            stopAutoStory()
-        end
-    end
-)
-
 -- Section: Combat Options
-local combatLabel, combatSeparator = TeleportGUILibrary.createSection("PLAYER SETTING", 165)
+local combatLabel, combatSeparator = TeleportGUILibrary.createSection("PLAYER SETTING", 135)
 
 -- Text Input: WalkSpeed
 local walkSpeedContainer
@@ -812,7 +759,7 @@ walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     "WalkSpeedInput",
     "WalkSpeed",
     walkSpeedValue,
-    UDim2.new(0.05, 0, 0, 195),
+    UDim2.new(0.05, 0, 0, 165),
     ContentFrame,
     function(value)
         local speed = tonumber(value)
@@ -831,7 +778,7 @@ jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     "JumpHeightInput",
     "Jump Height",
     jumpHeightValue,
-    UDim2.new(0.05, 0, 0, 225),
+    UDim2.new(0.05, 0, 0, 195),
     ContentFrame,
     function(value)
         local height = tonumber(value)
@@ -850,7 +797,7 @@ flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInpu
     "FlyingPlatformInput",
     "Flying Platform",
     flyingPlatformValue,
-    UDim2.new(0.05, 0, 0, 255),
+    UDim2.new(0.05, 0, 0, 225),
     ContentFrame,
     function(value)
         local height = tonumber(value)
@@ -868,7 +815,7 @@ local wallhackCheckbox, getWallhackState
 wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
     "WallhackCheckbox",
     "Wallhack",
-    UDim2.new(0.05, 0, 0, 285),
+    UDim2.new(0.05, 0, 0, 255),
     ContentFrame,
     function(checked)
         if checked then
@@ -879,8 +826,8 @@ wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
     end
 )
 
--- Update Canvas Size (Adjusted after removing Auto Collect Items)
-TeleportGUILibrary.updateCanvasSize(315)
+-- Update Canvas Size
+TeleportGUILibrary.updateCanvasSize(285)
 
 -- Function to monitor the death indicator and handle respawn
 local function monitorDeathIndicator()
@@ -1025,7 +972,6 @@ print("Initial state:")
 print("isAutofarming:", isAutofarming)
 print("isSuppliesAutofarming:", isSuppliesAutofarming)
 print("isAutoFloorActive:", isAutoFloorActive)
-print("isAutoStoryActive:", isAutoStoryActive)
 print("wallhackActive:", wallhackActive)
 print("walkSpeedValue:", walkSpeedValue)
 print("jumpHeightValue:", jumpHeightValue)
@@ -1101,24 +1047,6 @@ local function terminateAutoFloor()
         stopAutoFloor()
     else
         notify("Auto Floor is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for starting auto story
-local function initiateAutoStory()
-    if not isAutoStoryActive then
-        startAutoStory()
-    else
-        notify("Auto Story is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping auto story
-local function terminateAutoStory()
-    if isAutoStoryActive then
-        stopAutoStory()
-    else
-        notify("Auto Story is not running!", "warning")
     end
 end
 
@@ -1201,11 +1129,10 @@ debugCharacterState()
 -- 1. Autofarm Nearest: Automatically targets and attacks the nearest mob within a specified radius.
 -- 2. Autofarm Supplies [OP]: Collects supply items in the DrugStore dungeon.
 -- 3. Auto Floor: Automatically navigates and farms in the InfExplore mode.
--- 4. Auto Story: Automates story progression by pressing F and E keys.
--- 5. WalkSpeed: Adjusts the player's walking speed (0 to 999).
--- 6. Jump Height: Adjusts the player's jump height (0 to 999).
--- 7. Flying Platform: Adjusts the HumanoidRootPart.Size.Y incrementally (0 to 999).
--- 8. Enable Wallhack (NoClip): Allows the player to pass through walls.
+-- 4. WalkSpeed: Adjusts the player's walking speed (0 to 999).
+-- 5. Jump Height: Adjusts the player's jump height (0 to 999).
+-- 6. Flying Platform: Adjusts the HumanoidRootPart.Size.Y incrementally (0 to 999).
+-- 7. Enable Wallhack (NoClip): Allows the player to pass through walls.
 
 -- The script uses a custom UI library (TeleportGUILibrary) to create a graphical interface.
 -- The UI includes sections for teleportation and combat options, with checkboxes and text inputs.
