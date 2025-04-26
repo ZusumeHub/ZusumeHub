@@ -160,7 +160,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     return sectionLabel, separator
 end
 
--- Function to create custom checkbox with auto-apply (Option 1: Checkbox on left, Label on right)
+-- Function to create custom checkbox with auto-apply (Option 2: Label on left, Checkbox on right)
 function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name .. "Container"
@@ -172,7 +172,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxBG = Instance.new("Frame")
     checkboxBG.Name = "Background"
     checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(0, 0, 0.5, -10) -- Checkbox on the left
+    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Checkbox on the far right
     checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     checkboxBG.BorderSizePixel = 0
     checkboxBG.Parent = checkboxContainer
@@ -198,7 +198,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxLabel = Instance.new("TextLabel")
     checkboxLabel.Name = "Label"
     checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 28, 0, 0) -- Label to the right of the checkbox (20px width + 8px gap)
+    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
@@ -245,7 +245,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     return checkboxContainer, function() return checked end
 end
 
--- Updated Text Input Function (Option 1: Input on left, Label on right)
+-- Updated Text Input Function (Option 2: Label on left, Input on right)
 function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
     -- Container for the whole input element
     local inputContainer = Instance.new("Frame")
@@ -255,11 +255,24 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputContainer.BackgroundTransparency = 1
     inputContainer.Parent = parent
     
-    -- Input Box Background (on the left)
+    -- Label (on the left)
+    local inputLabel = Instance.new("TextLabel")
+    inputLabel.Name = "Label"
+    inputLabel.Size = UDim2.new(0, 150, 1, 0)
+    inputLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
+    inputLabel.BackgroundTransparency = 1
+    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    inputLabel.TextSize = 14
+    inputLabel.Font = FONT
+    inputLabel.Text = labelText
+    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
+    inputLabel.Parent = inputContainer
+    
+    -- Input Box Background (on the far right)
     local inputBG = Instance.new("Frame")
     inputBG.Name = "Background"
     inputBG.Size = UDim2.new(0, 60, 0, 24)
-    inputBG.Position = UDim2.new(0, 0, 0.5, -12) -- Input on the left
+    inputBG.Position = UDim2.new(1, -60, 0.5, -12) -- Input on the far right
     inputBG.BackgroundColor3 = COLORS.Input
     inputBG.BorderSizePixel = 0
     inputBG.Parent = inputContainer
@@ -284,19 +297,6 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     textBox.TextXAlignment = Enum.TextXAlignment.Center
     textBox.ClearTextOnFocus = false
     textBox.Parent = inputBG
-    
-    -- Label (to the right of the input)
-    local inputLabel = Instance.new("TextLabel")
-    inputLabel.Name = "Label"
-    inputLabel.Size = UDim2.new(0, 150, 1, 0)
-    inputLabel.Position = UDim2.new(0, 68, 0, 0) -- Label to the right (60px width + 8px gap)
-    inputLabel.BackgroundTransparency = 1
-    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    inputLabel.TextSize = 14
-    inputLabel.Font = FONT
-    inputLabel.Text = labelText
-    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
-    inputLabel.Parent = inputContainer
     
     -- Store the current value
     local currentValue = defaultValue
