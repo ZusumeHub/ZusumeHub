@@ -18,6 +18,7 @@ local COLORS = {
     Success = Color3.fromRGB(87, 242, 135),
     Error = Color3.fromRGB(255, 89, 89),
     Warning = Color3.fromRGB(255, 201, 79),
+    Input = Color3.fromRGB(55, 55, 60),
 }
 
 -- Create GUI
@@ -201,7 +202,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
-    checkboxLabel.Font = FONT -- Changed to use bold font
+    checkboxLabel.Font = FONT
     checkboxLabel.Text = text
     checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
     checkboxLabel.Parent = checkboxContainer
@@ -242,6 +243,111 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     end)
     
     return checkboxContainer, function() return checked end
+end
+
+-- NEW FEATURE: Text Input with label
+function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
+    -- Container for the whole input element
+    local inputContainer = Instance.new("Frame")
+    inputContainer.Name = name .. "Container"
+    inputContainer.Size = UDim2.new(0.9, 0, 0, 32)
+    inputContainer.Position = position
+    inputContainer.BackgroundTransparency = 1
+    inputContainer.Parent = parent
+    
+    -- Label
+    local inputLabel = Instance.new("TextLabel")
+    inputLabel.Name = "Label"
+    inputLabel.Size = UDim2.new(0.5, -10, 1, 0)
+    inputLabel.BackgroundTransparency = 1
+    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    inputLabel.TextSize = 14
+    inputLabel.Font = FONT
+    inputLabel.Text = labelText
+    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
+    inputLabel.Parent = inputContainer
+    
+    -- Input Box Background
+    local inputBG = Instance.new("Frame")
+    inputBG.Name = "Background"
+    inputBG.Size = UDim2.new(0.5, 0, 0, 25)
+    inputBG.Position = UDim2.new(0.5, 0, 0.5, -12.5)
+    inputBG.BackgroundColor3 = COLORS.Input
+    inputBG.BorderSizePixel = 0
+    inputBG.Parent = inputContainer
+    
+    -- Round the corners of the input box
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 5)
+    inputCorner.Parent = inputBG
+    
+    -- The actual TextBox
+    local textBox = Instance.new("TextBox")
+    textBox.Name = "TextBox"
+    textBox.Size = UDim2.new(0.9, 0, 1, 0)
+    textBox.Position = UDim2.new(0.05, 0, 0, 0)
+    textBox.BackgroundTransparency = 1
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.TextSize = 14
+    textBox.Font = FONT
+    textBox.Text = tostring(defaultValue)
+    textBox.PlaceholderText = "Enter value..."
+    textBox.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
+    textBox.TextXAlignment = Enum.TextXAlignment.Center
+    textBox.ClearTextOnFocus = false
+    textBox.Parent = inputBG
+    
+    -- Store the current value
+    local currentValue = defaultValue
+    
+    -- Handle focus
+    textBox.Focused:Connect(function()
+        TweenService:Create(
+            inputBG,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(70, 70, 80)}
+        ):Play()
+    end)
+    
+    textBox.FocusLost:Connect(function(enterPressed)
+        TweenService:Create(
+            inputBG,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = COLORS.Input}
+        ):Play()
+        
+        if enterPressed then
+            local newValue = textBox.Text
+            -- Try to convert to number if possible
+            local numValue = tonumber(newValue)
+            if numValue then
+                newValue = numValue
+            end
+            
+            -- Only call onChange if the value actually changed
+            if newValue ~= currentValue then
+                currentValue = newValue
+                if onChange then
+                    onChange(newValue)
+                end
+            end
+        else
+            -- Revert to current value if user didn't press enter
+            textBox.Text = tostring(currentValue)
+        end
+    end)
+    
+    -- Return the container and functions to get/set the value
+    return inputContainer, {
+        getValue = function() return currentValue end,
+        setValue = function(value)
+            currentValue = value
+            textBox.Text = tostring(value)
+            if onChange then
+                onChange(value)
+            end
+        end
+    }
 end
 
 -- Function to create notification
