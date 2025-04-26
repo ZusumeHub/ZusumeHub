@@ -51,42 +51,24 @@ TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
 
--- Title
+-- Title (Centered)
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
 Title.Size = UDim2.new(1, -60, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Position = UDim2.new(0, 30, 0, 0)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
 Title.Text = "you noob Sv_Azidan lol"
-Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.TextXAlignment = Enum.TextXAlignment.Center -- Centered
 Title.Parent = TopBar
 
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -28, 0, 2)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BorderSizePixel = 0
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.TextSize = 14
-CloseButton.Parent = TopBar
-
--- Round the close button
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
-CloseCorner.Parent = CloseButton
-
--- Minimize Button
+-- Minimize Button (Moved to far right)
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
+MinimizeButton.Position = UDim2.new(1, -28, 0, 2) -- Position where CloseButton was
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
@@ -119,7 +101,7 @@ ContentFrame.Size = UDim2.new(1, 0, 0, 0) -- Will be updated dynamically
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = ScrollingFrame
 
--- YouTube Label (fixed at the bottom of MainFrame)
+-- YouTube Label (fixed at the bottom of MainFrame, left-aligned)
 local YouTubeLabel = Instance.new("TextLabel")
 YouTubeLabel.Name = "YouTubeLabel"
 YouTubeLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -130,13 +112,13 @@ YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YouTubeLabel.TextSize = 16
 YouTubeLabel.Font = Enum.Font.GothamBold
 YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center
+YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Left -- Left-aligned
 YouTubeLabel.Parent = MainFrame
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
 
--- Function to create a section (label + separator)
-function TeleportGUILibrary.createSection(sectionName, positionY)
+-- Function to create a section (label + separator) with centered text option
+function TeleportGUILibrary.createSection(sectionName, positionY, centerText)
     local sectionLabel = Instance.new("TextLabel")
     sectionLabel.Name = sectionName .. "Label"
     sectionLabel.Size = UDim2.new(0.9, 0, 0, 25)
@@ -146,7 +128,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     sectionLabel.TextSize = 16
     sectionLabel.Font = Enum.Font.GothamBold
     sectionLabel.Text = sectionName
-    sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sectionLabel.TextXAlignment = centerText and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left
     sectionLabel.Parent = ContentFrame
 
     local separator = Instance.new("Frame")
@@ -532,10 +514,6 @@ end
 -- Minimize Status
 local isMinimized = false
 local originalSize = MainFrame.Size
-
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
-end)
 
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
