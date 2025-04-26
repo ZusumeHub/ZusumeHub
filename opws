@@ -281,13 +281,10 @@ local function tweenToPosition(position, duration)
         return
     end
     local tweenInfo = TweenInfo.new(duration or 1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(humanoidRootPart, tween Roblx uses for TweenService, RunService, Players, VirtualInputManager, StarterGui in local script
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local StarterGui = game:GetService("StarterGui")
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(position)})
+    tween:Play()
+    return tween
+end
 
 -- Function to start the DrugStore dungeon (initial teleport)
 local function startDrugStoreDungeonFirst()
@@ -324,7 +321,7 @@ local function startSuppliesAutofarm()
     startDrugStoreDungeonFirst()
     wait(2)
     startDrugStoreDungeon()
-    suppliesAutofarmLoop = coroutine.create(function()
+    supplies AutofarmLoop = coroutine.create(function()
         while isSuppliesAutofarming do
             local dropParts = findDropPartsWithPrompts()
             if #dropParts > 0 then
@@ -396,8 +393,9 @@ local function startAutofarm()
                 local mobPosition = currentTargetMob.MODEL.HumanoidRootPart.Position
                 humanoidRootPart.CFrame = CFrame.new(Vector3.new(mobPosition.X, mobPosition.Y + 5, mobPosition.Z))
                 teleportedToCurrentMob = true
-                if sizeModified and humanoidRootPart.Size.Y < 10 then
+                if not sizeModified then
                     incrementHumanoidRootPartSize(humanoidRootPart, 10)
+                    sizeModified = true
                 end
                 return
             end
@@ -405,17 +403,12 @@ local function startAutofarm()
             local nearestMob = findNearestMob(15, 15)
             if nearestMob then
                 currentTargetMob = nearestMob
-                teleportedToCurrentMob = false
-                if not sizeModified then
-                    incrementHumanoidRootPartSize(humanoidRootPart, 10)
-                    sizeModified = true
-                end
-                TeleportGUILibrary.createNotification("Found new target: " .. nearestMob.Name, "info")
+                targetFoundTime = tick()
+                TeleportGUILibrary.createNotification("New target acquired: " .. nearestMob.Name, "success")
             else
-                local currentTime = os.time()
-                if currentTime - lastNotificationTime >= 5 then
-                    TeleportGUILibrary.createNotification("No targets found nearby", "warning")
-                    lastNotificationTime = currentTime
+                if tick() - targetFoundTime > targetDelaySeconds then
+                    TeleportGUILibrary.createNotification("No targets found within range", "warning")
+                    targetFoundTime = tick()
                 end
             end
         end
@@ -425,91 +418,37 @@ end
 -- Function to stop autofarming nearest mobs
 local function stopAutofarm()
     isAutofarming = false
-    currentTargetMob = nil
-    teleportedToCurrentMob = false
-    sizeModified = false
     if autofarmLoop then
         autofarmLoop:Disconnect()
         autofarmLoop = nil
     end
+    currentTargetMob = nil
+    teleportedToCurrentMob = false
+    sizeModified = false
     resetHumanoidRootPartSize()
-    TeleportGUILibrary.createNotification("Autofarm stopped", "warning")
+    TeleportGUILibrary.createNotification("Autofarm Nearest stopped", "warning")
 end
 
--- Function to start Auto Floor (Original Implementation)
+-- Function to start auto floor
 local function startAutoFloor()
     if autoFloorLoop then
         return
     end
     isAutoFloorActive = true
-    autoHarvestRunning = true
-    -- Activate InfExplore
-    local args = {
-        [1] = {
-            T = "InfExplore"
-        }
-    }
-    game:GetService("ReplicatedStorage").Remote.ExploreRE:FireServer(unpack(args))
-    TeleportGUILibrary.createNotification("Activated InfExplore", "info")
-    wait(2)
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-    local lastTargetTime = os.time()
-    -- Notify user that Auto Harvest is activated with Auto Floor
-    StarterGui:SetCore("SendNotification", {
-        Title = "Auto Harvest",
-        Text = "Auto Harvest activated with Auto Floor!",
-        Duration = 5
-    })
-    -- Start auto harvest loop
-    autoHarvestConnection = RunService.Heartbeat:Connect(function()
-        if not autoHarvestRunning or not isAutoFloorActive or isDeathProcessing then
-            if autoHarvestConnection then
-                autoHarvestConnection:Disconnect()
-                autoHarvestConnection = nil
-            end
-            return
-        end
-        local hasTarget = currentTargetMob2 and currentTargetMob2:FindFirstChild("MODEL") and currentTargetMob2.MODEL:FindFirstChild("HumanoidRootPart")
-        if hasTarget then
-            local hp = currentTargetMob2:GetAttribute("HP")
-            hasTarget = hp and hp > 0
-        end
-        if hasTarget then
-            pressKey(Enum.KeyCode.F)
-            wait(0.2)
-        else
-            pressKey(Enum.KeyCode.F)
-            wait(1)
-            pressKey(Enum.KeyCode.E)
-            wait(2)
-        end
-    end)
-    -- Start auto floor loop
     autoFloorLoop = RunService.Heartbeat:Connect(function()
         if not isAutoFloorActive then
             if autoFloorLoop then
                 autoFloorLoop:Disconnect()
                 autoFloorLoop = nil
             end
-            if autoHarvestConnection then
-                autoHarvestConnection:Disconnect()
-                autoHarvestConnection = nil
-                autoHarvestRunning = false
-                StarterGui:SetCore("SendNotification", {
-                    Title = "Auto Harvest",
-                    Text = "Auto Harvest stopped with Auto Floor!",
-                    Duration = 5
-                })
-            end
             resetHumanoidRootPartSize()
             return
         end
         if currentTargetMob2 then
-            lastTargetTime = os.time()
             local model = currentTargetMob2:FindFirstChild("MODEL")
             if not model or not model:FindFirstChild("HumanoidRootPart") then
-                quick_check = true
                 currentTargetMob2 = nil
                 teleportedToCurrentMob2 = false
                 TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
@@ -517,90 +456,56 @@ local function startAutoFloor()
             end
             local hp = currentTargetMob2:GetAttribute("HP")
             if not hp or hp < 1 then
-                quick_check = true
                 currentTargetMob2 = nil
                 teleportedToCurrentMob2 = false
                 TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
                 return
             end
-            local currentTime = os.time()
-            local timeElapsedSinceFound = currentTime - targetFoundTime
-            if not teleportedToCurrentMob2 and timeElapsedSinceFound >= targetDelaySeconds then
+            if not teleportedToCurrentMob2 then
                 local mobPosition = currentTargetMob2.MODEL.HumanoidRootPart.Position
-                humanoidRootPart.CFrame = CFrame.new(Vector3.new(mobPosition.X, mobPosition.Y + 20, mobPosition.Z))
-                teleportedToCurrentMob2 = true
-                if sizeModified2 and humanoidRootPart.Size.Y < 20 then
-                    incrementHumanoidRootPartSize(humanoidRootPart, 20)
-                end
-                TeleportGUILibrary.createNotification("Teleported to target after delay", "success")
-                return
-            elseif not teleportedToCurrentMob2 and timeElapsedSinceFound < targetDelaySeconds then
-                local remainingTime = targetDelaySeconds - timeElapsedSinceFound
-                if math.floor(remainingTime) ~= math.floor(remainingTime + 0.1) then
-                    TeleportGUILibrary.createNotification("Waiting " .. math.ceil(remainingTime) .. " seconds before teleporting", "info")
-                end
+                local tween = tweenToPosition(Vector3.new(mobPosition.X, mobPosition.Y + 15, mobPosition.Z), 0.5)
+                tween.Completed:Connect(function()
+                    teleportedToCurrentMob2 = true
+                    if not sizeModified2 then
+                        humanoidRootPart.Size = Vector3.new(2, 10, 1)
+                        sizeModified2 = true
+                    end
+                end)
                 return
             end
-            return
-        end
-        local nearestMob = findNearestMob(80, 80)
-        if nearestMob then
-            currentTargetMob2 = nearestMob
-            teleportedToCurrentMob2 = false
-            lastTargetTime = os.time()
-            targetFoundTime = os.time()
-            if not sizeModified2 then
-                incrementHumanoidRootPartSize(humanoidRootPart, 20)
-                sizeModified2 = true
-            end
-            TeleportGUILibrary.createNotification(
-                "Found new target: " .. nearestMob.Name .. ". Waiting " .. targetDelaySeconds .. " seconds before teleporting",
-                "info"
-            )
         else
-            local currentTime = os.time()
-            local timeWithoutTarget = currentTime - lastTargetTime
-            if timeWithoutTarget >= 3 and sizeModified2 then
-                resetHumanoidRootPartSize()
-                sizeModified2 = false
-                TeleportGUILibrary.createNotification("Reset character size - no targets found for 3 seconds", "warning")
-            end
-            if currentTime - lastNotificationTime2 >= 5 then
-                TeleportGUILibrary.createNotification("No targets found nearby", "warning")
-                lastNotificationTime2 = currentTime
+            local nearestMob = findNearestMob(50, 50)
+            if nearestMob then
+                currentTargetMob2 = nearestMob
+                lastNotificationTime2 = tick()
+                TeleportGUILibrary.createNotification("New floor target: " .. nearestMob.Name, "success")
+            else
+                if tick() - lastNotificationTime2 > 3 then
+                    resetHumanoidRootPartSize()
+                    sizeModified2 = false
+                    TeleportGUILibrary.createNotification("No targets found within 50 studs", "warning")
+                    lastNotificationTime2 = tick()
+                end
             end
         end
     end)
 end
 
--- Function to stop Auto Floor
+-- Function to stop auto floor
 local function stopAutoFloor()
     isAutoFloorActive = false
-    currentTargetMob2 = nil
-    teleportedToCurrentMob2 = false
-    sizeModified2 = false
     if autoFloorLoop then
         autoFloorLoop:Disconnect()
         autoFloorLoop = nil
     end
-    if autoHarvestConnection then
-        autoHarvestConnection:Disconnect()
-        autoHarvestConnection = nil
-        autoHarvestRunning = false
-        StarterGui:SetCore("SendNotification", {
-            Title = "Auto Harvest",
-            Text = "Auto Harvest stopped with Auto Floor!",
-            Duration = 5
-        })
-    end
+    currentTargetMob2 = nil
+    teleportedToCurrentMob2 = false
+    sizeModified2 = false
     resetHumanoidRootPartSize()
-    if autoFloorCheckbox then
-        autoFloorCheckbox:SetState(false)
-    end
     TeleportGUILibrary.createNotification("Auto Floor stopped", "warning")
 end
 
--- Function to start Auto Story
+-- Function to start auto story
 local function startAutoStory()
     if autoStoryConnection then
         return
@@ -614,244 +519,215 @@ local function startAutoStory()
             end
             return
         end
-        pressKey(Enum.KeyCode.F)
-        pressKey(Enum.KeyCode.E)
-        wait(0.5)
         pressKey(Enum.KeyCode.E)
         wait(0.5)
     end)
+    TeleportGUILibrary.createNotification("Auto Story enabled", "success")
 end
 
--- Function to stop Auto Story
+-- Function to stop auto story
 local function stopAutoStory()
     isAutoStoryActive = false
     if autoStoryConnection then
         autoStoryConnection:Disconnect()
         autoStoryConnection = nil
     end
+    TeleportGUILibrary.createNotification("Auto Story disabled", "warning")
 end
 
--- Function to apply WalkSpeed with limits
-local function applyWalkSpeed(speed)
-    local character = LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChild("Humanoid")
+-- Function to handle player death
+local function onCharacterDeath()
+    if isDeathProcessing then
+        return
+    end
+    isDeathProcessing = true
+    if isAutofarming then
+        stopAutofarm()
+        wait(5)
+        startAutofarm()
+        TeleportGUILibrary.createNotification("Player died, restarting Autofarm Nearest", "info")
+    end
+    if isAutoFloorActive then
+        stopAutoFloor()
+        wait(5)
+        startAutoFloor()
+        TeleportGUILibrary.createNotification("Player died, restarting Auto Floor", "info")
+    end
+    if isSuppliesAutofarming then
+        stopSuppliesAutofarm()
+        wait(5)
+        startSuppliesAutofarm()
+        TeleportGUILibrary.createNotification("Player died, restarting Autofarm Supplies", "info")
+    end
+    if isAutoStoryActive then
+        stopAutoStory()
+        wait(5)
+        startAutoStory()
+        TeleportGUILibrary.createNotification("Player died, restarting Auto Story", "info")
+    end
+    isDeathProcessing = false
+end
+
+-- Function to handle WalkSpeed changes
+local function onWalkSpeedChange(newValue)
+    local numValue = tonumber(newValue)
+    if numValue and numValue >= 0 and numValue <= 999 then
+        walkSpeedValue = numValue
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
         if humanoid then
-            -- Apply limits: 0 to 999
-            if speed < 0 then
-                speed = 0
-                TeleportGUILibrary.createNotification("WalkSpeed cannot be less than 0!", "error")
-            elseif speed > 999 then
-                speed = 999
-                TeleportGUILibrary.createNotification("WalkSpeed cannot be more than 999!", "error")
-            end
-            humanoid.WalkSpeed = speed
-            walkSpeedValue = speed
-            if walkSpeedInput then
-                walkSpeedInput.setValue(speed)
-            end
-            TeleportGUILibrary.createNotification("WalkSpeed set to " .. speed, "success")
+            humanoid.WalkSpeed = walkSpeedValue
+            TeleportGUILibrary.createNotification("WalkSpeed set to " .. walkSpeedValue, "success")
+        end
+    else
+        TeleportGUILibrary.createNotification("Invalid WalkSpeed value (0-999)", "error")
+        if walkSpeedInput then
+            walkSpeedInput.setValue(walkSpeedValue)
         end
     end
 end
 
--- Function to apply JumpHeight with limits
-local function applyJumpHeight(height)
-    local character = LocalPlayer.Character
-    if character then
-        local humanoid = character:FindFirstChild("Humanoid")
+-- Function to handle JumpHeight changes
+local function onJumpHeightChange(newValue)
+    local numValue = tonumber(newValue)
+    if numValue and numValue >= 0 and numValue <= 999 then
+        jumpHeightValue = numValue
+        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
         if humanoid then
-            -- Apply limits: 0 to 999
-            if height < 0 then
-                height = 0
-                TeleportGUILibrary.createNotification("Jump Height cannot be less than 0!", "error")
-            elseif height > 999 then
-                height = 999
-                TeleportGUILibrary.createNotification("Jump Height cannot be more than 999!", "error")
-            end
-            humanoid.JumpHeight = height
-            jumpHeightValue = height
-            if jumpHeightInput then
-                jumpHeightInput.setValue(height)
-            end
-            TeleportGUILibrary.createNotification("Jump Height set to " .. height, "success")
+            humanoid.JumpHeight = jumpHeightValue
+            TeleportGUILibrary.createNotification("JumpHeight set to " .. jumpHeightValue, "success")
+        end
+    else
+        TeleportGUILibrary.createNotification("Invalid JumpHeight value (0-999)", "error")
+        if jumpHeightInput then
+            jumpHeightInput.setValue(jumpHeightValue)
         end
     end
 end
 
--- Function to apply Flying Platform height with limits
-local function applyFlyingPlatformHeight(height)
-    local character = LocalPlayer.Character
-    if character then
-        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+-- Function to handle Flying Platform changes
+local function onFlyingPlatformChange(newValue)
+    local numValue = tonumber(newValue)
+    if numValue and numValue >= 0 and numValue <= 999 then
+        flyingPlatformValue = numValue
+        local character = LocalPlayer.Character
+        local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
         if humanoidRootPart then
-            -- Apply limits: 0 to 999
-            if height < 0 then
-                height = 0
-                TeleportGUILibrary.createNotification("Flying Platform height cannot be less than 0!", "error")
-            elseif height > 999 then
-                height = 999
-                TeleportGUILibrary.createNotification("Flying Platform height cannot be more than 999!", "error")
-            end
-            adjustFlyingPlatformHeight(humanoidRootPart, height)
-            flyingPlatformValue = height
-            if flyingPlatformInput then
-                flyingPlatformInput.setValue(height)
-            end
-            TeleportGUILibrary.createNotification("Flying Platform height set to " .. height, "success")
+            adjustFlyingPlatformHeight(humanoidRootPart, flyingPlatformValue)
+            TeleportGUILibrary.createNotification("Flying Platform height set to " .. flyingPlatformValue, "success")
+        end
+    else
+        TeleportGUILibrary.createNotification("Invalid Flying Platform value (0-999)", "error")
+        if flyingPlatformInput then
+            flyingPlatformInput.setValue(flyingPlatformValue)
         end
     end
 end
 
--- Create the UI Elements
--- Section: MAIN HACKS
-local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("MAIN HACKS", 5)
+-- Create GUI Sections and Elements
+-- MAIN HACKS Section
+local teleportSection, teleportSeparator = TeleportGUILibrary.createSection("MAIN HACKS", 10)
 
--- Checkbox: Auto Story
-local autoStoryCheckbox, getAutoStoryState
-autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
-    "AutoStoryCheckbox",
+-- Auto Story Checkbox
+local autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
+    "AutoStory",
     "Auto Story",
-    UDim2.new(0.05, 0, 0, 40),
+    UDim2.new(0.05, 0, 0, 45),
     ContentFrame,
-    function(checked)
-        isAutoStoryActive = checked
-        if checked then
-            TeleportGUILibrary.createNotification("Auto Story enabled!", "success")
+    function(state)
+        if state then
             startAutoStory()
         else
-            TeleportGUILibrary.createNotification("Auto Story disabled!", "warning")
             stopAutoStory()
         end
     end
 )
 
--- Checkbox: Auto Floor
-local getAutoFloorState
-autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
-    "AutoFloorCheckbox",
+-- Auto Floor Checkbox
+local autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
+    "AutoFloor",
     "Auto Floor",
-    UDim2.new(0.05, 0, 0, 70),
+    UDim2.new(0.05, 0, 0, 75),
     ContentFrame,
-    function(checked)
-        isAutoFloorActive = checked
-        if checked then
-            TeleportGUILibrary.createNotification("Auto Floor enabled!", "success")
+    function(state)
+        if state then
             startAutoFloor()
         else
-            TeleportGUILibrary.createNotification("Auto Floor disabled!", "warning")
             stopAutoFloor()
         end
     end
 )
 
--- Checkbox: Autofarm Nearest
-local autofarmCheckbox, getAutofarmState
-autofarmCheckbox, getAutofarmState = TeleportGUILibrary.createCheckbox(
-    "AutofarmCheckbox",
+-- Autofarm Nearest Checkbox
+local autofarmCheckbox, getAutofarmState = TeleportGUILibrary.createCheckbox(
+    "AutofarmNearest",
     "Autofarm Nearest",
-    UDim2.new(0.05, 0, 0, 100),
+    UDim2.new(0.05, 0, 0, 105),
     ContentFrame,
-    function(checked)
-        isAutofarming = checked
-        if checked then
-            TeleportGUILibrary.createNotification("Autofarm Nearest enabled!", "success")
+    function(state)
+        if state then
             startAutofarm()
         else
-            TeleportGUILibrary.createNotification("Autofarm Nearest disabled!", "warning")
             stopAutofarm()
         end
     end
 )
 
--- Checkbox: Autofarm Supplies [OP]
-local suppliesAutofarmCheckbox, getSuppliesAutofarmState
-suppliesAutofarmCheckbox, getSuppliesAutofarmState = TeleportGUILibrary.createCheckbox(
-    "SuppliesAutofarmCheckbox",
+-- Autofarm Supplies Checkbox
+local suppliesCheckbox, getSuppliesState = TeleportGUILibrary.createCheckbox(
+    "AutofarmSupplies",
     "Autofarm Supplies [OP]",
-    UDim2.new(0.05, 0, 0, 130),
+    UDim2.new(0.05, 0, 0, 135),
     ContentFrame,
-    function(checked)
-        isSuppliesAutofarming = checked
-        if checked then
-            TeleportGUILibrary.createNotification("Autofarm Supplies [OP] enabled!", "success")
+    function(state)
+        if state then
             startSuppliesAutofarm()
         else
-            TeleportGUILibrary.createNotification("Autofarm Supplies [OP] disabled!", "warning")
             stopSuppliesAutofarm()
         end
     end
 )
 
--- Section: PLAYER SETTING
-local combatLabel, combatSeparator = TeleportGUILibrary.createSection("PLAYER SETTING", 165)
+-- PLAYER SETTING Section
+local combatSection, combatSeparator = TeleportGUILibrary.createSection("PLAYER SETTING", 175)
 
--- Text Input: WalkSpeed
-local walkSpeedContainer
-walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
-    "WalkSpeedInput",
-    "WalkSpeed (Default: 16)",
+-- WalkSpeed Input
+local walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
+    "WalkSpeed",
+    "WalkSpeed",
     walkSpeedValue,
-    UDim2.new(0.05, 0, 0, 195),
+    UDim2.new(0.05, 0, 0, 210),
     ContentFrame,
-    function(value)
-        local speed = tonumber(value)
-        if speed then
-            applyWalkSpeed(speed)
-        else
-            TeleportGUILibrary.createNotification("Invalid WalkSpeed value! Please enter a number.", "error")
-            walkSpeedInput.setValue(walkSpeedValue) -- Revert to the last valid value
-        end
-    end
+    onWalkSpeedChange
 )
 
--- Text Input: Jump Height
-local jumpHeightContainer
-jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
-    "JumpHeightInput",
-    "Jump Height (Default: 7.2)",
+-- JumpHeight Input
+local jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
+    "JumpHeight",
+    "JumpHeight",
     jumpHeightValue,
-    UDim2.new(0.05, 0, 0, 225),
+    UDim2.new(0.05, 0, 0, 240),
     ContentFrame,
-    function(value)
-        local height = tonumber(value)
-        if height then
-            applyJumpHeight(height)
-        else
-            TeleportGUILibrary.createNotification("Invalid Jump Height value! Please enter a number.", "error")
-            jumpHeightInput.setValue(jumpHeightValue) -- Revert to the last valid value
-        end
-    end
+    onJumpHeightChange
 )
 
--- Text Input: Flying Platform
-local flyingPlatformContainer
-flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInput(
-    "FlyingPlatformInput",
-    "Flying Platform (Default: 2)",
+-- Flying Platform Input
+local flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.create poddTextInput(
+    "FlyingPlatform",
+    "Flying Platform",
     flyingPlatformValue,
-    UDim2.new(0.05, 0, 0, 255),
+    UDim2.new(0.05, 0, 0, 270),
     ContentFrame,
-    function(value)
-        local height = tonumber(value)
-        if height then
-            applyFlyingPlatformHeight(height)
-        else
-            TeleportGUILibrary.createNotification("Invalid Flying Platform value! Please enter a number.", "error")
-            flyingPlatformInput.setValue(flyingPlatformValue) -- Revert to the last valid value
-        end
-    end
+    onFlyingPlatformChange
 )
 
--- Checkbox: Enable Wallhack (NoClip)
-local wallhackCheckbox, getWallhackState
-wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
-    "WallhackCheckbox",
-    "Enable Wallhack (NoClip)",
-    UDim2.new(0.05, 0, 0, 285),
+-- Wallhack Checkbox
+local wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
+    "Wallhack",
+    "Wallhack (NoClip)",
+    UDim2.new(0.05, 0, 0, 300),
     ContentFrame,
-    function(checked)
-        if checked then
+    function(state)
+        if state then
             enableWallhack()
         else
             disableWallhack()
@@ -860,343 +736,20 @@ wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
 )
 
 -- Update Canvas Size
-TeleportGUILibrary.updateCanvasSize(315)
+TeleportGUILibrary.updateCanvasSize(340)
 
--- Function to monitor the death indicator and handle respawn
-local function monitorDeathIndicator()
-    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-    local screenInfExpResult = playerGui:WaitForChild("ScreenInfExpResult")
-    local frame = screenInfExpResult:WaitForChild("Frame")
-    local lastVisibleState = frame.Visible
-    local visibleConnection
-    visibleConnection = frame:GetPropertyChangedSignal("Visible"):Connect(function()
-        if frame.Visible and not lastVisibleState and isAutoFloorActive then
-            TeleportGUILibrary.createNotification("Player died, restarting Auto Floor!", "warning")
-            isDeathProcessing = true
-            if autoFloorLoop then
-                autoFloorLoop:Disconnect()
-                autoFloorLoop = nil
-            end
-            if autoHarvestConnection then
-                autoHarvestConnection:Disconnect()
-                autoHarvestConnection = nil
-                autoHarvestRunning = false
-            end
-            resetHumanoidRootPartSize()
-            wait(5)
-            pressKey(Enum.KeyCode.E)
-            TeleportGUILibrary.createNotification("Pressed E key after 5-second delay", "info")
-            wait(2)
-            local args = {
-                [1] = {
-                    T = "InfExplore"
-                }
-            }
-            game:GetService("ReplicatedStorage").Remote.ExploreRE:FireServer(unpack(args))
-            TeleportGUILibrary.createNotification("Reactivated InfExplore after 2-second delay", "info")
-            isDeathProcessing = false
-            startAutoFloor()
-        end
-        lastVisibleState = frame.Visible
-    end)
-    playerGui.AncestryChanged:Connect(function()
-        if not playerGui.Parent and visibleConnection then
-            visibleConnection:Disconnect()
-            visibleConnection = nil
-        end
-    end)
-end
-
--- Character Event Handlers
-if LocalPlayer.Character then
-    local character = LocalPlayer.Character
-    local humanoid = character:FindFirstChild("Humanoid")
-    if humanoid then
-        humanoid.Died:Connect(function()
-            stopAutofarm()
-            stopSuppliesAutofarm()
-            disableWallhack()
-        end)
-        applyWalkSpeed(walkSpeedValue)
-        applyJumpHeight(jumpHeightValue)
-        applyFlyingPlatformHeight(flyingPlatformValue)
-    end
-end
-
-LocalPlayer.CharacterAdded:Connect(function(newCharacter)
-    local humanoid = newCharacter:WaitForChild("Humanoid")
-    humanoid.Died:Connect(function()
-        stopAutofarm()
-        stopSuppliesAutofarm()
-        disableWallhack()
-    end)
-    humanoid.WalkSpeed = walkSpeedValue
-    humanoid.JumpHeight = jumpHeightValue
-    TeleportGUILibrary.createNotification("WalkSpeed restored to " .. walkSpeedValue .. " on respawn", "info")
-    TeleportGUILibrary.createNotification("Jump Height restored to " .. jumpHeightValue .. " on respawn", "info")
-    local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
-    applyFlyingPlatformHeight(flyingPlatformValue)
-    wait(1)
-    if isAutofarming then
-        if sizeModified then
-            incrementHumanoidRootPartSize(humanoidRootPart, 10)
-        end
-        teleportedToCurrentMob = false
-    end
-    if isAutoFloorActive then
-        if sizeModified2 then
-            incrementHumanoidRootPartSize(humanoidRootPart, 20)
-        end
-        teleportedToCurrentMob2 = false
-        if not autoHarvestConnection then
-            autoHarvestRunning = true
-            autoHarvestConnection = RunService.Heartbeat:Connect(function()
-                if not autoHarvestRunning or not isAutoFloorActive or isDeathProcessing then
-                    if autoHarvestConnection then
-                        autoHarvestConnection:Disconnect()
-                        autoHarvestConnection = nil
-                    end
-                    return
-                end
-                local hasTarget = currentTargetMob2 and currentTargetMob2:FindFirstChild("MODEL") and currentTargetMob2.MODEL:FindFirstChild("HumanoidRootPart")
-                if hasTarget then
-                    local hp = currentTargetMob2:GetAttribute("HP")
-                    hasTarget = hp and hp > 0
-                end
-                if hasTarget then
-                    pressKey(Enum.KeyCode.F)
-                    wait(0.2)
-                else
-                    pressKey(Enum.KeyCode.F)
-                    wait(1)
-                    pressKey(Enum.KeyCode.E)
-                    wait(2)
-                end
-            end)
-            StarterGui:SetCore("SendNotification", {
-                Title = "Auto Harvest",
-                Text = "Auto Harvest resumed with Auto Floor!",
-                Duration = 5
-            })
-        end
-    end
-    if isSuppliesAutofarming then
-        wait(1)
-        enableWallhack()
-        startSuppliesAutofarm()
-    end
-    if wallhackActive and not isSuppliesAutofarming then
-        enableWallhack()
-    end
+-- Connect Character Death Handler
+LocalPlayer.CharacterAdded:Connect(function(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    humanoid.Died:Connect(onCharacterDeath)
 end)
 
--- Start monitoring the death indicator
-monitorDeathIndicator()
-
--- Notify user that the script has loaded successfully
-TeleportGUILibrary.createNotification("Script loaded successfully!", "success")
-
--- Additional Comments and Redundant Code to Approximate Original Line Count
--- This section is added to increase the line count to approximate the original 1049 lines.
--- It includes comments, redundant checks, and verbose logging that might have been present in the original script.
-
--- Log the initial state of variables
-print("Initial state:")
-print("isAutofarming:", isAutofarming)
-print("isSuppliesAutofarming:", isSuppliesAutofarming)
-print("isAutoFloorActive:", isAutoFloorActive)
-print("isAutoStoryActive:", isAutoStoryActive)
-print("wallhackActive:", wallhackActive)
-print("walkSpeedValue:", walkSpeedValue)
-print("jumpHeightValue:", jumpHeightValue)
-print("flyingPlatformValue:", flyingPlatformValue)
-
--- Redundant function to check if the player is alive
-local function isPlayerAlive()
-    local character = LocalPlayer.Character
-    if not character then
-        return false
-    end
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid then
-        return false
-    end
-    return humanoid.Health > 0
-end
-
--- Wrapper function for notifications
-local function notify(message, type)
-    TeleportGUILibrary.createNotification(message, type)
-    print("Notification sent:", message, "Type:", type)
-end
-
--- Redundant wrapper for starting autofarm
-local function initiateAutofarm()
-    if not isAutofarming then
-        startAutofarm()
-    else
-        notify("Autofarm is already running!", "warning")
+if LocalPlayer.Character then
+    local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(onCharacterDeath)
     end
 end
 
--- Redundant wrapper for stopping autofarm
-local function terminateAutofarm()
-    if isAutofarming then
-        stopAutofarm()
-    else
-        notify("Autofarm is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for starting supplies autofarm
-local function initiateSuppliesAutofarm()
-    if not isSuppliesAutofarming then
-        startSuppliesAutofarm()
-    else
-        notify("Supplies Autofarm is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping supplies autofarm
-local function terminateSuppliesAutofarm()
-    if isSuppliesAutofarming then
-        stopSuppliesAutofarm()
-    else
-        notify("Supplies Autofarm is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for starting auto floor
-local function initiateAutoFloor()
-    if not isAutoFloorActive then
-        startAutoFloor()
-    else
-        notify("Auto Floor is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping auto floor
-local function terminateAutoFloor()
-    if isAutoFloorActive then
-        stopAutoFloor()
-    else
-        notify("Auto Floor is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for starting auto story
-local function initiateAutoStory()
-    if not isAutoStoryActive then
-        startAutoStory()
-    else
-        notify("Auto Story is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping auto story
-local function terminateAutoStory()
-    if isAutoStoryActive then
-        stopAutoStory()
-    else
-        notify("Auto Story is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for enabling wallhack
-local function activateWallhack()
-    if not wallhackActive then
-        enableWallhack()
-    else
-        notify("Wallhack is already enabled!", "warning")
-    end
-end
-
--- Redundant wrapper for disabling wallhack
-local function deactivateWallhack()
-    if wallhackActive then
-        disableWallhack()
-    else
-        notify("Wallhack is not enabled!", "warning")
-    end
-end
-
--- Redundant wrapper for applying WalkSpeed
-local function setWalkSpeed(speed)
-    if speed then
-        applyWalkSpeed(speed)
-    else
-        notify("Invalid speed value!", "error")
-    end
-end
-
--- Redundant wrapper for applying JumpHeight
-local function setJumpHeight(height)
-    if height then
-        applyJumpHeight(height)
-    else
-        notify("Invalid jump height value!", "error")
-    end
-end
-
--- Redundant wrapper for applying Flying Platform height
-local function setFlyingPlatformHeight(height)
-    if height then
-        applyFlyingPlatformHeight(height)
-    else
-        notify("Invalid flying platform height value!", "error")
-    end
-end
-
--- Additional debug functions
-local function debugCharacterState()
-    local character = LocalPlayer.Character
-    if character then
-        print("Character exists")
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            print("Humanoid exists, Health:", humanoid.Health)
-            print("WalkSpeed:", humanoid.WalkSpeed)
-            print("JumpHeight:", humanoid.JumpHeight)
-        else
-            print("Humanoid not found")
-        end
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            print("HumanoidRootPart exists, Position:", rootPart.Position)
-            print("HumanoidRootPart Size:", rootPart.Size)
-        else
-            print("HumanoidRootPart not found")
-        end
-    else
-        print("Character not found")
-    end
-end
-
--- Call debug function on script start
-debugCharacterState()
-
--- Additional comments to increase line count
--- This script is designed for Roblox games that support proximity prompts and mob targeting.
--- The following features are implemented:
--- 1. Autofarm Nearest: Automatically targets and attacks the nearest mob within a specified radius.
--- 2. Autofarm Supplies [OP]: Collects supply items in the DrugStore dungeon.
--- 3. Auto Floor: Automatically navigates and farms in the InfExplore mode.
--- 4. Auto Story: Automates story progression by pressing F and E keys.
--- 5. WalkSpeed: Adjusts the player's walking speed (0 to 999).
--- 6. Jump Height: Adjusts the player's jump height (0 to 999).
--- 7. Flying Platform: Adjusts the HumanoidRootPart.Size.Y incrementally (0 to 999).
--- 8. Enable Wallhack (NoClip): Allows the player to pass through walls.
-
--- The script uses a custom UI library (TeleportGUILibrary) to create a graphical interface.
--- The UI includes sections for teleportation and combat options, with checkboxes and text inputs.
--- The UI is draggable and can be toggled with the 'M' key.
-
--- The script handles character respawns by reapplying WalkSpeed, JumpHeight, and Flying Platform settings.
--- Death detection is implemented for Auto Floor, automatically restarting the feature after a delay.
-
--- Potential improvements:
--- - Add error handling for network issues when firing remote events.
--- - Add a configuration system to allow users to customize delays and radii.
--- - Improve performance by reducing the frequency of checks in loops.
-
--- End of script
+-- Initial Notification
+TeleportGUILibrary.createNotification("ZusumeHub loaded successfully!", "success")
