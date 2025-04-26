@@ -21,6 +21,9 @@ local COLORS = {
     Input = Color3.fromRGB(55, 55, 60),
 }
 
+-- Auto destroy functionality (if no interaction after 5 minutes)
+local AUTO_DESTROY_TIME = 300 -- 5 minutes in seconds
+
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TeleportGUI"
@@ -64,29 +67,11 @@ Title.Text = "Minds-Fall Zombie"
 Title.TextXAlignment = Enum.TextXAlignment.Center
 Title.Parent = TopBar
 
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -28, 0, 2)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BorderSizePixel = 0
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.TextSize = 14
-CloseButton.Parent = TopBar
-
--- Round the close button
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
-CloseCorner.Parent = CloseButton
-
--- Minimize Button
+-- Minimize Button (moved to Close Button position)
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
+MinimizeButton.Position = UDim2.new(1, -28, 0, 2) -- Now in Close Button position
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
@@ -119,21 +104,43 @@ ContentFrame.Size = UDim2.new(1, 0, 0, 0) -- Will be updated dynamically
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = ScrollingFrame
 
--- YouTube Label (fixed at the bottom of MainFrame)
+-- YouTube Icon (Added to the left of the label)
+local YouTubeIcon = Instance.new("ImageLabel")
+YouTubeIcon.Name = "YouTubeIcon"
+YouTubeIcon.Size = UDim2.new(0, 20, 0, 20)
+YouTubeIcon.Position = UDim2.new(0, 10, 0, 5) -- Left-aligned
+YouTubeIcon.BackgroundTransparency = 1
+YouTubeIcon.Image = "rbxassetid://11855696418" -- YouTube logo asset ID
+YouTubeIcon.ScaleType = Enum.ScaleType.Fit
+YouTubeIcon.Parent = MainFrame
+YouTubeIcon.ZIndex = 2
+YouTubeIcon.Visible = true
+
+-- YouTube Label (moved to left side)
 local YouTubeLabel = Instance.new("TextLabel")
 YouTubeLabel.Name = "YouTubeLabel"
-YouTubeLabel.Size = UDim2.new(1, 0, 0, 30)
-YouTubeLabel.Position = UDim2.new(0, 0, 1, -30)
+YouTubeLabel.Size = UDim2.new(0, 120, 0, 30)
+YouTubeLabel.Position = UDim2.new(0, 35, 1, -30) -- Left-aligned, after icon
 YouTubeLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 YouTubeLabel.BorderSizePixel = 0
 YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YouTubeLabel.TextSize = 16
 YouTubeLabel.Font = Enum.Font.GothamBold
-YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center
+YouTubeLabel.Text = "Zysume"
+YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Left
 YouTubeLabel.Parent = MainFrame
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
+
+-- Bottom bar for YouTube label background
+local BottomBar = Instance.new("Frame")
+BottomBar.Name = "BottomBar"
+BottomBar.Size = UDim2.new(1, 0, 0, 30)
+BottomBar.Position = UDim2.new(0, 0, 1, -30)
+BottomBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+BottomBar.BorderSizePixel = 0
+BottomBar.Parent = MainFrame
+BottomBar.ZIndex = 1
 
 -- Function to create a section (label + separator)
 function TeleportGUILibrary.createSection(sectionName, positionY)
@@ -240,6 +247,9 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
         if onToggle then
             onToggle(checked)
         end
+        
+        -- Reset auto-destroy timer on interaction
+        resetAutoDestroyTimer()
     end)
     
     return checkboxContainer, function() return checked end
@@ -308,6 +318,9 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
             TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             {BackgroundColor3 = Color3.fromRGB(70, 70, 80)}
         ):Play()
+        
+        -- Reset auto-destroy timer on interaction
+        resetAutoDestroyTimer()
     end)
     
     textBox.FocusLost:Connect(function(enterPressed)
@@ -333,6 +346,9 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
         else
             textBox.Text = tostring(currentValue)
         end
+        
+        -- Reset auto-destroy timer on interaction
+        resetAutoDestroyTimer()
     end)
     
     return inputContainer, {
@@ -434,6 +450,9 @@ function TeleportGUILibrary.createNotification(message, type)
         wait(0.5)
         NotifGui:Destroy()
     end)
+    
+    -- Reset auto-destroy timer on notification
+    resetAutoDestroyTimer()
 end
 
 -- Expose ContentFrame for adding sections
@@ -445,6 +464,49 @@ function TeleportGUILibrary.updateCanvasSize(contentHeight)
     ContentFrame.Size = UDim2.new(1, 0, 0, contentHeight)
 end
 
+-- Auto destroy functionality
+local autoDestroyConnection
+local function setupAutoDestroy()
+    local lastInteractionTime = os.time()
+    
+    -- Function to reset the timer
+    function resetAutoDestroyTimer()
+        lastInteractionTime = os.time()
+    end
+    
+    -- Create connection to check time
+    if autoDestroyConnection then
+        autoDestroyConnection:Disconnect()
+    end
+    
+    autoDestroyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if os.time() - lastInteractionTime >= AUTO_DESTROY_TIME then
+            if ScreenGui and ScreenGui.Parent then
+                ScreenGui:Destroy()
+            end
+            if autoDestroyConnection then
+                autoDestroyConnection:Disconnect()
+            end
+        end
+    end)
+    
+    -- Expose reset function
+    TeleportGUILibrary.resetAutoDestroyTimer = resetAutoDestroyTimer
+    
+    -- Reset timer on GUI interaction
+    MainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+           input.UserInputType == Enum.UserInputType.Touch then
+            resetAutoDestroyTimer()
+        end
+    end)
+    
+    MinimizeButton.MouseButton1Click:Connect(resetAutoDestroyTimer)
+end
+
+-- Call to setup auto destroy
+setupAutoDestroy()
+
 -- Make GUI draggable (both vertically and horizontally)
 local dragging = false
 local dragInput
@@ -455,6 +517,7 @@ local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseE
 local function updateDrag(input)
     local delta = input.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    TeleportGUILibrary.resetAutoDestroyTimer() -- Reset timer on drag
 end
 
 local function disableCamera(actionName, inputState, inputObject)
@@ -469,6 +532,7 @@ TopBar.InputBegan:Connect(function(input)
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
+        TeleportGUILibrary.resetAutoDestroyTimer() -- Reset timer on drag start
         
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
@@ -501,6 +565,7 @@ if isMobile then
             dragging = true
             dragStart = input.Position
             startPos = MainFrame.Position
+            TeleportGUILibrary.resetAutoDestroyTimer() -- Reset timer on touch start
 
             touchConnection = UIS.TouchMoved:Connect(function(touchInput)
                 if touchInput == input and dragging then
@@ -533,29 +598,31 @@ end
 local isMinimized = false
 local originalSize = MainFrame.Size
 
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
-end)
-
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
         MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
         ScrollingFrame.Visible = true
         YouTubeLabel.Visible = true
+        YouTubeIcon.Visible = true
+        BottomBar.Visible = true
         MinimizeButton.Text = "-"
     else
         originalSize = MainFrame.Size
         MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
         ScrollingFrame.Visible = false
         YouTubeLabel.Visible = false
+        YouTubeIcon.Visible = false
+        BottomBar.Visible = false
         MinimizeButton.Text = "+"
     end
     isMinimized = not isMinimized
+    TeleportGUILibrary.resetAutoDestroyTimer() -- Reset timer on minimize
 end)
 
 UIS.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.M then
         ScreenGui.Enabled = not ScreenGui.Enabled
+        TeleportGUILibrary.resetAutoDestroyTimer() -- Reset timer on toggle
     end
 end)
 
