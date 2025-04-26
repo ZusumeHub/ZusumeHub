@@ -79,6 +79,7 @@ local jumpHeightInput = nil
 local flyingPlatformValue = 2 -- Default HumanoidRootPart.Size.Y
 local flyingPlatformInput = nil
 local flyingPlatformAdjusting = false
+local flyingPlatformTween = nil -- To track and cancel ongoing tweens
 
 -- Utility Functions
 -- Function to simulate a key press
@@ -191,24 +192,44 @@ local function incrementHumanoidRootPartSize(humanoidRootPart, maxHeight)
     end)
 end
 
--- Function to incrementally adjust HumanoidRootPart.Size.Y for Flying Platform
+-- Function to adjust HumanoidRootPart.Size.Y for Flying Platform using TweenService
 local function adjustFlyingPlatformHeight(humanoidRootPart, targetHeight)
-    if flyingPlatformAdjusting then
+    if flyingPlatformAdjusting or not humanoidRootPart or not humanoidRootPart.Parent then
         return
     end
     flyingPlatformAdjusting = true
-    local originalSize = humanoidRootPart.Size
-    local currentY = originalSize.Y
-    local step = currentY < targetHeight and 1 or -1
-    while (step > 0 and currentY < targetHeight) or (step < 0 and currentY > targetHeight) do
-        currentY = currentY + step
-        humanoidRootPart.Size = Vector3.new(originalSize.X, currentY, originalSize.Z)
-        wait(0.2)
-        if not humanoidRootPart or not humanoidRootPart.Parent then
-            break
-        end
+    
+    -- Cancel any existing tween to prevent conflicts
+    if flyingPlatformTween then
+        flyingPlatformTween:Cancel()
+        flyingPlatformTween = nil
     end
-    flyingPlatformAdjusting = false
+    
+    local originalSize = humanoidRootPart.Size
+    local tweenInfo = TweenInfo.new(
+        0.5, -- Duration for smooth transition
+        Enum.EasingStyle.Linear,
+        Enum.EasingDirection.InOut
+    )
+    local goal = {Size = Vector3.new(originalSize.X, targetHeight, originalSize.Z)}
+    
+    flyingPlatformTween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+    flyingPlatformTween:Play()
+    
+    -- Wait for tween completion or cancellation
+    flyingPlatformTween.Completed:Connect(function()
+        flyingPlatformAdjusting = false
+        flyingPlatformTween = nil
+    end)
+    
+    -- Handle case where HumanoidRootPart is destroyed during tween
+    humanoidRootPart.AncestryChanged:Connect(function()
+        if not humanoidRootPart.Parent and flyingPlatformTween then
+            flyingPlatformTween:Cancel()
+            flyingPlatformTween = nil
+            flyingPlatformAdjusting = false
+        end
+    end)
 end
 
 -- Function to reset the HumanoidRootPart size to default
@@ -694,7 +715,11 @@ local function applyFlyingPlatformHeight(height)
                 flyingPlatformInput.setValue(height)
             end
             TeleportGUILibrary.createNotification("Flying Platform height set to " .. height, "success")
+        else
+            TeleportGUILibrary.createNotification("HumanoidRootPart not found!", "error")
         end
+    else
+        TeleportGUILibrary.createNotification("Character not found!", "error")
     end
 end
 
