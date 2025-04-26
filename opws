@@ -73,6 +73,13 @@ local autoStoryConnection = nil
 local walkSpeedValue = 16
 local walkSpeedInput = nil
 
+local jumpHeightValue = 7.2 -- Default JumpHeight (Roblox default is approximately 7.2 studs)
+local jumpHeightInput = nil
+
+local flyingPlatformValue = 2 -- Default HumanoidRootPart.Size.Y
+local flyingPlatformInput = nil
+local flyingPlatformAdjusting = false
+
 -- Utility Functions
 -- Function to simulate a key press
 local function pressKey(keyCode)
@@ -184,6 +191,26 @@ local function incrementHumanoidRootPartSize(humanoidRootPart, maxHeight)
     end)
 end
 
+-- Function to incrementally adjust HumanoidRootPart.Size.Y for Flying Platform
+local function adjustFlyingPlatformHeight(humanoidRootPart, targetHeight)
+    if flyingPlatformAdjusting then
+        return
+    end
+    flyingPlatformAdjusting = true
+    local originalSize = humanoidRootPart.Size
+    local currentY = originalSize.Y
+    local step = currentY < targetHeight and 1 or -1
+    while (step > 0 and currentY < targetHeight) or (step < 0 and currentY > targetHeight) do
+        currentY = currentY + step
+        humanoidRootPart.Size = Vector3.new(originalSize.X, currentY, originalSize.Z)
+        wait(0.2)
+        if not humanoidRootPart or not humanoidRootPart.Parent then
+            break
+        end
+    end
+    flyingPlatformAdjusting = false
+end
+
 -- Function to reset the HumanoidRootPart size to default
 local function resetHumanoidRootPartSize()
     local character = LocalPlayer.Character
@@ -191,6 +218,10 @@ local function resetHumanoidRootPartSize()
         local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
         if humanoidRootPart then
             humanoidRootPart.Size = Vector3.new(2, 2, 1)
+            flyingPlatformValue = 2
+            if flyingPlatformInput then
+                flyingPlatformInput.setValue(2)
+            end
         end
     end
 end
@@ -595,18 +626,74 @@ local function stopAutoStory()
     end
 end
 
--- Function to apply WalkSpeed
+-- Function to apply WalkSpeed with limits
 local function applyWalkSpeed(speed)
     local character = LocalPlayer.Character
     if character then
         local humanoid = character:FindFirstChild("Humanoid")
         if humanoid then
+            -- Apply limits: 0 to 999
+            if speed < 0 then
+                speed = 0
+                TeleportGUILibrary.createNotification("WalkSpeed cannot be less than 0!", "error")
+            elseif speed > 999 then
+                speed = 999
+                TeleportGUILibrary.createNotification("WalkSpeed cannot be more than 999!", "error")
+            end
             humanoid.WalkSpeed = speed
             walkSpeedValue = speed
             if walkSpeedInput then
                 walkSpeedInput.setValue(speed)
             end
             TeleportGUILibrary.createNotification("WalkSpeed set to " .. speed, "success")
+        end
+    end
+end
+
+-- Function to apply JumpHeight with limits
+local function applyJumpHeight(height)
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            -- Apply limits: 0 to 999
+            if height < 0 then
+                height = 0
+                TeleportGUILibrary.createNotification("Jump Height cannot be less than 0!", "error")
+            elseif height > 999 then
+                height = 999
+                TeleportGUILibrary.createNotification("Jump Height cannot be more than 999!", "error")
+            end
+            humanoid.JumpHeight = height
+            jumpHeightValue = height
+            if jumpHeightInput then
+                jumpHeightInput.setValue(height)
+            end
+            TeleportGUILibrary.createNotification("Jump Height set to " .. height, "success")
+        end
+    end
+end
+
+-- Function to apply Flying Platform height with limits
+local function applyFlyingPlatformHeight(height)
+    local character = LocalPlayer.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            -- Apply limits: 0 to 999
+            if height < 0 then
+                height = 0
+                TeleportGUILibrary.createNotification("Flying Platform height cannot be less than 0!", "error")
+            elseif height > 999 then
+                height = 999
+                TeleportGUILibrary.createNotification("Flying Platform height cannot be more than 999!", "error")
+            end
+            adjustFlyingPlatformHeight(humanoidRootPart, height)
+            flyingPlatformValue = height
+            if flyingPlatformInput then
+                flyingPlatformInput.setValue(height)
+            end
+            TeleportGUILibrary.createNotification("Flying Platform height set to " .. height, "success")
         end
     end
 end
@@ -694,29 +781,13 @@ autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
 -- Section: Combat Options
 local combatLabel, combatSeparator = TeleportGUILibrary.createSection("Combat Options", 165)
 
--- Checkbox: Enable Wallhack (NoClip)
-local wallhackCheckbox, getWallhackState
-wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
-    "WallhackCheckbox",
-    "Enable Wallhack (NoClip)",
-    UDim2.new(0.05, 0, 0, 195),
-    ContentFrame,
-    function(checked)
-        if checked then
-            enableWallhack()
-        else
-            disableWallhack()
-        end
-    end
-)
-
 -- Text Input: WalkSpeed
 local walkSpeedContainer
 walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     "WalkSpeedInput",
     "WalkSpeed (Default: 16)",
     walkSpeedValue,
-    UDim2.new(0.05, 0, 0, 225),
+    UDim2.new(0.05, 0, 0, 195),
     ContentFrame,
     function(value)
         local speed = tonumber(value)
@@ -729,53 +800,62 @@ walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     end
 )
 
--- Checkbox: Auto Heal
-local autoHealCheckbox, getAutoHealState
-autoHealCheckbox, getAutoHealState = TeleportGUILibrary.createCheckbox(
-    "AutoHealCheckbox",
-    "Auto Heal",
-    UDim2.new(0.05, 0, 0, 255),
+-- Text Input: Jump Height (Replaces Auto Heal)
+local jumpHeightContainer
+jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
+    "JumpHeightInput",
+    "Jump Height (Default: 7.2)",
+    jumpHeightValue,
+    UDim2.new(0.05, 0, 0, 225),
     ContentFrame,
-    function(checked)
-        TeleportGUILibrary.createNotification(
-            checked and "Auto Heal enabled!" or "Auto Heal disabled!",
-            checked and "success" or "warning"
-        )
+    function(value)
+        local height = tonumber(value)
+        if height then
+            applyJumpHeight(height)
+        else
+            TeleportGUILibrary.createNotification("Invalid Jump Height value! Please enter a number.", "error")
+            jumpHeightInput.setValue(jumpHeightValue) -- Revert to the last valid value
+        end
     end
 )
 
--- Checkbox: Auto Farm Enemies
-local extraOption1, getExtraOption1State
-extraOption1, getExtraOption1State = TeleportGUILibrary.createCheckbox(
-    "ExtraOption1",
-    "Auto Farm Enemies",
+-- Text Input: Flying Platform (Replaces Auto Farm Enemies)
+local flyingPlatformContainer
+flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInput(
+    "FlyingPlatformInput",
+    "Flying Platform (Default: 2)",
+    flyingPlatformValue,
+    UDim2.new(0.05, 0, 0, 255),
+    ContentFrame,
+    function(value)
+        local height = tonumber(value)
+        if height then
+            applyFlyingPlatformHeight(height)
+        else
+            TeleportGUILibrary.createNotification("Invalid Flying Platform value! Please enter a number.", "error")
+            flyingPlatformInput.setValue(flyingPlatformValue) -- Revert to the last valid value
+        end
+    end
+)
+
+-- Checkbox: Enable Wallhack (NoClip) (Moved below Flying Platform)
+local wallhackCheckbox, getWallhackState
+wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
+    "WallhackCheckbox",
+    "Enable Wallhack (NoClip)",
     UDim2.new(0.05, 0, 0, 285),
     ContentFrame,
     function(checked)
-        TeleportGUILibrary.createNotification(
-            checked and "Auto Farm Enemies enabled!" or "Auto Farm Enemies disabled!",
-            checked and "success" or "warning"
-        )
+        if checked then
+            enableWallhack()
+        else
+            disableWallhack()
+        end
     end
 )
 
--- Checkbox: Auto Collect Items
-local extraOption2, getExtraOption2State
-extraOption2, getExtraOption2State = TeleportGUILibrary.createCheckbox(
-    "ExtraOption2",
-    "Auto Collect Items",
-    UDim2.new(0.05, 0, 0, 315),
-    ContentFrame,
-    function(checked)
-        TeleportGUILibrary.createNotification(
-            checked and "Auto Collect Items enabled!" or "Auto Collect Items disabled!",
-            checked and "success" or "warning"
-        )
-    end
-)
-
--- Update Canvas Size
-TeleportGUILibrary.updateCanvasSize(345)
+-- Update Canvas Size (Adjusted after removing Auto Collect Items)
+TeleportGUILibrary.updateCanvasSize(315)
 
 -- Function to monitor the death indicator and handle respawn
 local function monitorDeathIndicator()
@@ -833,6 +913,8 @@ if LocalPlayer.Character then
             disableWallhack()
         end)
         applyWalkSpeed(walkSpeedValue)
+        applyJumpHeight(jumpHeightValue)
+        applyFlyingPlatformHeight(flyingPlatformValue)
     end
 end
 
@@ -844,17 +926,19 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
         disableWallhack()
     end)
     humanoid.WalkSpeed = walkSpeedValue
+    humanoid.JumpHeight = jumpHeightValue
     TeleportGUILibrary.createNotification("WalkSpeed restored to " .. walkSpeedValue .. " on respawn", "info")
+    TeleportGUILibrary.createNotification("Jump Height restored to " .. jumpHeightValue .. " on respawn", "info")
+    local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+    applyFlyingPlatformHeight(flyingPlatformValue)
     wait(1)
     if isAutofarming then
-        local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
         if sizeModified then
             incrementHumanoidRootPartSize(humanoidRootPart, 10)
         end
         teleportedToCurrentMob = false
     end
     if isAutoFloorActive then
-        local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
         if sizeModified2 then
             incrementHumanoidRootPartSize(humanoidRootPart, 20)
         end
@@ -919,6 +1003,8 @@ print("isAutoFloorActive:", isAutoFloorActive)
 print("isAutoStoryActive:", isAutoStoryActive)
 print("wallhackActive:", wallhackActive)
 print("walkSpeedValue:", walkSpeedValue)
+print("jumpHeightValue:", jumpHeightValue)
+print("flyingPlatformValue:", flyingPlatformValue)
 
 -- Redundant function to check if the player is alive
 local function isPlayerAlive()
@@ -1038,6 +1124,24 @@ local function setWalkSpeed(speed)
     end
 end
 
+-- Redundant wrapper for applying JumpHeight
+local function setJumpHeight(height)
+    if height then
+        applyJumpHeight(height)
+    else
+        notify("Invalid jump height value!", "error")
+    end
+end
+
+-- Redundant wrapper for applying Flying Platform height
+local function setFlyingPlatformHeight(height)
+    if height then
+        applyFlyingPlatformHeight(height)
+    else
+        notify("Invalid flying platform height value!", "error")
+    end
+end
+
 -- Additional debug functions
 local function debugCharacterState()
     local character = LocalPlayer.Character
@@ -1046,12 +1150,15 @@ local function debugCharacterState()
         local humanoid = character:FindFirstChild("Humanoid")
         if humanoid then
             print("Humanoid exists, Health:", humanoid.Health)
+            print("WalkSpeed:", humanoid.WalkSpeed)
+            print("JumpHeight:", humanoid.JumpHeight)
         else
             print("Humanoid not found")
         end
         local rootPart = character:FindFirstChild("HumanoidRootPart")
         if rootPart then
             print("HumanoidRootPart exists, Position:", rootPart.Position)
+            print("HumanoidRootPart Size:", rootPart.Size)
         else
             print("HumanoidRootPart not found")
         end
@@ -1070,22 +1177,20 @@ debugCharacterState()
 -- 2. Autofarm Supplies [OP]: Collects supply items in the DrugStore dungeon.
 -- 3. Auto Floor: Automatically navigates and farms in the InfExplore mode.
 -- 4. Auto Story: Automates story progression by pressing F and E keys.
--- 5. Enable Wallhack (NoClip): Allows the player to pass through walls.
--- 6. WalkSpeed: Adjusts the player's walking speed.
--- 7. Auto Heal: Placeholder for auto-healing functionality (not implemented).
--- 8. Auto Farm Enemies: Placeholder for additional autofarming functionality (not implemented).
--- 9. Auto Collect Items: Placeholder for additional item collection functionality (not implemented).
+-- 5. WalkSpeed: Adjusts the player's walking speed (0 to 999).
+-- 6. Jump Height: Adjusts the player's jump height (0 to 999).
+-- 7. Flying Platform: Adjusts the HumanoidRootPart.Size.Y incrementally (0 to 999).
+-- 8. Enable Wallhack (NoClip): Allows the player to pass through walls.
 
 -- The script uses a custom UI library (TeleportGUILibrary) to create a graphical interface.
--- The UI includes sections for teleportation and combat options, with checkboxes and a text input for WalkSpeed.
+-- The UI includes sections for teleportation and combat options, with checkboxes and text inputs.
 -- The UI is draggable and can be toggled with the 'M' key.
 
--- The script handles character respawns by reapplying WalkSpeed and restarting autofarming features if they were active.
+-- The script handles character respawns by reapplying WalkSpeed, JumpHeight, and Flying Platform settings.
 -- Death detection is implemented for Auto Floor, automatically restarting the feature after a delay.
 
 -- Potential improvements:
 -- - Add error handling for network issues when firing remote events.
--- - Implement the Auto Heal, Auto Farm Enemies, and Auto Collect Items features.
 -- - Add a configuration system to allow users to customize delays and radii.
 -- - Improve performance by reducing the frequency of checks in loops.
 
