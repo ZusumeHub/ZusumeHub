@@ -19,38 +19,77 @@ if not LocalPlayer.Character then
     return
 end
 
--- Fetch and Load the Library with Enhanced Error Handling
+-- Fetch and Load the Library with Enhanced Error Handling and Retry Mechanism
 local libraryUrl = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/LibraryNewUI"
-local libraryCode
-local success, errorMessage = pcall(function()
-    libraryCode = game:HttpGet(libraryUrl)
-end)
+local MAX_RETRIES = 3
+local RETRY_DELAY = 2 -- seconds
+local libraryCode, TeleportGUILibrary
 
-if not success or not libraryCode then
-    warn("Failed to fetch the library from " .. libraryUrl .. ". Error: " .. tostring(errorMessage))
-    -- Display an in-game notification if possible
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = "ZusumeHub Error",
-            Text = "Failed to load UI library. Check your internet connection or the library URL.",
-            Duration = 10
-        })
-    end)
-    return
+-- Function to check if a string is valid Lua code (basic validation)
+local function isValidLuaCode(code)
+    if not code or code == "" then
+        return false, "Code is empty or nil"
+    end
+    -- Check for common invalid patterns (e.g., HTTP error pages, non-Lua content)
+    if code:find("404: Not Found") or code:find("<html") or code:find("404") then
+        return false, "Fetched content is not Lua code (likely an HTTP error)"
+    end
+    return true, "Code appears to be valid"
 end
 
--- Load the Library
-local TeleportGUILibrary
-success, errorMessage = pcall(function()
-    TeleportGUILibrary = loadstring(libraryCode)()
-end)
+-- Attempt to fetch the library with retries
+for attempt = 1, MAX_RETRIES do
+    local httpSuccess, httpError = pcall(function()
+        libraryCode = game:HttpGet(libraryUrl)
+    end)
 
-if not success or not TeleportGUILibrary then
-    warn("Failed to load the library: " .. tostring(errorMessage))
+    if not httpSuccess then
+        warn(string.format("Attempt %d/%d: Failed to fetch library from %s. Error: %s", attempt, MAX_RETRIES, libraryUrl, tostring(httpError)))
+        if attempt < MAX_RETRIES then
+            warn("Retrying in " .. RETRY_DELAY .. " seconds...")
+            wait(RETRY_DELAY)
+        end
+        continue
+    end
+
+    -- Validate the fetched code
+    local isValid, validationError = isValidLuaCode(libraryCode)
+    if not isValid then
+        warn(string.format("Attempt %d/%d: Fetched code is invalid. Error: %s", attempt, MAX_RETRIES, validationError))
+        if attempt < MAX_RETRIES then
+            warn("Retrying in " .. RETRY_DELAY .. " seconds...")
+            wait(RETRY_DELAY)
+        end
+        continue
+    end
+
+    -- Attempt to load the code using loadstring
+    local loadSuccess, loadError = pcall(function()
+        local loadedFunction = loadstring(libraryCode)
+        if not loadedFunction then
+            error("loadstring returned nil - code is not executable")
+        end
+        TeleportGUILibrary = loadedFunction()
+    end)
+
+    if loadSuccess and TeleportGUILibrary then
+        break -- Successfully loaded the library
+    else
+        warn(string.format("Attempt %d/%d: Failed to load library. Error: %s", attempt, MAX_RETRIES, tostring(loadError)))
+        if attempt < MAX_RETRIES then
+            warn("Retrying in " .. RETRY_DELAY .. " seconds...")
+            wait(RETRY_DELAY)
+        end
+    end
+end
+
+-- Check if the library loaded successfully
+if not TeleportGUILibrary then
+    warn("Failed to load the library after " .. MAX_RETRIES .. " attempts.")
     pcall(function()
         StarterGui:SetCore("SendNotification", {
             Title = "ZusumeHub Error",
-            Text = "Failed to initialize UI library. Script cannot proceed.",
+            Text = "Failed to load UI library after multiple attempts. Please check the URL or your network.",
             Duration = 10
         })
     end)
@@ -1148,8 +1187,6 @@ local function deactivateWallhack()
 end
 
 -- Redundant wrapper for applying WalkSpeed
-local function setWi
--- Redundant wrapper for applying WalkSpeed
 local function setWalkSpeed(speed)
     if speed then
         applyWalkSpeed(speed)
@@ -1167,6 +1204,7 @@ local function setJumpHeight(height)
     end
 end
 
+-- sequel from last code
 -- Redundant wrapper for applying Flying Platform height
 local function setFlyingPlatformHeight(height)
     if height then
