@@ -281,10 +281,13 @@ local function tweenToPosition(position, duration)
         return
     end
     local tweenInfo = TweenInfo.new(duration or 1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(position)})
-    tween:Play()
-    return tween
-end
+    local tween = TweenService:Create(humanoidRootPart, tween Roblx uses for TweenService, RunService, Players, VirtualInputManager, StarterGui in local script
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local StarterGui = game:GetService("StarterGui")
 
 -- Function to start the DrugStore dungeon (initial teleport)
 local function startDrugStoreDungeonFirst()
@@ -506,6 +509,7 @@ local function startAutoFloor()
             lastTargetTime = os.time()
             local model = currentTargetMob2:FindFirstChild("MODEL")
             if not model or not model:FindFirstChild("HumanoidRootPart") then
+                quick_check = true
                 currentTargetMob2 = nil
                 teleportedToCurrentMob2 = false
                 TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
@@ -513,6 +517,7 @@ local function startAutoFloor()
             end
             local hp = currentTargetMob2:GetAttribute("HP")
             if not hp or hp < 1 then
+                quick_check = true
                 currentTargetMob2 = nil
                 teleportedToCurrentMob2 = false
                 TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
@@ -699,15 +704,53 @@ local function applyFlyingPlatformHeight(height)
 end
 
 -- Create the UI Elements
--- Section: Teleportation Options
-local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("Teleportation Options", 5)
+-- Section: MAIN HACKS
+local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("MAIN HACKS", 5)
+
+-- Checkbox: Auto Story
+local autoStoryCheckbox, getAutoStoryState
+autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
+    "AutoStoryCheckbox",
+    "Auto Story",
+    UDim2.new(0.05, 0, 0, 40),
+    ContentFrame,
+    function(checked)
+        isAutoStoryActive = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Story enabled!", "success")
+            startAutoStory()
+        else
+            TeleportGUILibrary.createNotification("Auto Story disabled!", "warning")
+            stopAutoStory()
+        end
+    end
+)
+
+-- Checkbox: Auto Floor
+local getAutoFloorState
+autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
+    "AutoFloorCheckbox",
+    "Auto Floor",
+    UDim2.new(0.05, 0, 0, 70),
+    ContentFrame,
+    function(checked)
+        isAutoFloorActive = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Floor enabled!", "success")
+            startAutoFloor()
+        else
+            TeleportGUILibrary.createNotification("Auto Floor disabled!", "warning")
+            stopAutoFloor()
+        end
+    end
+)
 
 -- Checkbox: Autofarm Nearest
 local autofarmCheckbox, getAutofarmState
 autofarmCheckbox, getAutofarmState = TeleportGUILibrary.createCheckbox(
     "AutofarmCheckbox",
     "Autofarm Nearest",
-    UDim2.new(0.05, 0, 0, 40),
+    UDim2.new(0.05, 0, 0, 100),
     ContentFrame,
     function(checked)
         isAutofarming = checked
@@ -726,7 +769,7 @@ local suppliesAutofarmCheckbox, getSuppliesAutofarmState
 suppliesAutofarmCheckbox, getSuppliesAutofarmState = TeleportGUILibrary.createCheckbox(
     "SuppliesAutofarmCheckbox",
     "Autofarm Supplies [OP]",
-    UDim2.new(0.05, 0, 0, 70),
+    UDim2.new(0.05, 0, 0, 130),
     ContentFrame,
     function(checked)
         isSuppliesAutofarming = checked
@@ -740,46 +783,8 @@ suppliesAutofarmCheckbox, getSuppliesAutofarmState = TeleportGUILibrary.createCh
     end
 )
 
--- Checkbox: Auto Floor
-local getAutoFloorState
-autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
-    "AutoFloorCheckbox",
-    "Auto Floor",
-    UDim2.new(0.05, 0, 0, 100),
-    ContentFrame,
-    function(checked)
-        isAutoFloorActive = checked
-        if checked then
-            TeleportGUILibrary.createNotification("Auto Floor enabled!", "success")
-            startAutoFloor()
-        else
-            TeleportGUILibrary.createNotification("Auto Floor disabled!", "warning")
-            stopAutoFloor()
-        end
-    end
-)
-
--- Checkbox: Auto Story
-local autoStoryCheckbox, getAutoStoryState
-autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
-    "AutoStoryCheckbox",
-    "Auto Story",
-    UDim2.new(0.05, 0, 0, 130),
-    ContentFrame,
-    function(checked)
-        isAutoStoryActive = checked
-        if checked then
-            TeleportGUILibrary.createNotification("Auto Story enabled!", "success")
-            startAutoStory()
-        else
-            TeleportGUILibrary.createNotification("Auto Story disabled!", "warning")
-            stopAutoStory()
-        end
-    end
-)
-
--- Section: Combat Options
-local combatLabel, combatSeparator = TeleportGUILibrary.createSection("Combat Options", 165)
+-- Section: PLAYER SETTING
+local combatLabel, combatSeparator = TeleportGUILibrary.createSection("PLAYER SETTING", 165)
 
 -- Text Input: WalkSpeed
 local walkSpeedContainer
@@ -800,7 +805,7 @@ walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     end
 )
 
--- Text Input: Jump Height (Replaces Auto Heal)
+-- Text Input: Jump Height
 local jumpHeightContainer
 jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     "JumpHeightInput",
@@ -819,7 +824,7 @@ jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     end
 )
 
--- Text Input: Flying Platform (Replaces Auto Farm Enemies)
+-- Text Input: Flying Platform
 local flyingPlatformContainer
 flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInput(
     "FlyingPlatformInput",
@@ -838,7 +843,7 @@ flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInpu
     end
 )
 
--- Checkbox: Enable Wallhack (NoClip) (Moved below Flying Platform)
+-- Checkbox: Enable Wallhack (NoClip)
 local wallhackCheckbox, getWallhackState
 wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
     "WallhackCheckbox",
@@ -854,7 +859,7 @@ wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
     end
 )
 
--- Update Canvas Size (Adjusted after removing Auto Collect Items)
+-- Update Canvas Size
 TeleportGUILibrary.updateCanvasSize(315)
 
 -- Function to monitor the death indicator and handle respawn
