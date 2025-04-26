@@ -118,16 +118,6 @@ BottomBar.BorderSizePixel = 0
 BottomBar.Parent = MainFrame
 BottomBar.ZIndex = 1
 
--- Bottom bar for YouTube label background
-local BottomBar = Instance.new("Frame")
-BottomBar.Name = "BottomBar"
-BottomBar.Size = UDim2.new(1, 0, 0, 30)
-BottomBar.Position = UDim2.new(0, 0, 1, -30)
-BottomBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-BottomBar.BorderSizePixel = 0
-BottomBar.Parent = MainFrame
-BottomBar.ZIndex = 1
-
 -- YouTube Label (moved to left side with padding)
 local YouTubeLabel = Instance.new("TextLabel")
 YouTubeLabel.Name = "YouTubeLabel"
@@ -541,15 +531,20 @@ end
 local isMinimized = false
 local originalSize = MainFrame.Size
 
+-- Fixed MinimizeButton click event
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
+        -- Expand back to original size
         MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
         ScrollingFrame.Visible = true
         BottomBar.Visible = true
         MinimizeButton.Text = "-"
     else
+        -- Save original size before minimizing
         originalSize = MainFrame.Size
+        -- When minimizing, keep the TopBar visible by setting the height to 30 (TopBar's height)
         MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        -- Hide content but keep TopBar visible
         ScrollingFrame.Visible = false
         BottomBar.Visible = false
         MinimizeButton.Text = "+"
