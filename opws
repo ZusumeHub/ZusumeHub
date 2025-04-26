@@ -67,8 +67,8 @@ local suppliesAutofarmLoop = nil
 local targetFoundTime = 0
 local targetDelaySeconds = 0.5
 
-local isAutoStoryActive = false
-local autoStoryConnection = nil
+local isTeleportStoryActive = false
+local teleportStoryConnection = nil
 
 local walkSpeedValue = 32
 local walkSpeedInput = nil
@@ -193,21 +193,24 @@ end
 
 -- Function to incrementally adjust HumanoidRootPart.Size.Y for Flying Platform
 local function adjustFlyingPlatformHeight(humanoidRootPart, targetHeight)
-    if flyingPlatformAdjusting then
-        return
-    end
     flyingPlatformAdjusting = true
     local originalSize = humanoidRootPart.Size
     local currentY = originalSize.Y
-    local step = currentY < targetHeight and 1 or -1
-    while (step > 0 and currentY < targetHeight) or (step < 0 and currentY > targetHeight) do
+    local step = currentY < targetHeight and 0.5 or -0.5
+    local stepsNeeded = math.abs(targetHeight - currentY) / math.abs(step)
+    local stepCount = 0
+    while stepCount < stepsNeeded do
+        if not humanoidRootPart or not humanoidRootPart.Parent then
+            flyingPlatformAdjusting = false
+            return
+        end
         currentY = currentY + step
         humanoidRootPart.Size = Vector3.new(originalSize.X, currentY, originalSize.Z)
         wait(0.2)
-        if not humanoidRootPart or not humanoidRootPart.Parent then
-            break
-        end
+        stepCount = stepCount + 1
     end
+    -- Set to exact target height to avoid floating-point errors
+    humanoidRootPart.Size = Vector3.new(originalSize.X, targetHeight, originalSize.Z)
     flyingPlatformAdjusting = false
 end
 
@@ -595,35 +598,54 @@ local function stopAutoFloor()
     TeleportGUILibrary.createNotification("Auto Floor stopped", "warning")
 end
 
--- Function to start Auto Story
-local function startAutoStory()
-    if autoStoryConnection then
+-- Function to start Teleport Next Story
+local function startTeleportStory()
+    if teleportStoryConnection then
         return
     end
-    isAutoStoryActive = true
-    autoStoryConnection = RunService.Heartbeat:Connect(function()
-        if not isAutoStoryActive then
-            if autoStoryConnection then
-                autoStoryConnection:Disconnect()
-                autoStoryConnection = nil
+    isTeleportStoryActive = true
+    local storyPrompt = workspace:FindFirstChild("StoryPromptREMOTE")
+    if not storyPrompt then
+        TeleportGUILibrary.createNotification("StoryPromptREMOTE not found!", "error")
+        isTeleportStoryActive = false
+        return
+    end
+    local cframe = storyPrompt.CFrame
+    if not cframe then
+        TeleportGUILibrary.createNotification("No CFrame found in StoryPromptREMOTE!", "error")
+        isTeleportStoryActive = false
+        return
+    end
+    teleportStoryConnection = RunService.Heartbeat:Connect(function()
+        if not isTeleportStoryActive then
+            if teleportStoryConnection then
+                teleportStoryConnection:Disconnect()
+                teleportStoryConnection = nil
             end
             return
         end
-        pressKey(Enum.KeyCode.F)
-        pressKey(Enum.KeyCode.E)
-        wait(0.5)
-        pressKey(Enum.KeyCode.E)
-        wait(0.5)
+        local character = LocalPlayer.Character
+        if not character then
+            return
+        end
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then
+            return
+        end
+        humanoidRootPart.CFrame = cframe + Vector3.new(0, 2, 0) -- Offset slightly above to avoid clipping
+        TeleportGUILibrary.createNotification("Teleported to StoryPromptREMOTE position", "success")
+        wait(1) -- Prevent excessive teleportation in the loop
     end)
 end
 
--- Function to stop Auto Story
-local function stopAutoStory()
-    isAutoStoryActive = false
-    if autoStoryConnection then
-        autoStoryConnection:Disconnect()
-        autoStoryConnection = nil
+-- Function to stop Teleport Next Story
+local function stopTeleportStory()
+    isTeleportStoryActive = false
+    if teleportStoryConnection then
+        teleportStoryConnection:Disconnect()
+        teleportStoryConnection = nil
     end
+    TeleportGUILibrary.createNotification("Teleport Next Story stopped", "warning")
 end
 
 -- Function to apply WalkSpeed with limits
@@ -642,7 +664,7 @@ local function applyWalkSpeed(speed)
             end
             humanoid.WalkSpeed = speed
             walkSpeedValue = speed
-            if walkSpeedInput then
+            if walkSpeedInput banter
                 walkSpeedInput.setValue(speed)
             end
             TeleportGUILibrary.createNotification("WalkSpeed set to " .. speed, "success")
@@ -759,21 +781,21 @@ autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
     end
 )
 
--- Checkbox: Auto Story
-local autoStoryCheckbox, getAutoStoryState
-autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
-    "AutoStoryCheckbox",
-    "Auto Story",
+-- Checkbox: Teleport Next Story
+local teleportStoryCheckbox, getTeleportStoryState
+teleportStoryCheckbox, getTeleportStoryState = TeleportGUILibrary.createCheckbox(
+    "TeleportStoryCheckbox",
+    "Teleport Next Story",
     UDim2.new(0.05, 0, 0, 130),
     ContentFrame,
     function(checked)
-        isAutoStoryActive = checked
+        isTeleportStoryActive = checked
         if checked then
-            TeleportGUILibrary.createNotification("Auto Story enabled!", "success")
-            startAutoStory()
+            TeleportGUILibrary.createNotification("Teleport Next Story enabled!", "success")
+            startTeleportStory()
         else
-            TeleportGUILibrary.createNotification("Auto Story disabled!", "warning")
-            stopAutoStory()
+            TeleportGUILibrary.createNotification("Teleport Next Story disabled!", "warning")
+            stopTeleportStory()
         end
     end
 )
@@ -800,7 +822,7 @@ walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     end
 )
 
--- Text Input: Jump Height (Replaces Auto Heal)
+-- Text Input: Jump Height
 local jumpHeightContainer
 jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     "JumpHeightInput",
@@ -819,7 +841,7 @@ jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     end
 )
 
--- Text Input: Flying Platform (Replaces Auto Farm Enemies)
+-- Text Input: Flying Platform
 local flyingPlatformContainer
 flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInput(
     "FlyingPlatformInput",
@@ -838,7 +860,7 @@ flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInpu
     end
 )
 
--- Checkbox: Enable Wallhack (NoClip) (Moved below Flying Platform)
+-- Checkbox: Enable Wallhack (NoClip)
 local wallhackCheckbox, getWallhackState
 wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
     "WallhackCheckbox",
@@ -854,7 +876,7 @@ wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
     end
 )
 
--- Update Canvas Size (Adjusted after removing Auto Collect Items)
+-- Update Canvas Size
 TeleportGUILibrary.updateCanvasSize(315)
 
 -- Function to monitor the death indicator and handle respawn
@@ -911,6 +933,7 @@ if LocalPlayer.Character then
             stopAutofarm()
             stopSuppliesAutofarm()
             disableWallhack()
+            stopTeleportStory()
         end)
         applyWalkSpeed(walkSpeedValue)
         applyJumpHeight(jumpHeightValue)
@@ -924,6 +947,7 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
         stopAutofarm()
         stopSuppliesAutofarm()
         disableWallhack()
+        stopTeleportStory()
     end)
     humanoid.WalkSpeed = walkSpeedValue
     humanoid.JumpHeight = jumpHeightValue
@@ -980,6 +1004,10 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
         enableWallhack()
         startSuppliesAutofarm()
     end
+    if isTeleportStoryActive then
+        wait(1)
+        startTeleportStory()
+    end
     if wallhackActive and not isSuppliesAutofarming then
         enableWallhack()
     end
@@ -990,208 +1018,3 @@ monitorDeathIndicator()
 
 -- Notify user that the script has loaded successfully
 TeleportGUILibrary.createNotification("Script loaded successfully!", "success")
-
--- Additional Comments and Redundant Code to Approximate Original Line Count
--- This section is added to increase the line count to approximate the original 1049 lines.
--- It includes comments, redundant checks, and verbose logging that might have been present in the original script.
-
--- Log the initial state of variables
-print("Initial state:")
-print("isAutofarming:", isAutofarming)
-print("isSuppliesAutofarming:", isSuppliesAutofarming)
-print("isAutoFloorActive:", isAutoFloorActive)
-print("isAutoStoryActive:", isAutoStoryActive)
-print("wallhackActive:", wallhackActive)
-print("walkSpeedValue:", walkSpeedValue)
-print("jumpHeightValue:", jumpHeightValue)
-print("flyingPlatformValue:", flyingPlatformValue)
-
--- Redundant function to check if the player is alive
-local function isPlayerAlive()
-    local character = LocalPlayer.Character
-    if not character then
-        return false
-    end
-    local humanoid = character:FindFirstChild("Humanoid")
-    if not humanoid then
-        return false
-    end
-    return humanoid.Health > 0
-end
-
--- Wrapper function for notifications
-local function notify(message, type)
-    TeleportGUILibrary.createNotification(message, type)
-    print("Notification sent:", message, "Type:", type)
-end
-
--- Redundant wrapper for starting autofarm
-local function initiateAutofarm()
-    if not isAutofarming then
-        startAutofarm()
-    else
-        notify("Autofarm is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping autofarm
-local function terminateAutofarm()
-    if isAutofarming then
-        stopAutofarm()
-    else
-        notify("Autofarm is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for starting supplies autofarm
-local function initiateSuppliesAutofarm()
-    if not isSuppliesAutofarming then
-        startSuppliesAutofarm()
-    else
-        notify("Supplies Autofarm is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping supplies autofarm
-local function terminateSuppliesAutofarm()
-    if isSuppliesAutofarming then
-        stopSuppliesAutofarm()
-    else
-        notify("Supplies Autofarm is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for starting auto floor
-local function initiateAutoFloor()
-    if not isAutoFloorActive then
-        startAutoFloor()
-    else
-        notify("Auto Floor is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping auto floor
-local function terminateAutoFloor()
-    if isAutoFloorActive then
-        stopAutoFloor()
-    else
-        notify("Auto Floor is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for starting auto story
-local function initiateAutoStory()
-    if not isAutoStoryActive then
-        startAutoStory()
-    else
-        notify("Auto Story is already running!", "warning")
-    end
-end
-
--- Redundant wrapper for stopping auto story
-local function terminateAutoStory()
-    if isAutoStoryActive then
-        stopAutoStory()
-    else
-        notify("Auto Story is not running!", "warning")
-    end
-end
-
--- Redundant wrapper for enabling wallhack
-local function activateWallhack()
-    if not wallhackActive then
-        enableWallhack()
-    else
-        notify("Wallhack is already enabled!", "warning")
-    end
-end
-
--- Redundant wrapper for disabling wallhack
-local function deactivateWallhack()
-    if wallhackActive then
-        disableWallhack()
-    else
-        notify("Wallhack is not enabled!", "warning")
-    end
-end
-
--- Redundant wrapper for applying WalkSpeed
-local function setWalkSpeed(speed)
-    if speed then
-        applyWalkSpeed(speed)
-    else
-        notify("Invalid speed value!", "error")
-    end
-end
-
--- Redundant wrapper for applying JumpHeight
-local function setJumpHeight(height)
-    if height then
-        applyJumpHeight(height)
-    else
-        notify("Invalid jump height value!", "error")
-    end
-end
-
--- Redundant wrapper for applying Flying Platform height
-local function setFlyingPlatformHeight(height)
-    if height then
-        applyFlyingPlatformHeight(height)
-    else
-        notify("Invalid flying platform height value!", "error")
-    end
-end
-
--- Additional debug functions
-local function debugCharacterState()
-    local character = LocalPlayer.Character
-    if character then
-        print("Character exists")
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            print("Humanoid exists, Health:", humanoid.Health)
-            print("WalkSpeed:", humanoid.WalkSpeed)
-            print("JumpHeight:", humanoid.JumpHeight)
-        else
-            print("Humanoid not found")
-        end
-        local rootPart = character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            print("HumanoidRootPart exists, Position:", rootPart.Position)
-            print("HumanoidRootPart Size:", rootPart.Size)
-        else
-            print("HumanoidRootPart not found")
-        end
-    else
-        print("Character not found")
-    end
-end
-
--- Call debug function on script start
-debugCharacterState()
-
--- Additional comments to increase line count
--- This script is designed for Roblox games that support proximity prompts and mob targeting.
--- The following features are implemented:
--- 1. Autofarm Nearest: Automatically targets and attacks the nearest mob within a specified radius.
--- 2. Autofarm Supplies [OP]: Collects supply items in the DrugStore dungeon.
--- 3. Auto Floor: Automatically navigates and farms in the InfExplore mode.
--- 4. Auto Story: Automates story progression by pressing F and E keys.
--- 5. WalkSpeed: Adjusts the player's walking speed (0 to 999).
--- 6. Jump Height: Adjusts the player's jump height (0 to 999).
--- 7. Flying Platform: Adjusts the HumanoidRootPart.Size.Y incrementally (0 to 999).
--- 8. Enable Wallhack (NoClip): Allows the player to pass through walls.
-
--- The script uses a custom UI library (TeleportGUILibrary) to create a graphical interface.
--- The UI includes sections for teleportation and combat options, with checkboxes and text inputs.
--- The UI is draggable and can be toggled with the 'M' key.
-
--- The script handles character respawns by reapplying WalkSpeed, JumpHeight, and Flying Platform settings.
--- Death detection is implemented for Auto Floor, automatically restarting the feature after a delay.
-
--- Potential improvements:
--- - Add error handling for network issues when firing remote events.
--- - Add a configuration system to allow users to customize delays and radii.
--- - Improve performance by reducing the frequency of checks in loops.
-
--- End of script
