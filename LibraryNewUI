@@ -1,475 +1,40 @@
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
-local ContextActionService = game:GetService("ContextActionService")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
+-- ZusumeHub Library Script for Roblox
+-- Original Author: Zysume (Hypothetical Implementation)
+-- Version: 1.0
+-- Last Updated: April 2025
+-- Description: Provides GUI functionality for ZusumeHub script, including checkboxes, text inputs, sections, and notifications.
 
+-- Services
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- Library Table
 local TeleportGUILibrary = {}
 
--- Constants for Notification and UI
-local FONT = Enum.Font.GothamBold
-local CORNER_RADIUS = UDim.new(0, 6)
-local COLORS = {
-    Frame = Color3.fromRGB(35, 35, 40),
-    Text = Color3.fromRGB(255, 255, 255),
-    Accent = Color3.fromRGB(114, 137, 218), -- Discord blue
-    Success = Color3.fromRGB(87, 242, 135),
-    Error = Color3.fromRGB(255, 89, 89),
-    Warning = Color3.fromRGB(255, 201, 79),
-    Input = Color3.fromRGB(55, 55, 60),
-}
-
--- Create GUI
+-- GUI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TeleportGUI"
+ScreenGui.Name = "ZusumeHubGui"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = PlayerGui
 
--- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 250, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
+MainFrame.Visible = true
 
--- Round the corners
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
-
--- Top Bar
-local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 30)
-TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
-
--- Title
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, -60, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamBold
-Title.Text = "you noob Sv_Azidan lol"
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
-
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -28, 0, 2)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BorderSizePixel = 0
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.TextSize = 14
-CloseButton.Parent = TopBar
-
--- Round the close button
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
-CloseCorner.Parent = CloseButton
-
--- Minimize Button
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.Text = "-"
-MinimizeButton.TextSize = 16
-MinimizeButton.Parent = TopBar
-
--- Round the minimize button
-local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 5)
-MinimizeCorner.Parent = MinimizeButton
-
--- ScrollingFrame to contain all content
-local ScrollingFrame = Instance.new("ScrollingFrame")
-ScrollingFrame.Name = "ScrollingFrame"
-ScrollingFrame.Size = UDim2.new(1, 0, 1, -60)
-ScrollingFrame.Position = UDim2.new(0, 0, 0, 30)
-ScrollingFrame.BackgroundTransparency = 1
-ScrollingFrame.ScrollBarThickness = 6
-ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-ScrollingFrame.HorizontalScrollBarInset = Enum.ScrollBarInset.None
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- Will be updated dynamically
-ScrollingFrame.Parent = MainFrame
-
--- Content Frame within the ScrollingFrame
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, 0, 0, 0) -- Will be updated dynamically
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = ScrollingFrame
-
--- YouTube Label (fixed at the bottom of MainFrame)
-local YouTubeLabel = Instance.new("TextLabel")
-YouTubeLabel.Name = "YouTubeLabel"
-YouTubeLabel.Size = UDim2.new(1, 0, 0, 30)
-YouTubeLabel.Position = UDim2.new(0, 0, 1, -30)
-YouTubeLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-YouTubeLabel.BorderSizePixel = 0
-YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-YouTubeLabel.TextSize = 16
-YouTubeLabel.Font = Enum.Font.GothamBold
-YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center
-YouTubeLabel.Parent = MainFrame
-YouTubeLabel.ZIndex = 2
-YouTubeLabel.Visible = true
-
--- Function to create a section (label + separator)
-function TeleportGUILibrary.createSection(sectionName, positionY)
-    local sectionLabel = Instance.new("TextLabel")
-    sectionLabel.Name = sectionName .. "Label"
-    sectionLabel.Size = UDim2.new(0.9, 0, 0, 25)
-    sectionLabel.Position = UDim2.new(0.05, 0, 0, positionY)
-    sectionLabel.BackgroundTransparency = 1
-    sectionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    sectionLabel.TextSize = 16
-    sectionLabel.Font = Enum.Font.GothamBold
-    sectionLabel.Text = sectionName
-    sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    sectionLabel.Parent = ContentFrame
-
-    local separator = Instance.new("Frame")
-    separator.Name = sectionName .. "Separator"
-    separator.Size = UDim2.new(0.9, 0, 0, 1)
-    separator.Position = UDim2.new(0.05, 0, 0, positionY + 30)
-    separator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    separator.BorderSizePixel = 0
-    separator.Parent = ContentFrame
-
-    return sectionLabel, separator
-end
-
--- Function to create custom checkbox with auto-apply (Option 2: Label on left, Checkbox on right)
-function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
-    local checkboxContainer = Instance.new("Frame")
-    checkboxContainer.Name = name .. "Container"
-    checkboxContainer.Size = UDim2.new(0.9, 0, 0, 28)
-    checkboxContainer.Position = position
-    checkboxContainer.BackgroundTransparency = 1
-    checkboxContainer.Parent = parent
-    
-    local checkboxBG = Instance.new("Frame")
-    checkboxBG.Name = "Background"
-    checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Checkbox on the far right
-    checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    checkboxBG.BorderSizePixel = 0
-    checkboxBG.Parent = checkboxContainer
-    
-    local checkboxCorner = Instance.new("UICorner")
-    checkboxCorner.CornerRadius = UDim.new(0, 5)
-    checkboxCorner.Parent = checkboxBG
-    
-    local checkmark = Instance.new("Frame")
-    checkmark.Name = "Checkmark"
-    checkmark.Size = UDim2.new(0, 0, 0, 0)
-    checkmark.AnchorPoint = Vector2.new(0.5, 0.5)
-    checkmark.Position = UDim2.new(0.5, 0, 0.5, 0)
-    checkmark.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
-    checkmark.BorderSizePixel = 0
-    checkmark.Visible = true
-    checkmark.Parent = checkboxBG
-    
-    local checkmarkCorner = Instance.new("UICorner")
-    checkmarkCorner.CornerRadius = UDim.new(0, 3)
-    checkmarkCorner.Parent = checkmark
-    
-    local checkboxLabel = Instance.new("TextLabel")
-    checkboxLabel.Name = "Label"
-    checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
-    checkboxLabel.BackgroundTransparency = 1
-    checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    checkboxLabel.TextSize = 14
-    checkboxLabel.Font = FONT
-    checkboxLabel.Text = text
-    checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
-    checkboxLabel.Parent = checkboxContainer
-    
-    local checkboxButton = Instance.new("TextButton")
-    checkboxButton.Name = "Button"
-    checkboxButton.Size = UDim2.new(1, 0, 1, 0)
-    checkboxButton.BackgroundTransparency = 1
-    checkboxButton.Text = ""
-    checkboxButton.Parent = checkboxContainer
-    
-    local checked = false
-    
-    checkboxButton.MouseButton1Click:Connect(function()
-        checked = not checked
-        
-        if checked then
-            local expandTween = TweenService:Create(
-                checkmark,
-                TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0.8, 0, 0.8, 0)}
-            )
-            expandTween:Play()
-            checkboxLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        else
-            local shrinkTween = TweenService:Create(
-                checkmark,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                {Size = UDim2.new(0, 0, 0, 0)}
-            )
-            shrinkTween:Play()
-            checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-        end
-        
-        if onToggle then
-            onToggle(checked)
-        end
-    end)
-    
-    return checkboxContainer, function() return checked end
-end
-
--- Updated Text Input Function (Option 2: Label on left, Input on right)
-function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
-    -- Container for the whole input element
-    local inputContainer = Instance.new("Frame")
-    inputContainer.Name = name .. "Container"
-    inputContainer.Size = UDim2.new(0.9, 0, 0, 30)
-    inputContainer.Position = position
-    inputContainer.BackgroundTransparency = 1
-    inputContainer.Parent = parent
-    
-    -- Label (on the left)
-    local inputLabel = Instance.new("TextLabel")
-    inputLabel.Name = "Label"
-    inputLabel.Size = UDim2.new(0, 150, 1, 0)
-    inputLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
-    inputLabel.BackgroundTransparency = 1
-    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    inputLabel.TextSize = 14
-    inputLabel.Font = FONT
-    inputLabel.Text = labelText
-    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
-    inputLabel.Parent = inputContainer
-    
-    -- Input Box Background (on the far right)
-    local inputBG = Instance.new("Frame")
-    inputBG.Name = "Background"
-    inputBG.Size = UDim2.new(0, 60, 0, 24)
-    inputBG.Position = UDim2.new(1, -60, 0.5, -12) -- Input on the far right
-    inputBG.BackgroundColor3 = COLORS.Input
-    inputBG.BorderSizePixel = 0
-    inputBG.Parent = inputContainer
-    
-    -- Round the corners of the input box
-    local inputCorner = Instance.new("UICorner")
-    inputCorner.CornerRadius = UDim.new(0, 5)
-    inputCorner.Parent = inputBG
-    
-    -- The actual TextBox
-    local textBox = Instance.new("TextBox")
-    textBox.Name = "TextBox"
-    textBox.Size = UDim2.new(0.9, 0, 0.8, 0)
-    textBox.Position = UDim2.new(0.05, 0, 0.1, 0)
-    textBox.BackgroundTransparency = 1
-    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textBox.TextSize = 14
-    textBox.Font = FONT
-    textBox.Text = tostring(defaultValue)
-    textBox.PlaceholderText = "Enter value..."
-    textBox.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
-    textBox.TextXAlignment = Enum.TextXAlignment.Center
-    textBox.ClearTextOnFocus = false
-    textBox.Parent = inputBG
-    
-    -- Store the current value
-    local currentValue = defaultValue
-    
-    -- Handle focus
-    textBox.Focused:Connect(function()
-        TweenService:Create(
-            inputBG,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(70, 70, 80)}
-        ):Play()
-    end)
-    
-    textBox.FocusLost:Connect(function(enterPressed)
-        TweenService:Create(
-            inputBG,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = COLORS.Input}
-        ):Play()
-        
-        if enterPressed then
-            local newValue = textBox.Text
-            local numValue = tonumber(newValue)
-            if numValue then
-                newValue = numValue
-            end
-            
-            if newValue ~= currentValue then
-                currentValue = newValue
-                if onChange then
-                    onChange(newValue)
-                end
-            end
-        else
-            textBox.Text = tostring(currentValue)
-        end
-    end)
-    
-    return inputContainer, {
-        getValue = function() return currentValue end,
-        setValue = function(value)
-            currentValue = value
-            textBox.Text = tostring(value)
-            if onChange then
-                onChange(value)
-            end
-        end
-    }
-end
-
--- Function to create notification
-function TeleportGUILibrary.createNotification(message, type)
-    local notifColor = COLORS.Accent
-    if type == "success" then
-        notifColor = COLORS.Success
-    elseif type == "error" then
-        notifColor = COLORS.Error
-    elseif type == "warning" then
-        notifColor = COLORS.Warning
-    end
-    
-    local NotifGui = Instance.new("ScreenGui")
-    local NotifFrame = Instance.new("Frame")
-    local NotifText = Instance.new("TextLabel")
-    local UICorner = Instance.new("UICorner")
-    local StatusBar = Instance.new("Frame")
-    local StatusBarCorner = Instance.new("UICorner")
-    
-    NotifGui.Name = "TeleportNotification"
-    NotifGui.DisplayOrder = 999
-    NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    
-    local parentSuccess = false
-    pcall(function()
-        if syn and syn.protect_gui then
-            syn.protect_gui(NotifGui)
-            NotifGui.Parent = CoreGui
-            parentSuccess = true
-        elseif gethui then
-            NotifGui.Parent = gethui()
-            parentSuccess = true
-        else
-            NotifGui.Parent = PlayerGui
-            parentSuccess = true
-        end
-    end)
-    if not parentSuccess then
-        print("Error: Failed to parent notification GUI.")
-        return
-    end
-    
-    NotifFrame.Name = "NotifFrame"
-    NotifFrame.Parent = NotifGui
-    NotifFrame.BackgroundColor3 = COLORS.Frame
-    NotifFrame.Position = UDim2.new(1, 10, 0.8, 0)
-    NotifFrame.Size = UDim2.new(0, 280, 0, 60)
-    NotifFrame.BackgroundTransparency = 0.1
-    NotifFrame.BorderSizePixel = 0
-    NotifFrame.ZIndex = 100
-    
-    UICorner.Parent = NotifFrame
-    UICorner.CornerRadius = CORNER_RADIUS
-    
-    NotifText.Name = "NotifText"
-    NotifText.Parent = NotifFrame
-    NotifText.BackgroundTransparency = 1
-    NotifText.Position = UDim2.new(0, 10, 0, 5)
-    NotifText.Size = UDim2.new(1, -20, 1, -15)
-    NotifText.Font = FONT
-    NotifText.Text = message
-    NotifText.TextColor3 = COLORS.Text
-    NotifText.TextSize = 16
-    NotifText.TextWrapped = true
-    NotifText.TextXAlignment = Enum.TextXAlignment.Left
-    NotifText.TextYAlignment = Enum.TextYAlignment.Top
-    NotifText.ZIndex = 101
-    
-    StatusBar.Name = "StatusBar"
-    StatusBar.Parent = NotifFrame
-    StatusBar.BackgroundColor3 = notifColor
-    StatusBar.Position = UDim2.new(0, 10, 1, -8)
-    StatusBar.Size = UDim2.new(1, -20, 0, 3)
-    StatusBar.ZIndex = 101
-    
-    StatusBarCorner.Parent = StatusBar
-    StatusBarCorner.CornerRadius = UDim.new(1, 0)
-    
-    TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
-    
-    local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
-    statusTween:Play()
-    
-    statusTween.Completed:Connect(function()
-        TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, 10, 0.8, 0)}):Play()
-        wait(0.5)
-        NotifGui:Destroy()
-    end)
-end
-
--- Expose ContentFrame for adding sections
-TeleportGUILibrary.ContentFrame = ContentFrame
-
--- Expose a function to update CanvasSize
-function TeleportGUILibrary.updateCanvasSize(contentHeight)
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-    ContentFrame.Size = UDim2.new(1, 0, 0, contentHeight)
-end
-
--- Make GUI draggable (both vertically and horizontally)
-local dragging = false
-local dragInput
-local dragStart
-local startPos
-local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-local function disableCamera(actionName, inputState, inputObject)
-    if dragging then
-        return Enum.ContextActionResult.Sink
-    end
-    return Enum.ContextActionResult.Pass
-end
-
-TopBar.InputBegan:Connect(function(input)
+-- Make MainFrame Draggable
+local dragging, dragInput, dragStart, startPos
+MainFrame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = MainFrame.Position
-        
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -477,86 +42,237 @@ TopBar.InputBegan:Connect(function(input)
         end)
     end
 end)
-
-TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
         dragInput = input
     end
 end)
-
-UIS.InputChanged:Connect(function(input)
+UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
-        updateDrag(input)
+        local delta = input.Position - dragStart
+        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
-if isMobile then
-    local touchConnection
-    local touchEndedConnection
+-- Topbar
+local Topbar = Instance.new("Frame")
+Topbar.Name = "Topbar"
+Topbar.Size = UDim2.new(1, 0, 0, 40)
+Topbar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Topbar.Parent = MainFrame
 
-    ContextActionService:BindAction("DisableCameraMovement", disableCamera, false, Enum.UserInputType.Touch)
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Size = UDim2.new(0.8, 0, 1, 0)
+Title.Position = UDim2.new(0.1, 0, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "ZusumeHub"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 20
+Title.TextXAlignment = Enum.TextXAlignment.Center -- Centered title
+Title.Parent = Topbar
 
-    TopBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = MainFrame.Position
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -35, 0, 5)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.Text = "-"
+MinimizeButton.TextSize = 18
+MinimizeButton.Parent = Topbar
+MinimizeButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    TeleportGUILibrary.createNotification(MainFrame.Visible and "GUI restored!" or "GUI minimized!", "info")
+end)
 
-            touchConnection = UIS.TouchMoved:Connect(function(touchInput)
-                if touchInput == input and dragging then
-                    updateDrag(touchInput)
-                end
-            end)
+-- Content Frame
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Name = "ContentFrame"
+ContentFrame.Size = UDim2.new(1, -10, 1, -50)
+ContentFrame.Position = UDim2.new(0, 5, 0, 45)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+TeleportGUILibrary.ContentFrame = ContentFrame
 
-            touchEndedConnection = UIS.TouchEnded:Connect(function(touchInput)
-                if touchInput == input then
-                    dragging = false
-                    if touchConnection then
-                        touchConnection:Disconnect()
-                    end
-                    if touchEndedConnection then
-                        touchEndedConnection:Disconnect()
-                    end
-                end
-            end)
+-- Scrolling Frame for Content
+local ScrollingFrame = Instance.new("ScrollingFrame")
+ScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
+ScrollingFrame.BackgroundTransparency = 1
+ScrollingFrame.ScrollBarThickness = 5
+ScrollingFrame.Parent = ContentFrame
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 315) -- Initial size, updated later
+
+-- Footer (Youtube: Zysume)
+local YoutubeLabel = Instance.new("TextLabel")
+YoutubeLabel.Name = "YoutubeLabel"
+YoutubeLabel.Size = UDim2.new(1, 0, 0, 20)
+YoutubeLabel.Position = UDim2.new(0, 0, 1, -25)
+YoutubeLabel.BackgroundTransparency = 1
+YoutubeLabel.Text = "Youtube: Zysume"
+YoutubeLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+YoutubeLabel.TextSize = 14
+YoutubeLabel.TextXAlignment = Enum.TextXAlignment.Left -- Left-aligned
+YoutubeLabel.Parent = MainFrame
+
+-- Toggle GUI with 'M' Key
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.M then
+        MainFrame.Visible = not MainFrame.Visible
+        TeleportGUILibrary.createNotification(MainFrame.Visible and "GUI shown!" or "GUI hidden!", "info")
+    end
+end)
+
+-- Function to Create a Section
+function TeleportGUILibrary.createSection(name, yOffset)
+    local label = Instance.new("TextLabel")
+    label.Name = name .. "Label"
+    label.Size = UDim2.new(1, 0, 0, 30)
+    label.Position = UDim2.new(0, 0, 0, yOffset)
+    label.BackgroundTransparency = 1
+    label.Text = name
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 18
+    label.TextXAlignment = Enum.TextXAlignment.Center -- Centered section title
+    label.Parent = ScrollingFrame
+
+    local separator = Instance.new("Frame")
+    separator.Name = name .. "Separator"
+    separator.Size = UDim2.new(1, -20, 0, 2)
+    separator.Position = UDim2.new(0, 10, 0, yOffset + 30)
+    separator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    separator.BorderSizePixel = 0
+    separator.Parent = ScrollingFrame
+
+    return label, separator
+end
+
+-- Function to Create a Checkbox
+function TeleportGUILibrary.createCheckbox(id, text, position, parent, callback)
+    local container = Instance.new("Frame")
+    container.Name = id .. "Container"
+    container.Size = UDim2.new(1, -20, 0, 30)
+    container.Position = position
+    container.BackgroundTransparency = 1
+    container.Parent = parent
+
+    local checkbox = Instance.new("TextButton")
+    checkbox.Name = id
+    checkbox.Size = UDim2.new(0, 20, 0, 20)
+    checkbox.Position = UDim2.new(0, 0, 0, 5)
+    checkbox.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    checkbox.Text = ""
+    checkbox.Parent = container
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -30, 1, 0)
+    label.Position = UDim2.new(0, 30, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    local checked = false
+    checkbox.MouseButton1Click:Connect(function()
+        checked = not checked
+        checkbox.BackgroundColor3 = checked and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(100, 100, 100)
+        callback(checked)
+    end)
+
+    local function getState()
+        return checked
+    end
+
+    local function setState(state)
+        checked = state
+        checkbox.BackgroundColor3 = checked and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(100, 100, 100)
+        callback(checked)
+    end
+
+    checkbox.SetState = setState
+    return checkbox, getState
+end
+
+-- Function to Create a Text Input
+function TeleportGUILibrary.createTextInput(id, placeholder, defaultValue, position, parent, callback)
+    local container = Instance.new("Frame")
+    container.Name = id .. "Container"
+    container.Size = UDim2.new(1, -20, 0, 30)
+    container.Position = position
+    container.BackgroundTransparency = 1
+    container.Parent = parent
+
+    local textBox = Instance.new("TextBox")
+    textBox.Name = id
+    textBox.Size = UDim2.new(0.5, 0, 1, 0)
+    textBox.Position = UDim2.new(0.5, 0, 0, 0)
+    textBox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.TextSize = 16
+    textBox.Text = tostring(defaultValue)
+    textBox.PlaceholderText = placeholder
+    textBox.Parent = container
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, -10, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = placeholder
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 16
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
+
+    textBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            callback(textBox.Text)
         end
     end)
 
-    ScreenGui.AncestryChanged:Connect(function()
-        if not ScreenGui:IsDescendantOf(game) then
-            ContextActionService:UnbindAction("DisableCameraMovement")
-        end
+    local function setValue(value)
+        textBox.Text = tostring(value)
+    end
+
+    textBox.setValue = setValue
+    return container, textBox
+end
+
+-- Function to Create a Notification
+function TeleportGUILibrary.createNotification(message, type)
+    local notification = Instance.new("Frame")
+    notification.Size = UDim2.new(0, 200, 0, 50)
+    notification.Position = UDim2.new(1, -210, 1, -60)
+    notification.BackgroundColor3 = type == "success" and Color3.fromRGB(0, 200, 0) or
+                                    type == "warning" and Color3.fromRGB(255, 165, 0) or
+                                    type == "error" and Color3.fromRGB(255, 0, 0) or
+                                    Color3.fromRGB(0, 120, 255)
+    notification.Parent = ScreenGui
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -10, 1, -10)
+    label.Position = UDim2.new(0, 5, 0, 5)
+    label.BackgroundTransparency = 1
+    label.Text = message
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 14
+    label.TextWrapped = true
+    label.Parent = notification
+
+    spawn(function()
+        wait(3)
+        local tween = TweenService:Create(notification, TweenInfo.new(0.5), {Position = UDim2.new(1, 0, 1, -60)})
+        tween:Play()
+        tween.Completed:Wait()
+        notification:Destroy()
     end)
 end
 
--- Minimize Status
-local isMinimized = false
-local originalSize = MainFrame.Size
+-- Function to Update Canvas Size
+function TeleportGUILibrary.updateCanvasSize(height)
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, height)
+end
 
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
-end)
-
-MinimizeButton.MouseButton1Click:Connect(function()
-    if isMinimized then
-        MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ScrollingFrame.Visible = true
-        YouTubeLabel.Visible = true
-        MinimizeButton.Text = "-"
-    else
-        originalSize = MainFrame.Size
-        MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ScrollingFrame.Visible = false
-        YouTubeLabel.Visible = false
-        MinimizeButton.Text = "+"
-    end
-    isMinimized = not isMinimized
-end)
-
-UIS.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.M then
-        ScreenGui.Enabled = not ScreenGui.Enabled
-    end
-end)
-
+-- Return Library
 return TeleportGUILibrary
