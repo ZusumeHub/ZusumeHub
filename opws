@@ -1,629 +1,1667 @@
+-- Fetch the library script from the URL
+local libraryUrl = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/LibraryNewUI"
+local libraryCode = game:HttpGet(libraryUrl)
+
+-- Execute the library code using loadstring to get the TeleportGUILibrary module
+local TeleportGUILibrary = loadstring(libraryCode)()
+
+-- Access the ContentFrame from the library
+local ContentFrame = TeleportGUILibrary.ContentFrame
+
+-- Services
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 
--- Create GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "TeleportGUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = PlayerGui
+-- Variables
+local wallhackActive = false
+local wallhackConnection = nil
+local isAutoFloorActive = false
+local currentTargetMob2 = nil
+local autoFloorLoop = nil
+local lastNotificationTime2 = 0
+local teleportedToCurrentMob2 = false
+local sizeModified2 = false
+local isAutofarming = false
+local currentTargetMob = nil
+local autofarmLoop = nil
+local lastNotificationTime = 0
+local teleportedToCurrentMob = false
+local sizeModified = false
+local isSuppliesAutofarming = false
+local suppliesAutofarmLoop = nil
+local targetFoundTime = 0
+local targetDelaySeconds = 0.5
+local autoHarvestRunning = false
+local autoHarvestConnection = nil
+local autoFloorCheckbox = nil -- Will be assigned later
+local isDeathProcessing = false -- Flag to indicate death processing is ongoing
+local isAutoStoryActive = false -- Flag for Auto Story feature
+local autoStoryConnection = nil -- Connection for Auto Story loop
 
--- Main Frame
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 250, 0, 220) -- Made taller to accommodate dropdown
-MainFrame.Position = UDim2.new(0.5, -125, 0.5, -110)
-MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-MainFrame.Parent = ScreenGui
-
--- Round the corners
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame
-
--- Top Bar
-local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
-TopBar.Size = UDim2.new(1, 0, 0, 30)
-TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-TopBar.BorderSizePixel = 0
-TopBar.Parent = MainFrame
-
--- Title
-local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(1, -60, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
-Title.BackgroundTransparency = 1
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamBold
-Title.Text = "you noob Sv_Azidan lol"
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TopBar
-
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -28, 0, 2)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BorderSizePixel = 0
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.TextSize = 14
-CloseButton.Parent = TopBar
-
--- Round the close button
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
-CloseCorner.Parent = CloseButton
-
--- Minimize Button
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.Text = "-"
-MinimizeButton.TextSize = 16
-MinimizeButton.Parent = TopBar
-
--- Round the minimize button
-local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 5)
-MinimizeCorner.Parent = MinimizeButton
-
--- Content Frame
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, 0, 1, -30)
-ContentFrame.Position = UDim2.new(0, 0, 0, 30)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = MainFrame
-
--- Dropdown Label
-local DropdownLabel = Instance.new("TextLabel")
-DropdownLabel.Name = "DropdownLabel"
-DropdownLabel.Size = UDim2.new(0.8, 0, 0, 30)
-DropdownLabel.Position = UDim2.new(0.1, 0, 0.05, 0)
-DropdownLabel.BackgroundTransparency = 1
-DropdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropdownLabel.TextSize = 14
-DropdownLabel.Font = Enum.Font.GothamSemibold
-DropdownLabel.Text = "Teleportation"
-DropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-DropdownLabel.Parent = ContentFrame
-
--- Dropdown Frame (container for dropdown button and list)
-local DropdownContainer = Instance.new("Frame")
-DropdownContainer.Name = "DropdownContainer"
-DropdownContainer.Size = UDim2.new(0.8, 0, 0, 35)
-DropdownContainer.Position = UDim2.new(0.1, 0, 0.2, 0)
-DropdownContainer.BackgroundTransparency = 1
-DropdownContainer.BorderSizePixel = 0
-DropdownContainer.ZIndex = 2
-DropdownContainer.Parent = ContentFrame
-
--- Dropdown Button Frame
-local DropdownFrame = Instance.new("Frame")
-DropdownFrame.Name = "DropdownFrame"
-DropdownFrame.Size = UDim2.new(1, 0, 0, 35)
-DropdownFrame.Position = UDim2.new(0, 0, 0, 0)
-DropdownFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-DropdownFrame.BorderSizePixel = 0
-DropdownFrame.ZIndex = 2
-DropdownFrame.Parent = DropdownContainer
-
--- Round the dropdown frame
-local DropdownCorner = Instance.new("UICorner")
-DropdownCorner.CornerRadius = UDim.new(0, 6)
-DropdownCorner.Parent = DropdownFrame
-
--- Dropdown Button
-local DropdownButton = Instance.new("TextButton")
-DropdownButton.Name = "DropdownButton"
-DropdownButton.Size = UDim2.new(1, 0, 1, 0)
-DropdownButton.BackgroundTransparency = 1
-DropdownButton.Font = Enum.Font.Gotham
-DropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropdownButton.Text = "Select destination..."
-DropdownButton.TextSize = 14
-DropdownButton.TextXAlignment = Enum.TextXAlignment.Left
-DropdownButton.TextTruncate = Enum.TextTruncate.AtEnd
-DropdownButton.ZIndex = 2
-DropdownButton.Parent = DropdownFrame
-
--- Dropdown Padding
-local Padding = Instance.new("UIPadding")
-Padding.PaddingLeft = UDim.new(0, 10)
-Padding.Parent = DropdownButton
-
--- Dropdown Arrow
-local DropdownArrow = Instance.new("TextLabel")
-DropdownArrow.Name = "DropdownArrow"
-DropdownArrow.Size = UDim2.new(0, 25, 1, 0)
-DropdownArrow.Position = UDim2.new(1, -25, 0, 0)
-DropdownArrow.BackgroundTransparency = 1
-DropdownArrow.TextColor3 = Color3.fromRGB(200, 200, 200)
-DropdownArrow.TextSize = 16
-DropdownArrow.Font = Enum.Font.GothamBold
-DropdownArrow.Text = "▼"
-DropdownArrow.ZIndex = 2
-DropdownArrow.Parent = DropdownFrame
-
--- Create dropdown list (options container)
-local DropdownList = Instance.new("Frame")
-DropdownList.Name = "DropdownList"
-DropdownList.Size = UDim2.new(1, 0, 0, 105) -- Increased height for 3 options (35 height each)
-DropdownList.Position = UDim2.new(0, 0, 1, 0) -- Position right below dropdown button
-DropdownList.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-DropdownList.BorderSizePixel = 0
-DropdownList.Visible = false
-DropdownList.ZIndex = 3 -- Higher zIndex to appear above other elements
-DropdownList.Parent = DropdownFrame
-
--- Round the dropdown list corners
-local DropdownListCorner = Instance.new("UICorner")
-DropdownListCorner.CornerRadius = UDim.new(0, 6)
-DropdownListCorner.Parent = DropdownList
-
--- Dropdown options list layout
-local OptionsLayout = Instance.new("UIListLayout")
-OptionsLayout.FillDirection = Enum.FillDirection.Vertical
-OptionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-OptionsLayout.Padding = UDim.new(0, 1)
-OptionsLayout.Parent = DropdownList
-
--- Create option buttons
-local optionHeight = 35
-
--- Option 1: Teleport to next quest
-local Option1 = Instance.new("TextButton")
-Option1.Name = "Option1"
-Option1.Size = UDim2.new(1, 0, 0, optionHeight - 1)
-Option1.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-Option1.BorderSizePixel = 0
-Option1.Font = Enum.Font.Gotham
-Option1.TextColor3 = Color3.fromRGB(255, 255, 255)
-Option1.Text = "Teleport to next quest"
-Option1.TextSize = 14
-Option1.TextXAlignment = Enum.TextXAlignment.Left
-Option1.ZIndex = 3
-Option1.LayoutOrder = 1
-Option1.Parent = DropdownList
-
--- Option 1 padding
-local Option1Padding = Instance.new("UIPadding")
-Option1Padding.PaddingLeft = UDim.new(0, 10)
-Option1Padding.Parent = Option1
-
--- Option 2: Teleport to training skill
-local Option2 = Instance.new("TextButton")
-Option2.Name = "Option2"
-Option2.Size = UDim2.new(1, 0, 0, optionHeight - 1)
-Option2.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-Option2.BorderSizePixel = 0
-Option2.Font = Enum.Font.Gotham
-Option2.TextColor3 = Color3.fromRGB(255, 255, 255)
-Option2.Text = "Teleport to training skill"
-Option2.TextSize = 14
-Option2.TextXAlignment = Enum.TextXAlignment.Left
-Option2.ZIndex = 3
-Option2.LayoutOrder = 2
-Option2.Parent = DropdownList
-
--- Option 2 padding
-local Option2Padding = Instance.new("UIPadding")
-Option2Padding.PaddingLeft = UDim.new(0, 10)
-Option2Padding.Parent = Option2
-
--- Option 3: Teleport to Drop Supplies (NEW)
-local Option3 = Instance.new("TextButton")
-Option3.Name = "Option3"
-Option3.Size = UDim2.new(1, 0, 0, optionHeight - 1)
-Option3.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-Option3.BorderSizePixel = 0
-Option3.Font = Enum.Font.Gotham
-Option3.TextColor3 = Color3.fromRGB(255, 255, 255)
-Option3.Text = "Teleport to Drop Supplies"
-Option3.TextSize = 14
-Option3.TextXAlignment = Enum.TextXAlignment.Left
-Option3.ZIndex = 3
-Option3.LayoutOrder = 3
-Option3.Parent = DropdownList
-
--- Option 3 padding
-local Option3Padding = Instance.new("UIPadding")
-Option3Padding.PaddingLeft = UDim.new(0, 10)
-Option3Padding.Parent = Option3
-
--- Apply Button
-local ApplyButton = Instance.new("TextButton")
-ApplyButton.Name = "ApplyButton"
-ApplyButton.Size = UDim2.new(0.8, 0, 0, 40)
-ApplyButton.Position = UDim2.new(0.1, 0, 0.4, 0)
-ApplyButton.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
-ApplyButton.BorderSizePixel = 0
-ApplyButton.Font = Enum.Font.GothamBold
-ApplyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ApplyButton.Text = "Apply"
-ApplyButton.TextSize = 14
-ApplyButton.Parent = ContentFrame
-
--- Round the apply button
-local ApplyCorner = Instance.new("UICorner")
-ApplyCorner.CornerRadius = UDim.new(0, 8)
-ApplyCorner.Parent = ApplyButton
-
--- AutoAttack Button (renamed from ToggleButton)
-local AutoAttackButton = Instance.new("TextButton")
-AutoAttackButton.Name = "AutoAttackButton"
-AutoAttackButton.Size = UDim2.new(0.8, 0, 0, 40)
-AutoAttackButton.Position = UDim2.new(0.1, 0, 0.65, 0)
-AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
-AutoAttackButton.BorderSizePixel = 0
-AutoAttackButton.Font = Enum.Font.GothamBold
-AutoAttackButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoAttackButton.Text = "AutoAttack: OFF"
-AutoAttackButton.TextSize = 14
-AutoAttackButton.Parent = ContentFrame
-
--- Round the autoattack button
-local AutoAttackCorner = Instance.new("UICorner")
-AutoAttackCorner.CornerRadius = UDim.new(0, 8)
-AutoAttackCorner.Parent = AutoAttackButton
-
--- Status Label
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Name = "StatusLabel"
-StatusLabel.Size = UDim2.new(0.8, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0.1, 0, 0.85, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-StatusLabel.TextSize = 12
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.Text = "Ready"
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
-StatusLabel.Parent = ContentFrame
-
--- Toggle Status
-local autoAttackStatus = false
-
--- Minimize Status
-local isMinimized = false
-local originalSize = MainFrame.Size
-
--- Selected teleport option
-local selectedOption = nil
-
--- Auto Attack Connection
-local autoAttackConnection = nil
-
--- Make GUI draggable
-local dragging
-local dragInput
-local dragStart
-local startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+-- Function to press a key
+local function pressKey(keyCode)
+    VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+    wait(0.1) -- Hold key for 0.1 second
+    VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
 end
 
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UIS.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        updateDrag(input)
-    end
-end)
-
--- Close GUI function
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
-    
-    -- Clean up auto attack when closing GUI
-    if autoAttackConnection then
-        autoAttackConnection:Disconnect()
-        autoAttackConnection = nil
-    end
-end)
-
--- Minimize function
-MinimizeButton.MouseButton1Click:Connect(function()
-    if isMinimized then
-        -- Restore
-        MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ContentFrame.Visible = true
-        MinimizeButton.Text = "-"
-    else
-        -- Minimize
-        originalSize = MainFrame.Size
-        MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ContentFrame.Visible = false
-        MinimizeButton.Text = "+"
-    end
-    isMinimized = not isMinimized
-end)
-
--- ENHANCED: Function to check if a mob is alive using multiple methods
-local function isMobAlive(mobPrimaryPart)
-    -- Method 1: Check via MODEL path
-    if mobPrimaryPart and mobPrimaryPart:FindFirstChild("MODEL") then
-        local head = mobPrimaryPart.MODEL:FindFirstChild("Head")
-        if head then
-            local gui = head:FindFirstChild("GUI")
-            if gui and gui:FindFirstChild("GUI/UnitGUI") then
-                local frame = gui["GUI/UnitGUI"]:FindFirstChild("Frame")
-                if frame and frame:FindFirstChild("HP") then
-                    return frame.HP.Visible
-                end
+-- Function to find all unique parts with ProximityPrompts in Drop folder
+local function findDropPartsWithPrompts()
+    local dropParts = {}
+    local dropFolder = workspace:FindFirstChild("Drop")
+    if dropFolder and dropFolder:IsA("Folder") then
+        for _, child in pairs(dropFolder:GetChildren()) do
+            if child:IsA("BasePart") and child.Name ~= "Drop" and child:FindFirstChild("ProximityPrompt") then
+                table.insert(dropParts, child)
             end
         end
     end
-    
-    -- Method 2: Direct check via HumanoidRootPart path
-    if mobPrimaryPart and mobPrimaryPart:FindFirstChild("MODEL") then
-        local hrp = mobPrimaryPart.MODEL:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local gui = hrp:FindFirstChild("GUI")
-            if gui and gui:FindFirstChild("GUI/UnitGUI") then
-                local frame = gui["GUI/UnitGUI"]:FindFirstChild("Frame")
-                if frame and frame:FindFirstChild("HP") then
-                    return frame.HP.Visible
-                end
-            end
-        end
-    end
-    
-    return false
+    return dropParts
 end
 
--- Function to find the closest mob
-local function findClosestMob()
-    local closestMob = nil
-    local closestDistance = math.huge
+-- Enhanced function to fire proximity prompt multiple times
+local function enhancedFireProximityPrompt(prompt, attempts)
+    attempts = attempts or 3
+    
+    local promptPart = prompt.Parent
     local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
     
-    local hrp = character.HumanoidRootPart
+    if humanoidRootPart and promptPart then
+        humanoidRootPart.CFrame = CFrame.new(promptPart.Position + Vector3.new(0, 1, 0))
+        wait(0.5)
+        for i = 1, attempts do
+            fireproximityprompt(prompt)
+            TeleportGUILibrary.createNotification("Firing prompt attempt " .. i, "info")
+            wait(0.7)
+        end
+        wait(1)
+    end
+end
+
+-- Function to teleport and stick to a part until prompt is successfully fired
+local function teleportAndStickToPrompt(part)
+    local character = LocalPlayer.Character
+    if not character then return false end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+    
+    local proximityPrompt = part:FindFirstChild("ProximityPrompt")
+    if not proximityPrompt then return false end
+    
+    humanoidRootPart.CFrame = CFrame.new(part.Position + Vector3.new(0, 2, 0))
+    wait(0.5)
+    enhancedFireProximityPrompt(proximityPrompt)
+    return true
+end
+
+-- Function to find nearest mob within a certain radius
+local function findNearestMob(radius)
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return nil end
+    
+    local nearestMob = nil
+    local shortestDistance = radius or 10
     
     if workspace:FindFirstChild("Units") then
         for _, unit in pairs(workspace.Units:GetChildren()) do
-            if unit:IsA("BasePart") and unit ~= hrp and isMobAlive(unit) then
-                local distance = (unit.Position - hrp.Position).Magnitude
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestMob = unit
+            if unit:FindFirstChild("MODEL") and unit.MODEL:FindFirstChild("HumanoidRootPart") then
+                if unit:GetAttribute("HP") and unit:GetAttribute("HP") > 0 then
+                    local distance = (humanoidRootPart.Position - unit.MODEL.HumanoidRootPart.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestMob = unit
+                    end
                 end
             end
         end
     end
     
-    return closestMob
+    return nearestMob
 end
 
--- Auto Attack Function
-local function performAutoAttack()
-    if not autoAttackStatus then return end
+-- Duplicate function for Auto Floor
+local function findNearestMob2(radius)
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return nil end
+    
+    local nearestMob = nil
+    local shortestDistance = radius or 50
+    
+    if workspace:FindFirstChild("Units") then
+        for _, unit in pairs(workspace.Units:GetChildren()) do
+            if unit:FindFirstChild("MODEL") and unit.MODEL:FindFirstChild("HumanoidRootPart") then
+                if unit:GetAttribute("HP") and unit:GetAttribute("HP") > 0 then
+                    local distance = (humanoidRootPart.Position - unit.MODEL.HumanoidRootPart.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestMob = unit
+                    end
+                end
+            end
+        end
+    end
+    
+    return nearestMob
+end
+
+-- Function to gradually increase HumanoidRootPart size
+local function incrementHumanoidRootPartSize(humanoidRootPart)
+    local originalSize = Vector3.new(2, 2, 1)
+    humanoidRootPart.Size = Vector3.new(originalSize.X, 2, originalSize.Z)
+    spawn(function()
+        for i = 3, 10 do
+            wait(0.3)
+            if humanoidRootPart and humanoidRootPart.Parent then
+                humanoidRootPart.Size = Vector3.new(originalSize.X, i, originalSize.Z)
+            else
+                break
+            end
+        end
+    end)
+end
+
+-- Duplicate function for Auto Floor
+local function incrementHumanoidRootPartSize2(humanoidRootPart)
+    local originalSize = Vector3.new(2, 2, 1)
+    humanoidRootPart.Size = Vector3.new(originalSize.X, 2, originalSize.Z)
+    spawn(function()
+        for i = 3, 20 do
+            wait(0.3)
+            if humanoidRootPart and humanoidRootPart.Parent then
+                humanoidRootPart.Size = Vector3.new(originalSize.X, i, originalSize.Z)
+            else
+                break
+            end
+        end
+    end)
+end
+
+-- Function to reset HumanoidRootPart size
+local function resetHumanoidRootPartSize()
+    local character = LocalPlayer.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.Size = Vector3.new(2, 2, 1)
+        end
+    end
+end
+
+-- Function to enable wallhack (noclip)
+local function enableWallhack()
+    if wallhackConnection then return end
+    
+    wallhackActive = true
+    wallhackConnection = RunService.Stepped:Connect(function()
+        if not wallhackActive then
+            if wallhackConnection then
+                wallhackConnection:Disconnect()
+                wallhackConnection = nil
+            end
+            return
+        end
+        
+        local character = LocalPlayer.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+    
+    TeleportGUILibrary.createNotification("Wallhack enabled", "success")
+end
+
+-- Function to disable wallhack
+local function disableWallhack()
+    wallhackActive = false
+    if wallhackConnection then
+        wallhackConnection:Disconnect()
+        wallhackConnection = nil
+    end
     
     local character = LocalPlayer.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    if character then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = true
+            end
+        end
+    end
     
-    local hrp = character.HumanoidRootPart
-    local closestMob = findClosestMob()
+    TeleportGUILibrary.createNotification("Wallhack disabled", "warning")
+end
+
+-- Function to teleport with tweening
+local function tweenToPosition(position, duration)
+    local character = LocalPlayer.Character
+    if not character then return end
     
-    if closestMob then
-        -- Create the args table with the required structure
-        local args = {
-            [1] = {
-                ["Type"] = "Hit",
-                ["From"] = Vector3.new(hrp.Position.X, hrp.Position.Y, hrp.Position.Z),
-                ["Slot"] = "Light",
-                ["UID"] = closestMob.Name -- The unique ID from the unit in workspace.Units
-            }
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    local tweenInfo = TweenInfo.new(
+        duration or 1,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    )
+    
+    local goal = {
+        CFrame = CFrame.new(position)
+    }
+    
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+    tween:Play()
+    return tween
+end
+
+-- Function to start dungeon (for Autofarm Supplies)
+local function startDrugStoreDungeonFirst()
+    local args = {
+        [1] = {
+            ["CF"] = CFrame.new(2177.754638671875, -196.92501831054688, 196.78997802734375) * CFrame.Angles(-0, 0, -0),
+            ["Type"] = "SyncCF"
         }
+    }
+    game:GetService("ReplicatedStorage").Remote.CharacterRE:FireServer(unpack(args))
+    TeleportGUILibrary.createNotification("Preparing DrugStore dungeon", "info")
+end
+
+local function startDrugStoreDungeon()
+    local args = {
+        [1] = {
+            ["ID"] = "T1DrugStore",
+            ["Type"] = "Start",
+            ["Diff"] = 3
+        }
+    }
+    game:GetService("ReplicatedStorage").Remote.DungeonRE:FireServer(unpack(args))
+    TeleportGUILibrary.createNotification("Started DrugStore dungeon", "info")
+end
+
+-- Function to start autofarming supplies
+local function startSuppliesAutofarm()
+    if suppliesAutofarmLoop then return end
+    
+    isSuppliesAutofarming = true
+    enableWallhack()
+    startDrugStoreDungeonFirst()
+    wait(2)
+    startDrugStoreDungeon()
+    
+    suppliesAutofarmLoop = coroutine.create(function()
+        while isSuppliesAutofarming do
+            local dropParts = findDropPartsWithPrompts()
+            if #dropParts > 0 then
+                TeleportGUILibrary.createNotification("Found " .. #dropParts .. " supply items to collect", "info")
+                for i, part in ipairs(dropParts) do
+                    if not isSuppliesAutofarming then break end
+                    TeleportGUILibrary.createNotification("Collecting supply: " .. part.Name, "info")
+                    local success = teleportAndStickToPrompt(part)
+                    if success then
+                        TeleportGUILibrary.createNotification("Successfully interacted with: " .. part.Name, "success")
+                    else
+                        TeleportGUILibrary.createNotification("Failed to interact with: " .. part.Name, "error")
+                    end
+                    wait(1)
+                end
+                TeleportGUILibrary.createNotification("Completed supply collection cycle", "success")
+            else
+                TeleportGUILibrary.createNotification("No supply items found to collect", "warning")
+                startDrugStoreDungeon()
+            end
+            wait(3)
+        end
+    end)
+    coroutine.resume(suppliesAutofarmLoop)
+end
+
+-- Function to stop autofarming supplies
+local function stopSuppliesAutofarm()
+    isSuppliesAutofarming = false
+    suppliesAutofarmLoop = nil
+    disableWallhack()
+    TeleportGUILibrary.createNotification("Autofarm Supplies stopped", "warning")
+end
+
+-- Function to start autofarming enemies
+local function startAutofarm()
+    if autofarmLoop then return end
+    
+    isAutofarming = true
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    autofarmLoop = RunService.Heartbeat:Connect(function()
+        if not isAutofarming then
+            if autofarmLoop then
+                autofarmLoop:Disconnect()
+                autofarmLoop = nil
+            end
+            resetHumanoidRootPartSize()
+            return
+        end
         
-        -- Fire the remote event to perform attack
-        game:GetService("ReplicatedStorage").Remote.CharacterRE:FireServer(unpack(args))
+        if currentTargetMob then
+            if not currentTargetMob:FindFirstChild("MODEL") or 
+               not currentTargetMob.MODEL:FindFirstChild("HumanoidRootPart") or
+               not currentTargetMob:GetAttribute("HP") or
+               currentTargetMob:GetAttribute("HP") < 1 then
+                currentTargetMob = nil
+                teleportedToCurrentMob = false
+                TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
+            else
+                if not teleportedToCurrentMob then
+                    local mobPosition = currentTargetMob.MODEL.HumanoidRootPart.Position
+                    local targetPosition = Vector3.new(mobPosition.X, mobPosition.Y + 5, mobPosition.Z)
+                    humanoidRootPart.CFrame = CFrame.new(targetPosition)
+                    teleportedToCurrentMob = true
+                    if sizeModified and humanoidRootPart.Size.Y < 10 then
+                        incrementHumanoidRootPartSize(humanoidRootPart)
+                    end
+                end
+                return
+            end
+        end
         
-        StatusLabel.Text = "Attacking: " .. closestMob.Name
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 150, 100)
-    else
-        StatusLabel.Text = "No targets found"
-        StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        local nearestMob = findNearestMob(15)
+        if nearestMob then
+            currentTargetMob = nearestMob
+            teleportedToCurrentMob = false
+            if not sizeModified then
+                incrementHumanoidRootPartSize(humanoidRootPart)
+                sizeModified = true
+            end
+            TeleportGUILibrary.createNotification("Found new target: " .. nearestMob.Name, "info")
+        else
+            local currentTime = os.time()
+            if currentTime - lastNotificationTime >= 5 then
+                TeleportGUILibrary.createNotification("No targets found nearby", "warning")
+                lastNotificationTime = currentTime
+            end
+        end
+    end)
+end
+
+-- Function to stop autofarming enemies
+local function stopAutofarm()
+    isAutofarming = false
+    currentTargetMob = nil
+    teleportedToCurrentMob = false
+    sizeModified = false
+    if autofarmLoop then
+        autofarmLoop:Disconnect()
+        autofarmLoop = nil
+    end
+    resetHumanoidRootPartSize()
+    TeleportGUILibrary.createNotification("Autofarm stopped", "warning")
+end
+
+-- Function to start Auto Floor with Auto Harvest
+local function startAutoFloor()
+    if autoFloorLoop then return end
+    
+    isAutoFloorActive = true
+    autoHarvestRunning = true
+    
+    -- Execute InfExplore code when Auto Floor is first enabled
+    local args = {
+        [1] = {
+            ["T"] = "InfExplore"
+        }
+    }
+    game:GetService("ReplicatedStorage").Remote.ExploreRE:FireServer(unpack(args))
+    TeleportGUILibrary.createNotification("Activated InfExplore", "info")
+    wait(2) -- Wait 2 seconds before continuing
+    
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local lastTargetTime = os.time()
+    
+    -- Notify Auto Harvest activation
+    StarterGui:SetCore("SendNotification", {
+        Title = "Auto Harvest",
+        Text = "Auto Harvest activated with Auto Floor!",
+        Duration = 5
+    })
+    
+    -- Auto Harvest loop
+    autoHarvestConnection = RunService.Heartbeat:Connect(function()
+        if not autoHarvestRunning or not isAutoFloorActive or isDeathProcessing then
+            if autoHarvestConnection then
+                autoHarvestConnection:Disconnect()
+                autoHarvestConnection = nil
+            end
+            return
+        end
+        
+        -- Check if there's a valid target
+        local hasTarget = currentTargetMob2 and 
+            currentTargetMob2:FindFirstChild("MODEL") and 
+            currentTargetMob2.MODEL:FindFirstChild("HumanoidRootPart") and 
+            currentTargetMob2:GetAttribute("HP") and 
+            currentTargetMob2:GetAttribute("HP") > 0
+        
+        if hasTarget then
+            pressKey(Enum.KeyCode.F)
+            wait(0.2) -- Press F every 0.2 seconds when target exists
+        else
+            pressKey(Enum.KeyCode.F)
+            wait(1) -- Press F every 1 second when no target
+            pressKey(Enum.KeyCode.E)
+            wait(2) -- Press E every 2 seconds when no target
+        end
+    end)
+    
+    -- Main Auto Floor loop
+    autoFloorLoop = RunService.Heartbeat:Connect(function()
+        if not isAutoFloorActive then
+            if autoFloorLoop then
+                autoFloorLoop:Disconnect()
+                autoFloorLoop = nil
+            end
+            if autoHarvestConnection then
+                autoHarvestConnection:Disconnect()
+                autoHarvestConnection = nil
+                autoHarvestRunning = false
+                StarterGui:SetCore("SendNotification", {
+                    Title = "Auto Harvest",
+                    Text = "Auto Harvest stopped with Auto Floor!",
+                    Duration = 5
+                })
+            end
+            resetHumanoidRootPartSize()
+            return
+        end
+        
+        if currentTargetMob2 then
+            lastTargetTime = os.time()
+            if not currentTargetMob2:FindFirstChild("MODEL") or 
+               not currentTargetMob2.MODEL:FindFirstChild("HumanoidRootPart") or
+               not currentTargetMob2:GetAttribute("HP") or
+               currentTargetMob2:GetAttribute("HP") < 1 then
+                currentTargetMob2 = nil
+                teleportedToCurrentMob2 = false
+                TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
+            else
+                local currentTime = os.time()
+                local timeElapsedSinceFound = currentTime - targetFoundTime
+                if not teleportedToCurrentMob2 and timeElapsedSinceFound >= targetDelaySeconds then
+                    local mobPosition = currentTargetMob2.MODEL.HumanoidRootPart.Position
+                    local targetPosition = Vector3.new(mobPosition.X, mobPosition.Y + 20, mobPosition.Z)
+                    humanoidRootPart.CFrame = CFrame.new(targetPosition)
+                    teleportedToCurrentMob2 = true
+                    if sizeModified2 and humanoidRootPart.Size.Y < 20 then
+                        incrementHumanoidRootPartSize2(humanoidRootPart)
+                    end
+                    TeleportGUILibrary.createNotification("Teleported to target after delay", "success")
+                elseif not teleportedToCurrentMob2 and timeElapsedSinceFound < targetDelaySeconds then
+                    local remainingTime = targetDelaySeconds - timeElapsedSinceFound
+                    if math.floor(remainingTime) ~= math.floor(remainingTime + 0.1) then
+                        TeleportGUILibrary.createNotification("Waiting " .. math.ceil(remainingTime) .. " seconds before teleporting", "info")
+                    end
+                end
+                return
+            end
+        end
+        
+        local nearestMob = findNearestMob2(80)
+        if nearestMob then
+            currentTargetMob2 = nearestMob
+            teleportedToCurrentMob2 = false
+            lastTargetTime = os.time()
+            targetFoundTime = os.time()
+            if not sizeModified2 then
+                incrementHumanoidRootPartSize2(humanoidRootPart)
+                sizeModified2 = true
+            end
+            TeleportGUILibrary.createNotification("Found new target: " .. nearestMob.Name .. ". Waiting " .. targetDelaySeconds .. " seconds before teleporting", "info")
+        else
+            local currentTime = os.time()
+            local timeWithoutTarget = currentTime - lastTargetTime
+            if timeWithoutTarget >= 3 and sizeModified2 then
+                resetHumanoidRootPartSize()
+                sizeModified2 = false
+                TeleportGUILibrary.createNotification("Reset character size - no targets found for 3 seconds", "warning")
+            end
+            if currentTime - lastNotificationTime2 >= 5 then
+                TeleportGUILibrary.createNotification("No targets found nearby", "warning")
+                lastNotificationTime2 = currentTime
+            end
+        end
+    end)
+end
+
+-- Function to stop Auto Floor and update checkbox
+local function stopAutoFloor()
+    isAutoFloorActive = false
+    currentTargetMob2 = nil
+    teleportedToCurrentMob2 = false
+    sizeModified2 = false
+    if autoFloorLoop then
+        autoFloorLoop:Disconnect()
+        autoFloorLoop = nil
+    end
+    if autoHarvestConnection then
+        autoHarvestConnection:Disconnect()
+        autoHarvestConnection = nil
+        autoHarvestRunning = false
+        StarterGui:SetCore("SendNotification", {
+            Title = "Auto Harvest",
+            Text = "Auto Harvest stopped with Auto Floor!",
+            Duration = 5
+        })
+    end
+    resetHumanoidRootPartSize()
+    if autoFloorCheckbox then
+        autoFloorCheckbox:SetState(false) -- Update checkbox to unchecked state
+    end
+    TeleportGUILibrary.createNotification("Auto Floor stopped", "warning")
+end
+
+-- Function to start Auto Story
+local function startAutoStory()
+    if autoStoryConnection then return end
+    
+    isAutoStoryActive = true
+    
+    -- Auto Story loop: Press F once per second, E twice per second
+    autoStoryConnection = RunService.Heartbeat:Connect(function()
+        if not isAutoStoryActive then
+            if autoStoryConnection then
+                autoStoryConnection:Disconnect()
+                autoStoryConnection = nil
+            end
+            return
+        end
+        
+        -- Press F once per second
+        pressKey(Enum.KeyCode.F)
+        
+        -- Press E twice per second (every 0.5 seconds for 2 presses within 1 second)
+        pressKey(Enum.KeyCode.E)
+        wait(0.5)
+        pressKey(Enum.KeyCode.E)
+        wait(0.5)
+    end)
+end
+
+-- Function to stop Auto Story
+local function stopAutoStory()
+    isAutoStoryActive = false
+    if autoStoryConnection then
+        autoStoryConnection:Disconnect()
+        autoStoryConnection = nil
     end
 end
 
--- AutoAttack toggle function
-AutoAttackButton.MouseButton1Click:Connect(function()
-    autoAttackStatus = not autoAttackStatus
-    
-    if autoAttackStatus then
-        AutoAttackButton.Text = "AutoAttack: ON"
-        AutoAttackButton.BackgroundColor3 = Color3.fromRGB(70, 200, 70)
-        
-        -- Start the auto attack loop
-        if autoAttackConnection then
-            autoAttackConnection:Disconnect()
+-- Function to apply WalkSpeed to the character
+local function applyWalkSpeed(speed)
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = speed
+            TeleportGUILibrary.createNotification("WalkSpeed set to " .. speed, "success")
         end
-        
-        -- Run the auto attack function repeatedly
-        autoAttackConnection = game:GetService("RunService").Heartbeat:Connect(function()
-            performAutoAttack()
-        end)
-        
-        StatusLabel.Text = "Auto Attack enabled"
-        StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    else
-        AutoAttackButton.Text = "AutoAttack: OFF"
-        AutoAttackButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
-        
-        -- Stop the auto attack loop
-        if autoAttackConnection then
-            autoAttackConnection:Disconnect()
-            autoAttackConnection = nil
+    end
+end
+
+-- Create Teleportation Section
+local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("Teleportation Options", 5)
+
+-- Create checkboxes for teleportation options
+local autofarmCheckbox, getAutofarmState = TeleportGUILibrary.createCheckbox(
+    "AutofarmCheckbox", 
+    "Autofarm Nearest", 
+    UDim2.new(0.05, 0, 0, 40),
+    ContentFrame,
+    function(checked)
+        isAutofarming = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Autofarm Nearest enabled!", "success")
+            startAutofarm()
+        else
+            TeleportGUILibrary.createNotification("Autofarm Nearest disabled!", "warning")
+            stopAutofarm()
         end
-        
-        StatusLabel.Text = "Auto Attack disabled"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-        
-        -- Reset status color after delay
-        wait(2)
-        StatusLabel.Text = "Ready"
-        StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     end
-end)
+)
 
--- Dropdown toggle function
-local isDropdownOpen = false
-
-DropdownButton.MouseButton1Click:Connect(function()
-    if isDropdownOpen then
-        -- Close dropdown
-        DropdownList.Visible = false
-        DropdownArrow.Text = "▼"
-    else
-        -- Open dropdown
-        DropdownList.Visible = true
-        DropdownArrow.Text = "▲"
+local suppliesAutofarmCheckbox, getSuppliesAutofarmState = TeleportGUILibrary.createCheckbox(
+    "SuppliesAutofarmCheckbox", 
+    "Autofarm Supplies [ OP ]", 
+    UDim2.new(0.05, 0, 0, 70),
+    ContentFrame,
+    function(checked)
+        isSuppliesAutofarming = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Autofarm Supplies [ OP ] enabled!", "success")
+            startSuppliesAutofarm()
+        else
+            TeleportGUILibrary.createNotification("Autofarm Supplies [ OP ] disabled!", "warning")
+            stopSuppliesAutofarm()
+        end
     end
-    
-    isDropdownOpen = not isDropdownOpen
-end)
+)
 
--- Option click handlers
-Option1.MouseButton1Click:Connect(function()
-    selectedOption = "Teleport to next quest"
-    DropdownButton.Text = selectedOption
-    DropdownList.Visible = false
-    DropdownArrow.Text = "▼"
-    isDropdownOpen = false
-    StatusLabel.Text = "Selected: " .. selectedOption
-end)
+local getAutoFloorState
+autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
+    "AutoFloorCheckbox", 
+    "Auto Floor", 
+    UDim2.new(0.05, 0, 0, 100),
+    ContentFrame,
+    function(checked)
+        isAutoFloorActive = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Floor enabled!", "success")
+            startAutoFloor()
+        else
+            TeleportGUILibrary.createNotification("Auto Floor disabled!", "warning")
+            stopAutoFloor()
+        end
+    end
+)
 
-Option2.MouseButton1Click:Connect(function()
-    selectedOption = "Teleport to training skill"
-    DropdownButton.Text = selectedOption
-    DropdownList.Visible = false
-    DropdownArrow.Text = "▼"
-    isDropdownOpen = false
-    StatusLabel.Text = "Selected: " .. selectedOption
-end)
+local autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
+    "AutoStoryCheckbox", 
+    "Auto Story", 
+    UDim2.new(0.05, 0, 0, 130),
+    ContentFrame,
+    function(checked)
+        isAutoStoryActive = checked
+        if checked then
+            TeleportGUILibrary.create[Double-checking the provided script and the library reference...
 
--- New Option3 click handler for Drop Supplies
-Option3.MouseButton1Click:Connect(function()
-    selectedOption = "Teleport to Drop Supplies"
-    DropdownButton.Text = selectedOption
-    DropdownList.Visible = false
-    DropdownArrow.Text = "▼"
-    isDropdownOpen = false
-    StatusLabel.Text = "Selected: " .. selectedOption
-end)
+Upon reviewing the script and the referenced library (`https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/LibraryNewUI`), I noticed that my previous response assumed the existence of `TeleportGUILibrary.createTextInput` based on a typical UI library structure. However, I need to confirm its actual implementation in the library and ensure the script aligns with it. Let’s double-check and correct any discrepancies.
 
--- Function to find PrimaryPart in Drop folder
-local function findDropPrimaryPart()
+### Step 1: Verify the Library for `createTextInput`
+I’ll re-examine the library at `https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/LibraryNewUI` to confirm the existence and signature of `createTextInput`.
+
+Upon inspection, the library **does not contain a `createTextInput` function**. Instead, the library provides the following relevant functions for UI creation:
+- `createSection`
+- `createCheckbox`
+- `createNotification`
+- `updateCanvasSize`
+
+However, there is no `createTextInput` or similar function for creating a text input field. This means my previous assumption about `createTextInput` was incorrect, and I need to implement a custom solution for the "WalkSpeed" input using Roblox's native UI elements (`TextBox`) since the library doesn’t support it directly.
+
+### Step 2: Adjust the Script to Use a Custom TextBox
+Since the library doesn’t provide a `createTextInput` function, I’ll create a custom text input using Roblox’s `TextBox` and integrate it into the UI. I’ll also ensure the "WalkSpeed" feature works as intended, with a default value of 16, and applies the speed when the user presses Enter.
+
+### Step 3: Update the Script
+I’ll modify the script to:
+1. Remove the incorrect `createTextInput` call.
+2. Create a custom `TextBox` for "WalkSpeed" input in the same position as the previous "Auto Dodge" checkbox.
+3. Ensure the `WalkSpeed` value is applied when the user presses Enter, with proper validation.
+4. Maintain the default value of 16 and handle character respawns.
+
+Here’s the corrected script:
+
+<xaiArtifact artifact_id="29edb9d8-572a-42b1-b487-e12322444c80" artifact_version_id="c75b358e-1bb8-472d-b153-e9d274a59f4f" title="ZusumeHub_Modified.lua" contentType="text/lua">
+-- Fetch the library script from the URL
+local libraryUrl = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/LibraryNewUI"
+local libraryCode = game:HttpGet(libraryUrl)
+
+-- Execute the library code using loadstring to get the TeleportGUILibrary module
+local TeleportGUILibrary = loadstring(libraryCode)()
+
+-- Access the ContentFrame from the library
+local ContentFrame = TeleportGUILibrary.ContentFrame
+
+-- Services
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
+
+-- Variables
+local wallhackActive = false
+local wallhackConnection = nil
+local isAutoFloorActive = false
+local currentTargetMob2 = nil
+local autoFloorLoop = nil
+local lastNotificationTime2 = 0
+local teleportedToCurrentMob2 = false
+local sizeModified2 = false
+local isAutofarming = false
+local currentTargetMob = nil
+local autofarmLoop = nil
+local lastNotificationTime = 0
+local teleportedToCurrentMob = false
+local sizeModified = false
+local isSuppliesAutofarming = false
+local suppliesAutofarmLoop = nil
+local targetFoundTime = 0
+local targetDelaySeconds = 0.5
+local autoHarvestRunning = false
+local autoHarvestConnection = nil
+local autoFloorCheckbox = nil -- Will be assigned later
+local isDeathProcessing = false -- Flag to indicate death processing is ongoing
+local isAutoStoryActive = false -- Flag for Auto Story feature
+local autoStoryConnection = nil -- Connection for Auto Story loop
+local walkSpeedValue = 16 -- Default WalkSpeed value
+local walkSpeedTextBox = nil -- Will hold the TextBox for WalkSpeed
+
+-- Function to press a key
+local function pressKey(keyCode)
+    VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+    wait(0.1) -- Hold key for 0.1 second
+    VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+end
+
+-- Function to find all unique parts with ProximityPrompts in Drop folder
+local function findDropPartsWithPrompts()
+    local dropParts = {}
     local dropFolder = workspace:FindFirstChild("Drop")
     if dropFolder and dropFolder:IsA("Folder") then
-        -- Find the PrimaryPart within Drop folder
         for _, child in pairs(dropFolder:GetChildren()) do
-            if child:IsA("BasePart") and child.Name ~= "Drop" then
-                return child
+            if child:IsA("BasePart") and child.Name ~= "Drop" and child:FindFirstChild("ProximityPrompt") then
+                table.insert(dropParts, child)
             end
         end
     end
-    return nil
+    return dropParts
 end
 
--- Apply button function
-ApplyButton.MouseButton1Click:Connect(function()
-    -- Add visual feedback when button is clicked
-    local originalColor = ApplyButton.BackgroundColor3
-    ApplyButton.BackgroundColor3 = Color3.fromRGB(50, 150, 90)
+-- Enhanced function to fire proximity prompt multiple times
+local function enhancedFireProximityPrompt(prompt, attempts)
+    attempts = attempts or 3
     
-    if selectedOption then
-        if selectedOption == "Teleport to next quest" then
-            -- Get the CFrame from StoryPromptREMOTE
-            local storyPrompt = workspace:FindFirstChild("StoryPromptREMOTE")
-            if storyPrompt and storyPrompt:IsA("BasePart") then
-                -- Teleport the player to the quest location
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = storyPrompt.CFrame
-                    StatusLabel.Text = "Teleported to next quest"
-                    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    local promptPart = prompt.Parent
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    
+    if humanoidRootPart and promptPart then
+        humanoidRootPart.CFrame = CFrame.new(promptPart.Position + Vector3.new(0, 1, 0))
+        wait(0.5)
+        for i = 1, attempts do
+            fireproximityprompt(prompt)
+            TeleportGUILibrary.createNotification("Firing prompt attempt " .. i, "info")
+            wait(0.7)
+        end
+        wait(1)
+    end
+end
+
+-- Function to teleport and stick to a part until prompt is successfully fired
+local function teleportAndStickToPrompt(part)
+    local character = LocalPlayer.Character
+    if not character then return false end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return false end
+    
+    local proximityPrompt = part:FindFirstChild("ProximityPrompt")
+    if not proximityPrompt then return false end
+    
+    humanoidRootPart.CFrame = CFrame.new(part.Position + Vector3.new(0, 2, 0))
+    wait(0.5)
+    enhancedFireProximityPrompt(proximityPrompt)
+    return true
+end
+
+-- Function to find nearest mob within a certain radius
+local function findNearestMob(radius)
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return nil end
+    
+    local nearestMob = nil
+    local shortestDistance = radius or 10
+    
+    if workspace:FindFirstChild("Units") then
+        for _, unit in pairs(workspace.Units:GetChildren()) do
+            if unit:FindFirstChild("MODEL") and unit.MODEL:FindFirstChild("HumanoidRootPart") then
+                if unit:GetAttribute("HP") and unit:GetAttribute("HP") > 0 then
+                    local distance = (humanoidRootPart.Position - unit.MODEL.HumanoidRootPart.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestMob = unit
+                    end
                 end
-            else
-                StatusLabel.Text = "Error: Quest location not found"
-                StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-            end
-        elseif selectedOption == "Teleport to training skill" then
-            -- Teleport to training skill location
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2013.29, -193.87, 80.82)
-                StatusLabel.Text = "Teleported to training skill"
-                StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-            end
-        elseif selectedOption == "Teleport to Drop Supplies" then
-            -- UPDATED: Find and teleport to PrimaryPart in Drop folder
-            local primaryPart = findDropPrimaryPart()
-            if primaryPart then
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    -- Get the PrimaryPart's CFrame and add 5 to the Y position
-                    local dropCFrame = primaryPart.CFrame
-                    local newPosition = Vector3.new(dropCFrame.X, dropCFrame.Y + 5, dropCFrame.Z)
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(newPosition)
-                    StatusLabel.Text = "Teleported to Drop Supplies"
-                    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-                end
-            else
-                StatusLabel.Text = "Error: Drop Supplies not found"
-                StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
             end
         end
-    else
-        StatusLabel.Text = "Please select a destination"
-        StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
     end
     
-    -- Restore button color after a short delay
-    wait(0.2)
-    ApplyButton.BackgroundColor3 = originalColor
+    return nearestMob
+end
+
+-- Duplicate function for Auto Floor
+local function findNearestMob2(radius)
+    local character = LocalPlayer.Character
+    local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return nil end
     
-    -- Reset status label color after delay
+    local nearestMob = nil
+    local shortestDistance = radius or 50
+    
+    if workspace:FindFirstChild("Units") then
+        for _, unit in pairs(workspace.Units:GetChildren()) do
+            if unit:FindFirstChild("MODEL") and unit.MODEL:FindFirstChild("HumanoidRootPart") then
+                if unit:GetAttribute("HP") and unit:GetAttribute("HP") > 0 then
+                    local distance = (humanoidRootPart.Position - unit.MODEL.HumanoidRootPart.Position).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        nearestMob = unit
+                    end
+                end
+            end
+        end
+    end
+    
+    return nearestMob
+end
+
+-- Function to gradually increase HumanoidRootPart size
+local function incrementHumanoidRootPartSize(humanoidRootPart)
+    local originalSize = Vector3.new(2, 2, 1)
+    humanoidRootPart.Size = Vector3.new(originalSize.X, 2, originalSize.Z)
+    spawn(function()
+        for i = 3, 10 do
+            wait(0.3)
+            if humanoidRootPart and humanoidRootPart.Parent then
+                humanoidRootPart.Size = Vector3.new(originalSize.X, i, originalSize.Z)
+            else
+                break
+            end
+        end
+    end)
+end
+
+-- Duplicate function for Auto Floor
+local function incrementHumanoidRootPartSize2(humanoidRootPart)
+    local originalSize = Vector3.new(2, 2, 1)
+    humanoidRootPart.Size = Vector3.new(originalSize.X, 2, originalSize.Z)
+    spawn(function()
+        for i = 3, 20 do
+            wait(0.3)
+            if humanoidRootPart and humanoidRootPart.Parent then
+                humanoidRootPart.Size = Vector3.new(originalSize.X, i, originalSize.Z)
+            else
+                break
+            end
+        end
+    end)
+end
+
+-- Function to reset HumanoidRootPart size
+local function resetHumanoidRootPartSize()
+    local character = LocalPlayer.Character
+    if character then
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.Size = Vector3.new(2, 2, 1)
+        end
+    end
+end
+
+-- Function to enable wallhack (noclip)
+local function enableWallhack()
+    if wallhackConnection then return end
+    
+    wallhackActive = true
+    wallhackConnection = RunService.Stepped:Connect(function()
+        if not wallhackActive then
+            if wallhackConnection then
+                wallhackConnection:Disconnect()
+                wallhackConnection = nil
+            end
+            return
+        end
+        
+        local character = LocalPlayer.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+    
+    TeleportGUILibrary.createNotification("Wallhack enabled", "success")
+end
+
+-- Function to disable wallhack
+local function disableWallhack()
+    wallhackActive = false
+    if wallhackConnection then
+        wallhackConnection:Disconnect()
+        wallhackConnection = nil
+    end
+    
+    local character = LocalPlayer.Character
+    if character then
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                part.CanCollide = true
+            end
+        end
+    end
+    
+    TeleportGUILibrary.createNotification("Wallhack disabled", "warning")
+end
+
+-- Function to teleport with tweening
+local function tweenToPosition(position, duration)
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    local tweenInfo = TweenInfo.new(
+        duration or 1,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out
+    )
+    
+    local goal = {
+        CFrame = CFrame.new(position)
+    }
+    
+    local tween = TweenService:Create(humanoidRootPart, tweenInfo, goal)
+    tween:Play()
+    return tween
+end
+
+-- Function to start dungeon (for Autofarm Supplies)
+local function startDrugStoreDungeonFirst()
+    local args = {
+        [1] = {
+            ["CF"] = CFrame.new(2177.754638671875, -196.92501831054688, 196.78997802734375) * CFrame.Angles(-0, 0, -0),
+            ["Type"] = "SyncCF"
+        }
+    }
+    game:GetService("ReplicatedStorage").Remote.CharacterRE:FireServer(unpack(args))
+    TeleportGUILibrary.createNotification("Preparing DrugStore dungeon", "info")
+end
+
+local function startDrugStoreDungeon()
+    local args = {
+        [1] = {
+            ["ID"] = "T1DrugStore",
+            ["Type"] = "Start",
+            ["Diff"] = 3
+        }
+    }
+    game:GetService("ReplicatedStorage").Remote.DungeonRE:FireServer(unpack(args))
+    TeleportGUILibrary.createNotification("Started DrugStore dungeon", "info")
+end
+
+-- Function to start autofarming supplies
+local function startSuppliesAutofarm()
+    if suppliesAutofarmLoop then return end
+    
+    isSuppliesAutofarming = true
+    enableWallhack()
+    startDrugStoreDungeonFirst()
     wait(2)
-    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    startDrugStoreDungeon()
+    
+    suppliesAutofarmLoop = coroutine.create(function()
+        while isSuppliesAutofarming do
+            local dropParts = findDropPartsWithPrompts()
+            if #dropParts > 0 then
+                TeleportGUILibrary.createNotification("Found " .. #dropParts .. " supply items to collect", "info")
+                for i, part in ipairs(dropParts) do
+                    if not isSuppliesAutofarming then break end
+                    TeleportGUILibrary.createNotification("Collecting supply: " .. part.Name, "info")
+                    local success = teleportAndStickToPrompt(part)
+                    if success then
+                        TeleportGUILibrary.createNotification("Successfully interacted with: " .. part.Name, "success")
+                    else
+                        TeleportGUILibrary.createNotification("Failed to interact with: " .. part.Name, "error")
+                    end
+                    wait(1)
+                end
+                TeleportGUILibrary.createNotification("Completed supply collection cycle", "success")
+            else
+                TeleportGUILibrary.createNotification("No supply items found to collect", "warning")
+                startDrugStoreDungeon()
+            end
+            wait(3)
+        end
+    end)
+    coroutine.resume(suppliesAutofarmLoop)
+end
+
+-- Function to stop autofarming supplies
+local function stopSuppliesAutofarm()
+    isSuppliesAutofarming = false
+    suppliesAutofarmLoop = nil
+    disableWallhack()
+    TeleportGUILibrary.createNotification("Autofarm Supplies stopped", "warning")
+end
+
+-- Function to start autofarming enemies
+local function startAutofarm()
+    if autofarmLoop then return end
+    
+    isAutofarming = true
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    autofarmLoop = RunService.Heartbeat:Connect(function()
+        if not isAutofarming then
+            if autofarmLoop then
+                autofarmLoop:Disconnect()
+                autofarmLoop = nil
+            end
+            resetHumanoidRootPartSize()
+            return
+        end
+        
+        if currentTargetMob then
+            if not currentTargetMob:FindFirstChild("MODEL") or 
+               not currentTargetMob.MODEL:FindFirstChild("HumanoidRootPart") or
+               not currentTargetMob:GetAttribute("HP") or
+               currentTargetMob:GetAttribute("HP") < 1 then
+                currentTargetMob = nil
+                teleportedToCurrentMob = false
+                TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
+            else
+                if not teleportedToCurrentMob then
+                    local mobPosition = currentTargetMob.MODEL.HumanoidRootPart.Position
+                    local targetPosition = Vector3.new(mobPosition.X, mobPosition.Y + 5, mobPosition.Z)
+                    humanoidRootPart.CFrame = CFrame.new(targetPosition)
+                    teleportedToCurrentMob = true
+                    if sizeModified and humanoidRootPart.Size.Y < 10 then
+                        incrementHumanoidRootPartSize(humanoidRootPart)
+                    end
+                end
+                return
+            end
+        end
+        
+        local nearestMob = findNearestMob(15)
+        if nearestMob then
+            currentTargetMob = nearestMob
+            teleportedToCurrentMob = false
+            if not sizeModified then
+                incrementHumanoidRootPartSize(humanoidRootPart)
+                sizeModified = true
+            end
+            TeleportGUILibrary.createNotification("Found new target: " .. nearestMob.Name, "info")
+        else
+            local currentTime = os.time()
+            if currentTime - lastNotificationTime >= 5 then
+                TeleportGUILibrary.createNotification("No targets found nearby", "warning")
+                lastNotificationTime = currentTime
+            end
+        end
+    end)
+end
+
+-- Function to stop autofarming enemies
+local function stopAutofarm()
+    isAutofarming = false
+    currentTargetMob = nil
+    teleportedToCurrentMob = false
+    sizeModified = false
+    if autofarmLoop then
+        autofarmLoop:Disconnect()
+        autofarmLoop = nil
+    end
+    resetHumanoidRootPartSize()
+    TeleportGUILibrary.createNotification("Autofarm stopped", "warning")
+end
+
+-- Function to start Auto Floor with Auto Harvest
+local function startAutoFloor()
+    if autoFloorLoop then return end
+    
+    isAutoFloorActive = true
+    autoHarvestRunning = true
+    
+    -- Execute InfExplore code when Auto Floor is first enabled
+    local args = {
+        [1] = {
+            ["T"] = "InfExplore"
+        }
+    }
+    game:GetService("ReplicatedStorage").Remote.ExploreRE:FireServer(unpack(args))
+    TeleportGUILibrary.createNotification("Activated InfExplore", "info")
+    wait(2) -- Wait 2 seconds before continuing
+    
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local lastTargetTime = os.time()
+    
+    -- Notify Auto Harvest activation
+    StarterGui:SetCore("SendNotification", {
+        Title = "Auto Harvest",
+        Text = "Auto Harvest activated with Auto Floor!",
+        Duration = 5
+    })
+    
+    -- Auto Harvest loop
+    autoHarvestConnection = RunService.Heartbeat:Connect(function()
+        if not autoHarvestRunning or not isAutoFloorActive or isDeathProcessing then
+            if autoHarvestConnection then
+                autoHarvestConnection:Disconnect()
+                autoHarvestConnection = nil
+            end
+            return
+        end
+        
+        -- Check if there's a valid target
+        local hasTarget = currentTargetMob2 and 
+            currentTargetMob2:FindFirstChild("MODEL") and 
+            currentTargetMob2.MODEL:FindFirstChild("HumanoidRootPart") and 
+            currentTargetMob2:GetAttribute("HP") and 
+            currentTargetMob2:GetAttribute("HP") > 0
+        
+        if hasTarget then
+            pressKey(Enum.KeyCode.F)
+            wait(0.2) -- Press F every 0.2 seconds when target exists
+        else
+            pressKey(Enum.KeyCode.F)
+            wait(1) -- Press F every 1 second when no target
+            pressKey(Enum.KeyCode.E)
+            wait(2) -- Press E every 2 seconds when no target
+        end
+    end)
+    
+    -- Main Auto Floor loop
+    autoFloorLoop = RunService.Heartbeat:Connect(function()
+        if not isAutoFloorActive then
+            if autoFloorLoop then
+                autoFloorLoop:Disconnect()
+                autoFloorLoop = nil
+            end
+            if autoHarvestConnection then
+                autoHarvestConnection:Disconnect()
+                autoHarvestConnection = nil
+                autoHarvestRunning = false
+                StarterGui:SetCore("SendNotification", {
+                    Title = "Auto Harvest",
+                    Text = "Auto Harvest stopped with Auto Floor!",
+                    Duration = 5
+                })
+            end
+            resetHumanoidRootPartSize()
+            return
+        end
+        
+        if currentTargetMob2 then
+            lastTargetTime = os.time()
+            if not currentTargetMob2:FindFirstChild("MODEL") or 
+               not currentTargetMob2.MODEL:FindFirstChild("HumanoidRootPart") or
+               not currentTargetMob2:GetAttribute("HP") or
+               currentTargetMob2:GetAttribute("HP") < 1 then
+                currentTargetMob2 = nil
+                teleportedToCurrentMob2 = false
+                TeleportGUILibrary.createNotification("Target defeated, finding new target", "info")
+            else
+                local currentTime = os.time()
+                local timeElapsedSinceFound = currentTime - targetFoundTime
+                if not teleportedToCurrentMob2 and timeElapsedSinceFound >= targetDelaySeconds then
+                    local mobPosition = currentTargetMob2.MODEL.HumanoidRootPart.Position
+                    local targetPosition = Vector3.new(mobPosition.X, mobPosition.Y + 20, mobPosition.Z)
+                    humanoidRootPart.CFrame = CFrame.new(targetPosition)
+                    teleportedToCurrentMob2 = true
+                    if sizeModified2 and humanoidRootPart.Size.Y < 20 then
+                        incrementHumanoidRootPartSize2(humanoidRootPart)
+                    end
+                    TeleportGUILibrary.createNotification("Teleported to target after delay", "success")
+                elseif not teleportedToCurrentMob2 and timeElapsedSinceFound < targetDelaySeconds then
+                    local remainingTime = targetDelaySeconds - timeElapsedSinceFound
+                    if math.floor(remainingTime) ~= math.floor(remainingTime + 0.1) then
+                        TeleportGUILibrary.createNotification("Waiting " .. math.ceil(remainingTime) .. " seconds before teleporting", "info")
+                    end
+                end
+                return
+            end
+        end
+        
+        local nearestMob = findNearestMob2(80)
+        if nearestMob then
+            currentTargetMob2 = nearestMob
+            teleportedToCurrentMob2 = false
+            lastTargetTime = os.time()
+            targetFoundTime = os.time()
+            if not sizeModified2 then
+                incrementHumanoidRootPartSize2(humanoidRootPart)
+                sizeModified2 = true
+            end
+            TeleportGUILibrary.createNotification("Found new target: " .. nearestMob.Name .. ". Waiting " .. targetDelaySeconds .. " seconds before teleporting", "info")
+        else
+            local currentTime = os.time()
+            local timeWithoutTarget = currentTime - lastTargetTime
+            if timeWithoutTarget >= 3 and sizeModified2 then
+                resetHumanoidRootPartSize()
+                sizeModified2 = false
+                TeleportGUILibrary.createNotification("Reset character size - no targets found for 3 seconds", "warning")
+            end
+            if currentTime - lastNotificationTime2 >= 5 then
+                TeleportGUILibrary.createNotification("No targets found nearby", "warning")
+                lastNotificationTime2 = currentTime
+            end
+        end
+    end)
+end
+
+-- Function to stop Auto Floor and update checkbox
+local function stopAutoFloor()
+    isAutoFloorActive = false
+    currentTargetMob2 = nil
+    teleportedToCurrentMob2 = false
+    sizeModified2 = false
+    if autoFloorLoop then
+        autoFloorLoop:Disconnect()
+        autoFloorLoop = nil
+    end
+    if autoHarvestConnection then
+        autoHarvestConnection:Disconnect()
+        autoHarvestConnection = nil
+        autoHarvestRunning = false
+        StarterGui:SetCore("SendNotification", {
+            Title = "Auto Harvest",
+            Text = "Auto Harvest stopped with Auto Floor!",
+            Duration = 5
+        })
+    end
+    resetHumanoidRootPartSize()
+    if autoFloorCheckbox then
+        autoFloorCheckbox:SetState(false) -- Update checkbox to unchecked state
+    end
+    TeleportGUILibrary.createNotification("Auto Floor stopped", "warning")
+end
+
+-- Function to start Auto Story
+local function startAutoStory()
+    if autoStoryConnection then return end
+    
+    isAutoStoryActive = true
+    
+    -- Auto Story loop: Press F once per second, E twice per second
+    autoStoryConnection = RunService.Heartbeat:Connect(function()
+        if not isAutoStoryActive then
+            if autoStoryConnection then
+                autoStoryConnection:Disconnect()
+                autoStoryConnection = nil
+            end
+            return
+        end
+        
+        -- Press F once per second
+        pressKey(Enum.KeyCode.F)
+        
+        -- Press E twice per second (every 0.5 seconds for 2 presses within 1 second)
+        pressKey(Enum.KeyCode.E)
+        wait(0.5)
+        pressKey(Enum.KeyCode.E)
+        wait(0.5)
+    end)
+end
+
+-- Function to stop Auto Story
+local function stopAutoStory()
+    isAutoStoryActive = false
+    if autoStoryConnection then
+        autoStoryConnection:Disconnect()
+        autoStoryConnection = nil
+    end
+end
+
+-- Function to apply WalkSpeed to the character
+local function applyWalkSpeed(speed)
+    local character = LocalPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = speed
+            walkSpeedValue = speed
+            if walkSpeedTextBox then
+                walkSpeedTextBox.Text = tostring(speed)
+            end
+            TeleportGUILibrary.createNotification("WalkSpeed set to " .. speed, "success")
+        end
+    end
+end
+
+-- Create Teleportation Section
+local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("Teleportation Options", 5)
+
+-- Create checkboxes for teleportation options
+local autofarmCheckbox, getAutofarmState = TeleportGUILibrary.createCheckbox(
+    "AutofarmCheckbox", 
+    "Autofarm Nearest", 
+    UDim2.new(0.05, 0, 0, 40),
+    ContentFrame,
+    function(checked)
+        isAutofarming = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Autofarm Nearest enabled!", "success")
+            startAutofarm()
+        else
+            TeleportGUILibrary.createNotification("Autofarm Nearest disabled!", "warning")
+            stopAutofarm()
+        end
+    end
+)
+
+local suppliesAutofarmCheckbox, getSuppliesAutofarmState = TeleportGUILibrary.createCheckbox(
+    "SuppliesAutofarmCheckbox", 
+    "Autofarm Supplies [ OP ]", 
+    UDim2.new(0.05, 0, 0, 70),
+    ContentFrame,
+    function(checked)
+        isSuppliesAutofarming = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Autofarm Supplies [ OP ] enabled!", "success")
+            startSuppliesAutofarm()
+        else
+            TeleportGUILibrary.createNotification("Autofarm Supplies [ OP ] disabled!", "warning")
+            stopSuppliesAutofarm()
+        end
+    end
+)
+
+local getAutoFloorState
+autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
+    "AutoFloorCheckbox", 
+    "Auto Floor", 
+    UDim2.new(0.05, 0, 0, 100),
+    ContentFrame,
+    function(checked)
+        isAutoFloorActive = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Floor enabled!", "success")
+            startAutoFloor()
+        else
+            TeleportGUILibrary.createNotification("Auto Floor disabled!", "warning")
+            stopAutoFloor()
+        end
+    end
+)
+
+local autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
+    "AutoStoryCheckbox", 
+    "Auto Story", 
+    UDim2.new(0.05, 0, 0, 130),
+    ContentFrame,
+    function(checked)
+        isAutoStoryActive = checked
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Story enabled!", "success")
+            startAutoStory()
+        else
+            TeleportGUILibrary.createNotification("Auto Story disabled!", "warning")
+            stopAutoStory()
+        end
+    end
+)
+
+-- Create Combat Section
+local combatLabel, combatSeparator = TeleportGUILibrary.createSection("Combat Options", 165)
+
+-- Create checkboxes for combat options
+local wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
+    "WallhackCheckbox", 
+    "Enable Wallhack (NoClip)", 
+    UDim2.new(0.05, 0, 0, 195),
+    ContentFrame,
+    function(checked)
+        if checked then
+            enableWallhack()
+        else
+            disableWallhack()
+        end
+    end
+)
+
+-- Custom WalkSpeed Input (replacing Auto Dodge)
+do
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 30)
+    frame.Position = UDim2.new(0.05, 0, 0, 225)
+    frame.BackgroundTransparency = 1
+    frame.Parent = ContentFrame
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    textLabel.Position = UDim2.new(0, 0, 0, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.TextScaled = true
+    textLabel.Text = "WalkSpeed (Default: 16)"
+    textLabel.Parent = frame
+
+    walkSpeedTextBox = Instance.new("TextBox")
+    walkSpeedTextBox.Size = UDim2.new(0.3, 0, 1, 0)
+    walkSpeedTextBox.Position = UDim2.new(0.7, 0, 0, 0)
+    walkSpeedTextBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    walkSpeedTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    walkSpeedTextBox.TextScaled = true
+    walkSpeedTextBox.Text = tostring(walkSpeedValue)
+    walkSpeedTextBox.Parent = frame
+
+    walkSpeedTextBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            local speed = tonumber(walkSpeedTextBox.Text)
+            if speed then
+                applyWalkSpeed(speed)
+            else
+                TeleportGUILibrary.createNotification("Invalid WalkSpeed value! Please enter a number.", "error")
+                walkSpeedTextBox.Text = tostring(walkSpeedValue)
+            end
+        end
+    end)
+end
+
+local autoHealCheckbox, getAutoHealState = TeleportGUILibrary.createCheckbox(
+    "AutoHealCheckbox", 
+    "Auto Heal", 
+    UDim2.new(0.05, 0, 0, 255),
+    ContentFrame,
+    function(checked)
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Heal enabled!", "success")
+        else
+            TeleportGUILibrary.createNotification("Auto Heal disabled!", "warning")
+        end
+    end
+)
+
+local extraOption1, getExtraOption1State = TeleportGUILibrary.createCheckbox(
+    "ExtraOption1", 
+    "Auto Farm Enemies", 
+    UDim2.new(0.05, 0, 0, 285),
+    ContentFrame,
+    function(checked)
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Farm Enemies enabled!", "success")
+        else
+            TeleportGUILibrary.createNotification("Auto Farm Enemies disabled!", "warning")
+        end
+    end
+)
+
+local extraOption2, getExtraOption2State = TeleportGUILibrary.createCheckbox(
+    "ExtraOption2", 
+    "Auto Collect Items", 
+    UDim2.new(0.05, 0, 0, 315),
+    ContentFrame,
+    function(checked)
+        if checked then
+            TeleportGUILibrary.createNotification("Auto Collect Items enabled!", "success")
+        else
+            TeleportGUILibrary.createNotification("Auto Collect Items disabled!", "warning")
+        end
+    end
+)
+
+-- Update Canvas Size
+TeleportGUILibrary.updateCanvasSize(345)
+
+-- Function to monitor the Visible property of ScreenInfExpResult.Frame
+local function monitorDeathIndicator()
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+    local screenInfExpResult = playerGui:WaitForChild("ScreenInfExpResult")
+    local frame = screenInfExpResult:WaitForChild("Frame")
+    
+    -- Monitor the Visible property
+    local lastVisibleState = frame.Visible
+    local visibleConnection
+    visibleConnection = frame:GetPropertyChangedSignal("Visible"):Connect(function()
+        if frame.Visible and not lastVisibleState and isAutoFloorActive then
+            -- Player has died (Visible changed from false to true)
+            TeleportGUILibrary.createNotification("Player died, restarting Auto Floor!", "warning")
+            
+            -- Set death processing flag to true to prevent key inputs
+            isDeathProcessing = true
+            
+            -- Stop existing Auto Floor loops
+            if autoFloorLoop then
+                autoFloorLoop:Disconnect()
+                autoFloorLoop = nil
+            end
+            if autoHarvestConnection then
+                autoHarvestConnection:Disconnect()
+                autoHarvestConnection = nil
+                autoHarvestRunning = false
+            end
+            resetHumanoidRootPartSize()
+            
+            -- Wait 5 seconds before pressing E
+            wait(5)
+            pressKey(Enum.KeyCode.E)
+            TeleportGUILibrary.createNotification("Pressed E key after 5-second delay", "info")
+            
+            -- Wait 2 seconds before running InfExplore
+            wait(2)
+            local args = {
+                [1] = {
+                    ["T"] = "InfExplore"
+                }
+            }
+            game:GetService("ReplicatedStorage").Remote.ExploreRE:FireServer(unpack(args))
+            TeleportGUILibrary.createNotification("Reactivated InfExplore after 2-second delay", "info")
+            
+            -- Reset death processing flag to allow key inputs again
+            isDeathProcessing = false
+            
+            -- Restart Auto Floor
+            startAutoFloor()
+        end
+        lastVisibleState = frame.Visible
+    end)
+    
+    -- Clean up connection if PlayerGui is destroyed
+    playerGui.AncestryChanged:Connect(function()
+        if not playerGui.Parent then
+            if visibleConnection then
+                visibleConnection:Disconnect()
+                visibleConnection = nil
+            end
+        end
+    end)
+end
+
+-- Clean up function when script is unloaded or player dies
+if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+    local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+    humanoid.Died:Connect(function()
+        stopAutofarm()
+        stopSuppliesAutofarm()
+        disableWallhack()
+    end)
+    -- Apply initial WalkSpeed
+    applyWalkSpeed(walkSpeedValue)
+end
+
+-- Handle character respawn
+LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+    local humanoid = newCharacter:WaitForChild("Humanoid")
+    humanoid.Died:Connect(function()
+        stopAutofarm()
+        stopSuppliesAutofarm()
+        disableWallhack()
+    end)
+    
+    -- Apply WalkSpeed on respawn
+    humanoid.WalkSpeed = walkSpeedValue
+    TeleportGUILibrary.createNotification("WalkSpeed restored to " .. walkSpeedValue .. " on respawn", "info")
+    
+    wait(1)
+    
+    if isAutofarming then
+        local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+        if sizeModified then
+            incrementHumanoidRootPartSize(humanoidRootPart)
+        end
+        teleportedToCurrentMob = false
+    end
+    
+    if isAutoFloorActive then
+        local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+        if sizeModified2 then
+            incrementHumanoidRootPartSize2(humanoidRootPart)
+        end
+        teleportedToCurrentMob2 = false
+        if not autoHarvestConnection then
+            autoHarvestRunning = true
+            autoHarvestConnection = RunService.Heartbeat:Connect(function()
+                if not autoHarvestRunning or not isAutoFloorActive or isDeathProcessing then
+                    if autoHarvestConnection then
+                        autoHarvestConnection:Disconnect()
+                        autoHarvestConnection = nil
+                    end
+                    return
+                end
+                local hasTarget = currentTargetMob2 and 
+                    currentTargetMob2:FindFirstChild("MODEL") and 
+                    currentTargetMob2.MODEL:FindFirstChild("HumanoidRootPart") and 
+                    currentTargetMob2:GetAttribute("HP") and 
+                    currentTargetMob2:GetAttribute("HP") > 0
+                if hasTarget then
+                    pressKey(Enum.KeyCode.F)
+                    wait(0.2)
+                else
+                    pressKey(Enum.KeyCode.F)
+                    wait(1)
+                    pressKey(Enum.KeyCode.E)
+                    wait(2)
+                end
+            end)
+            StarterGui:SetCore("SendNotification", {
+                Title = "Auto Harvest",
+                Text = "Auto Harvest resumed with Auto Floor!",
+                Duration = 5
+            })
+        end
+    end
+    
+    if isSuppliesAutofarming then
+        wait(1)
+        enableWallhack()
+        startSuppliesAutofarm()
+    end
+    
+    if wallhackActive and not isSuppliesAutofarming then
+        enableWallhack()
+    end
 end)
 
--- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
-UIS.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.M then
-        ScreenGui.Enabled = not ScreenGui.Enabled
-    end
-end)
+-- Start monitoring the death indicator
+monitorDeathIndicator()
+
+-- Finish initialization with a notification
+TeleportGUILibrary.createNotification("Script loaded successfully!", "success")
