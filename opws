@@ -699,8 +699,8 @@ local function applyFlyingPlatformHeight(height)
 end
 
 -- Create the UI Elements
--- Section: Teleportation Options
-local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("Teleportation Options", 5)
+-- Section: MAIN HACKS (Previously Teleportation Options, centered)
+local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("MAIN HACKS", 5, true)
 
 -- Checkbox: Autofarm Nearest
 local autofarmCheckbox, getAutofarmState
@@ -759,7 +759,7 @@ autoFloorCheckbox, getAutoFloorState = TeleportGUILibrary.createCheckbox(
     end
 )
 
--- Checkbox: Auto Story
+-- Checkbox: Auto Story (Moved below MAIN HACKS section)
 local autoStoryCheckbox, getAutoStoryState
 autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
     "AutoStoryCheckbox",
@@ -778,8 +778,24 @@ autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
     end
 )
 
--- Section: Combat Options
-local combatLabel, combatSeparator = TeleportGUILibrary.createSection("Combat Options", 165)
+-- Section: PLAYER SETTING (Previously Combat Options, centered)
+local combatLabel, combatSeparator = TeleportGUILibrary.createSection("PLAYER SETTING", 165, true)
+
+-- Checkbox: Enable Wallhack (NoClip) (Moved directly below PLAYER SETTING section)
+local wallhackCheckbox, getWallhackState
+wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
+    "WallhackCheckbox",
+    "Enable Wallhack (NoClip)",
+    UDim2.new(0.05, 0, 0, 200),
+    ContentFrame,
+    function(checked)
+        if checked then
+            enableWallhack()
+        else
+            disableWallhack()
+        end
+    end
+)
 
 -- Text Input: WalkSpeed
 local walkSpeedContainer
@@ -787,7 +803,7 @@ walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     "WalkSpeedInput",
     "WalkSpeed (Default: 16)",
     walkSpeedValue,
-    UDim2.new(0.05, 0, 0, 195),
+    UDim2.new(0.05, 0, 0, 230),
     ContentFrame,
     function(value)
         local speed = tonumber(value)
@@ -800,13 +816,13 @@ walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     end
 )
 
--- Text Input: Jump Height (Replaces Auto Heal)
+-- Text Input: Jump Height
 local jumpHeightContainer
 jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     "JumpHeightInput",
     "Jump Height (Default: 7.2)",
     jumpHeightValue,
-    UDim2.new(0.05, 0, 0, 225),
+    UDim2.new(0.05, 0, 0, 260),
     ContentFrame,
     function(value)
         local height = tonumber(value)
@@ -819,13 +835,13 @@ jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     end
 )
 
--- Text Input: Flying Platform (Replaces Auto Farm Enemies)
+-- Text Input: Flying Platform
 local flyingPlatformContainer
 flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInput(
     "FlyingPlatformInput",
     "Flying Platform (Default: 2)",
     flyingPlatformValue,
-    UDim2.new(0.05, 0, 0, 255),
+    UDim2.new(0.05, 0, 0, 290),
     ContentFrame,
     function(value)
         local height = tonumber(value)
@@ -838,24 +854,8 @@ flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInpu
     end
 )
 
--- Checkbox: Enable Wallhack (NoClip) (Moved below Flying Platform)
-local wallhackCheckbox, getWallhackState
-wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
-    "WallhackCheckbox",
-    "Enable Wallhack (NoClip)",
-    UDim2.new(0.05, 0, 0, 285),
-    ContentFrame,
-    function(checked)
-        if checked then
-            enableWallhack()
-        else
-            disableWallhack()
-        end
-    end
-)
-
--- Update Canvas Size (Adjusted after removing Auto Collect Items)
-TeleportGUILibrary.updateCanvasSize(315)
+-- Update Canvas Size
+TeleportGUILibrary.updateCanvasSize(320)
 
 -- Function to monitor the death indicator and handle respawn
 local function monitorDeathIndicator()
@@ -930,6 +930,7 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
     TeleportGUILibrary.createNotification("WalkSpeed restored to " .. walkSpeedValue .. " on respawn", "info")
     TeleportGUILibrary.createNotification("Jump Height restored to " .. jumpHeightValue .. " on respawn", "info")
     local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
+    applyFlyingPlatformHeight(f  -- Apply Flying Platform height on respawn
     applyFlyingPlatformHeight(flyingPlatformValue)
     wait(1)
     if isAutofarming then
