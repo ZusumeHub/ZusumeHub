@@ -70,7 +70,7 @@ local targetDelaySeconds = 0.5
 local isAutoStoryActive = false
 local autoStoryConnection = nil
 
-local walkSpeedValue = 16
+local walkSpeedValue = 32
 local walkSpeedInput = nil
 
 local jumpHeightValue = 7.2 -- Default JumpHeight (Roblox default is approximately 7.2 studs)
@@ -119,7 +119,7 @@ local function enhancedFireProximityPrompt(prompt, attempts)
     for i = 1, attempts do
         fireproximityprompt(prompt)
         TeleportGUILibrary.createNotification("Firing prompt attempt " .. i, "info")
-        wait(0.7)
+        wait(0.5)
     end
     wait(1)
 end
@@ -700,7 +700,7 @@ end
 
 -- Create the UI Elements
 -- Section: Teleportation Options
-local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("Teleportation Options", 5)
+local teleportLabel, teleportSeparator = TeleportGUILibrary.createSection("MAIN HACKS", 5)
 
 -- Checkbox: Autofarm Nearest
 local autofarmCheckbox, getAutofarmState
@@ -779,13 +779,13 @@ autoStoryCheckbox, getAutoStoryState = TeleportGUILibrary.createCheckbox(
 )
 
 -- Section: Combat Options
-local combatLabel, combatSeparator = TeleportGUILibrary.createSection("Combat Options", 165)
+local combatLabel, combatSeparator = TeleportGUILibrary.createSection("PLAYER SETTING", 165)
 
 -- Text Input: WalkSpeed
 local walkSpeedContainer
 walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
     "WalkSpeedInput",
-    "WalkSpeed (Default: 16)",
+    "WalkSpeed",
     walkSpeedValue,
     UDim2.new(0.05, 0, 0, 195),
     ContentFrame,
@@ -804,7 +804,7 @@ walkSpeedContainer, walkSpeedInput = TeleportGUILibrary.createTextInput(
 local jumpHeightContainer
 jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
     "JumpHeightInput",
-    "Jump Height (Default: 7.2)",
+    "Jump Height",
     jumpHeightValue,
     UDim2.new(0.05, 0, 0, 225),
     ContentFrame,
@@ -823,7 +823,7 @@ jumpHeightContainer, jumpHeightInput = TeleportGUILibrary.createTextInput(
 local flyingPlatformContainer
 flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInput(
     "FlyingPlatformInput",
-    "Flying Platform (Default: 2)",
+    "Flying Platform",
     flyingPlatformValue,
     UDim2.new(0.05, 0, 0, 255),
     ContentFrame,
@@ -842,7 +842,7 @@ flyingPlatformContainer, flyingPlatformInput = TeleportGUILibrary.createTextInpu
 local wallhackCheckbox, getWallhackState
 wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
     "WallhackCheckbox",
-    "Enable Wallhack (NoClip)",
+    "Wallhack",
     UDim2.new(0.05, 0, 0, 285),
     ContentFrame,
     function(checked)
