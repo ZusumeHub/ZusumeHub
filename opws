@@ -175,26 +175,6 @@ local function findNearestMob(radius, maxDistance)
     return nearestMob
 end
 
--- Function to find and teleport to StoryPromptREMOTE
-local function teleportToStoryPrompt()
-    local storyPromptRemote = workspace:FindFirstChild("StoryPromptREMOTE")
-    if storyPromptRemote then
-        local character = LocalPlayer.Character
-        if character then
-            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-            if humanoidRootPart then
-                humanoidRootPart.CFrame = storyPromptRemote.CFrame
-                TeleportGUILibrary.createNotification("Teleported to StoryPrompt!", "success")
-                return true
-            end
-        end
-        TeleportGUILibrary.createNotification("Character not found!", "error")
-        return false
-    end
-    TeleportGUILibrary.createNotification("StoryPromptREMOTE not found in workspace!", "error")
-    return false
-end
-
 -- Function to incrementally increase the size of the HumanoidRootPart
 local function incrementHumanoidRootPartSize(humanoidRootPart, maxHeight)
     local originalSize = Vector3.new(2, 2, 1)
@@ -211,35 +191,23 @@ local function incrementHumanoidRootPartSize(humanoidRootPart, maxHeight)
     end)
 end
 
--- Function to adjust HumanoidRootPart.Size.Y for Flying Platform
+-- Function to incrementally adjust HumanoidRootPart.Size.Y for Flying Platform
 local function adjustFlyingPlatformHeight(humanoidRootPart, targetHeight)
-    if not humanoidRootPart or not humanoidRootPart.Parent then
-        return
-    end
-    
-    local originalSize = humanoidRootPart.Size
-    local currentY = originalSize.Y
-    
-    -- If decreasing height, do it instantly
-    if targetHeight < currentY then
-        humanoidRootPart.Size = Vector3.new(originalSize.X, targetHeight, originalSize.Z)
-        return
-    }
-    
-    -- If increasing height, do it incrementally
     if flyingPlatformAdjusting then
         return
-    }
-    
+    end
     flyingPlatformAdjusting = true
-    while currentY < targetHeight do
-        currentY = currentY + 1
+    local originalSize = humanoidRootPart.Size
+    local currentY = originalSize.Y
+    local step = currentY < targetHeight and 1 or -1
+    while (step > 0 and currentY < targetHeight) or (step < 0 and currentY > targetHeight) do
+        currentY = currentY + step
         humanoidRootPart.Size = Vector3.new(originalSize.X, currentY, originalSize.Z)
         wait(0.2)
         if not humanoidRootPart or not humanoidRootPart.Parent then
             break
-        }
-    }
+        end
+    end
     flyingPlatformAdjusting = false
 end
 
@@ -885,29 +853,9 @@ wallhackCheckbox, getWallhackState = TeleportGUILibrary.createCheckbox(
         end
     end
 )
--- Checkbox: Teleport to StoryPrompt
-local storyPromptCheckbox, getStoryPromptState
-storyPromptCheckbox, getStoryPromptState = TeleportGUILibrary.createCheckbox(
-    "StoryPromptCheckbox",
-    "Teleport to StoryPrompt",
-    UDim2.new(0.05, 0, 0, 315),
-    ContentFrame,
-    function(checked)
-        if checked then
-            local success = teleportToStoryPrompt()
-            if not success then
-                storyPromptCheckbox:SetState(false)
-            else
-                -- Auto uncheck after successful teleport
-                wait(1)
-                storyPromptCheckbox:SetState(false)
-            end
-        end
-    end
-)
 
 -- Update Canvas Size (Adjusted after removing Auto Collect Items)
-TeleportGUILibrary.updateCanvasSize(345)
+TeleportGUILibrary.updateCanvasSize(315)
 
 -- Function to monitor the death indicator and handle respawn
 local function monitorDeathIndicator()
