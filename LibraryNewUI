@@ -4,8 +4,21 @@ local ContextActionService = game:GetService("ContextActionService")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
 
 local TeleportGUILibrary = {}
+
+-- Constants for Notification and UI
+local FONT = Enum.Font.GothamBold
+local CORNER_RADIUS = UDim.new(0, 6)
+local COLORS = {
+    Frame = Color3.fromRGB(35, 35, 40),
+    Text = Color3.fromRGB(255, 255, 255),
+    Accent = Color3.fromRGB(114, 137, 218), -- Discord blue
+    Success = Color3.fromRGB(87, 242, 135),
+    Error = Color3.fromRGB(255, 89, 89),
+    Warning = Color3.fromRGB(255, 201, 79),
+}
 
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -229,6 +242,98 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     end)
     
     return checkboxContainer, function() return checked end
+end
+
+-- Function to create notification
+function TeleportGUILibrary.createNotification(message, type)
+    local notifColor = COLORS.Accent
+    if type == "success" then
+        notifColor = COLORS.Success
+    elseif type == "error" then
+        notifColor = COLORS.Error
+    elseif type == "warning" then
+        notifColor = COLORS.Warning
+    end
+    
+    local NotifGui = Instance.new("ScreenGui")
+    local NotifFrame = Instance.new("Frame")
+    local NotifText = Instance.new("TextLabel")
+    local UICorner = Instance.new("UICorner")
+    local StatusBar = Instance.new("Frame")
+    local StatusBarCorner = Instance.new("UICorner")
+    
+    -- Configure notification GUI
+    NotifGui.Name = "TeleportNotification"
+    NotifGui.DisplayOrder = 999
+    NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local parentSuccess = false
+    pcall(function()
+        if syn and syn.protect_gui then
+            syn.protect_gui(NotifGui)
+            NotifGui.Parent = CoreGui
+            parentSuccess = true
+        elseif gethui then
+            NotifGui.Parent = gethui()
+            parentSuccess = true
+        else
+            NotifGui.Parent = PlayerGui
+            parentSuccess = true
+        end
+    end)
+    if not parentSuccess then
+        print("Error: Failed to parent notification GUI.")
+        return
+    end
+    
+    NotifFrame.Name = "NotifFrame"
+    NotifFrame.Parent = NotifGui
+    NotifFrame.BackgroundColor3 = COLORS.Frame
+    NotifFrame.Position = UDim2.new(1, 10, 0.8, 0)
+    NotifFrame.Size = UDim2.new(0, 280, 0, 60)
+    NotifFrame.BackgroundTransparency = 0.1
+    NotifFrame.BorderSizePixel = 0
+    NotifFrame.ZIndex = 100
+    
+    UICorner.Parent = NotifFrame
+    UICorner.CornerRadius = CORNER_RADIUS
+    
+    NotifText.Name = "NotifText"
+    NotifText.Parent = NotifFrame
+    NotifText.BackgroundTransparency = 1
+    NotifText.Position = UDim2.new(0, 10, 0, 5)
+    NotifText.Size = UDim2.new(1, -20, 1, -15)
+    NotifText.Font = FONT
+    NotifText.Text = message
+    NotifText.TextColor3 = COLORS.Text
+    NotifText.TextSize = 16
+    NotifText.TextWrapped = true
+    NotifText.TextXAlignment = Enum.TextXAlignment.Left
+    NotifText.TextYAlignment = Enum.TextYAlignment.Top
+    NotifText.ZIndex = 101
+    
+    StatusBar.Name = "StatusBar"
+    StatusBar.Parent = NotifFrame
+    StatusBar.BackgroundColor3 = notifColor
+    StatusBar.Position = UDim2.new(0, 10, 1, -8)
+    StatusBar.Size = UDim2.new(1, -20, 0, 3)
+    StatusBar.ZIndex = 101
+    
+    StatusBarCorner.Parent = StatusBar
+    StatusBarCorner.CornerRadius = UDim.new(1, 0)
+    
+    -- Animate notification
+    TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
+    
+    -- Create countdown tween
+    local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
+    statusTween:Play()
+    
+    statusTween.Completed:Connect(function()
+        TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, 10, 0.8, 0)}):Play()
+        wait(0.5)
+        NotifGui:Destroy()
+    end)
 end
 
 -- Expose ContentFrame for adding sections
