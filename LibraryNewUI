@@ -201,7 +201,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
-    checkboxLabel.Font = Enum.Font.Gotham
+    checkboxLabel.Font = FONT -- Changed to use bold font
     checkboxLabel.Text = text
     checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
     checkboxLabel.Parent = checkboxContainer
