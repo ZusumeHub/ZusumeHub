@@ -12,30 +12,62 @@ local LocalPlayer = Players.LocalPlayer
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local StarterGui = game:GetService("StarterGui")
 
--- Fetch and Load the Library
-local libraryUrl = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/LibraryNewUI"
-local success, libraryCode = pcall(function()
-    return game:HttpGet(libraryUrl)
-end)
-
-if not success then
-    warn("Failed to fetch the library: " .. tostring(libraryCode))
+-- Wait for LocalPlayer to be fully loaded
+LocalPlayer.CharacterAdded:Wait() -- Ensure LocalPlayer.Character is available before proceeding
+if not LocalPlayer.Character then
+    warn("LocalPlayer.Character not found. Script cannot proceed.")
     return
 end
 
+-- Fetch and Load the Library with Enhanced Error Handling
+local libraryUrl = "https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/LibraryNewUI"
+local libraryCode
+local success, errorMessage = pcall(function()
+    libraryCode = game:HttpGet(libraryUrl)
+end)
+
+if not success or not libraryCode then
+    warn("Failed to fetch the library from " .. libraryUrl .. ". Error: " .. tostring(errorMessage))
+    -- Display an in-game notification if possible
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "ZusumeHub Error",
+            Text = "Failed to load UI library. Check your internet connection or the library URL.",
+            Duration = 10
+        })
+    end)
+    return
+end
+
+-- Load the Library
 local TeleportGUILibrary
-success, TeleportGUILibrary = pcall(function()
-    return loadstring(libraryCode)()
+success, errorMessage = pcall(function()
+    TeleportGUILibrary = loadstring(libraryCode)()
 end)
 
 if not success or not TeleportGUILibrary then
-    warn("Failed to load the library: " .. tostring(TeleportGUILibrary))
+    warn("Failed to load the library: " .. tostring(errorMessage))
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "ZusumeHub Error",
+            Text = "Failed to initialize UI library. Script cannot proceed.",
+            Duration = 10
+        })
+    end)
     return
 end
 
+-- Validate ContentFrame
 local ContentFrame = TeleportGUILibrary.ContentFrame
 if not ContentFrame then
     warn("ContentFrame not found in the library")
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "ZusumeHub Error",
+            Text = "UI library is corrupted (ContentFrame missing). Script cannot proceed.",
+            Duration = 10
+        })
+    end)
     return
 end
 
@@ -930,7 +962,6 @@ LocalPlayer.CharacterAdded:Connect(function(newCharacter)
     TeleportGUILibrary.createNotification("WalkSpeed restored to " .. walkSpeedValue .. " on respawn", "info")
     TeleportGUILibrary.createNotification("Jump Height restored to " .. jumpHeightValue .. " on respawn", "info")
     local humanoidRootPart = newCharacter:WaitForChild("HumanoidRootPart")
-    applyFlyingPlatformHeight(f  -- Apply Flying Platform height on respawn
     applyFlyingPlatformHeight(flyingPlatformValue)
     wait(1)
     if isAutofarming then
@@ -1116,6 +1147,8 @@ local function deactivateWallhack()
     end
 end
 
+-- Redundant wrapper for applying WalkSpeed
+local function setWi
 -- Redundant wrapper for applying WalkSpeed
 local function setWalkSpeed(speed)
     if speed then
