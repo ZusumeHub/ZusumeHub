@@ -416,7 +416,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
                 highest = descendant.ZIndex
             end
         end
-        return highest + 100 -- Increased buffer to ensure it's on top
+        return highest + 20 -- Add a large buffer to ensure it's on top
     end
     
     local baseZIndex = getHighestZIndex()
@@ -424,14 +424,14 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     -- Options Container (hidden by default)
     local optionsContainer = Instance.new("Frame")
     optionsContainer.Name = "OptionsContainer"
-    optionsContainer.Size = UDim2.new(0, 100, 0, 0) -- Will expand when opened
-    optionsContainer.Position = UDim2.new(1, -100, 1, 0)
+    optionsContainer.Size = UDim2.new(1, 0, 0, 0) -- Full width
+    optionsContainer.Position = UDim2.new(0, 0, 1, 0) -- Start at left edge
     optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
     optionsContainer.BorderSizePixel = 0
     optionsContainer.ClipsDescendants = true
     optionsContainer.Visible = false
     optionsContainer.ZIndex = baseZIndex
-    optionsContainer.Parent = dropdownContainer -- Keep parented to dropdownContainer
+    optionsContainer.Parent = dropdownContainer
     
     -- Round the corners of options container
     local optionsCorner = Instance.new("UICorner")
@@ -532,15 +532,25 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             if onSelect then
                 onSelect(optionText, i)
             end
-            
-            -- Return quickly to prevent event propagation
-            return
         end)
     end
     
-    -- Add UserInputService to handle clicks outside the dropdown
-    local UserInputService = game:GetService("UserInputService")
-    local dropdownClickConnection
+    -- Create background overlay to capture clicks outside the dropdown
+    local overlay = Instance.new("Frame")
+    overlay.Name = "DropdownOverlay"
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.Position = UDim2.new(0, 0, 0, 0)
+    overlay.BackgroundTransparency = 1 -- Fully transparent
+    overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
+    overlay.Visible = false
+    overlay.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui -- Adjust to your GUI parent
+    
+    overlay.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
+            input.UserInputType == Enum.UserInputType.Touch) and isOpen then
+            toggleDropdown(false)
+        end
+    end)
     
     -- Toggle dropdown function
     function toggleDropdown(forceState)
@@ -551,22 +561,11 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
         
         if isOpen then
-            -- Show options container
+            -- Show options container and overlay
             optionsContainer.Visible = true
+            overlay.Visible = true
             
-            -- Ensure dropdown is on top of everything by repositioning in absolute terms
-            local absPos = dropdownContainer.AbsolutePosition
-            local absSize = dropdownContainer.AbsoluteSize
-            
-            -- Calculate world position for options container
-            local worldPos = UDim2.new(0, absPos.X + absSize.X - 100, 0, absPos.Y + absSize.Y)
-            
-            -- Temporary reparent options container to ScreenGui for Z-index priority
-            local originalParent = optionsContainer.Parent
-            optionsContainer.Parent = ScreenGui
-            optionsContainer.Position = worldPos
-            
-            -- Update Z-indices
+            -- Ensure dropdown is on top of everything
             local newBaseZIndex = getHighestZIndex()
             optionsContainer.ZIndex = newBaseZIndex
             optionsScrollFrame.ZIndex = newBaseZIndex + 1
@@ -576,9 +575,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
                     btn.ZIndex = newBaseZIndex + 2
                 end
             end
-            
-            -- Store reference to restore parent later
-            optionsContainer:SetAttribute("OriginalParent", originalParent:GetFullName())
             
             -- Animate arrow
             TweenService:Create(
@@ -591,7 +587,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             TweenService:Create(
                 optionsContainer,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, 100, 0, visibleHeight)}
+                {Size = UDim2.new(1, 0, 0, visibleHeight)} -- Updated to full width
             ):Play()
             
             -- Adjust position to show current selection
@@ -604,31 +600,9 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
                 
                 optionsScrollFrame.CanvasPosition = Vector2.new(0, scrollPosition)
             end
-            
-            -- Connect input event to detect clicks outside dropdown
-            if dropdownClickConnection then dropdownClickConnection:Disconnect() end
-            dropdownClickConnection = UserInputService.InputBegan:Connect(function(input)
-                if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
-                    input.UserInputType == Enum.UserInputType.Touch) then
-                    
-                    -- Check if click is outside the dropdown
-                    local mousePos = UserInputService:GetMouseLocation()
-                    local dropdownAbsPos = optionsContainer.AbsolutePosition
-                    local dropdownAbsSize = optionsContainer.AbsoluteSize
-                    
-                    -- If click is outside the dropdown bounds, close it
-                    if mousePos.X < dropdownAbsPos.X or mousePos.Y < dropdownAbsPos.Y or
-                       mousePos.X > dropdownAbsPos.X + dropdownAbsSize.X or mousePos.Y > dropdownAbsPos.Y + dropdownAbsSize.Y then
-                        toggleDropdown(false)
-                    end
-                end
-            end)
         else
-            -- Disconnect the input detection when dropdown is closed
-            if dropdownClickConnection then
-                dropdownClickConnection:Disconnect()
-                dropdownClickConnection = nil
-            end
+            -- Hide overlay
+            overlay.Visible = false
             
             -- Animate arrow back
             TweenService:Create(
@@ -641,7 +615,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             local collapseTween = TweenService:Create(
                 optionsContainer,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                {Size = UDim2.new(0, 100, 0, 0)}
+                {Size = UDim2.new(1, 0, 0, 0)} -- Updated to full width
             )
             
             collapseTween:Play()
@@ -649,24 +623,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             collapseTween.Completed:Connect(function()
                 if not isOpen then
                     optionsContainer.Visible = false
-                    
-                    -- Restore original parent if needed
-                    if optionsContainer:GetAttribute("OriginalParent") then
-                        local success, result = pcall(function()
-                            local path = optionsContainer:GetAttribute("OriginalParent")
-                            local originalParent = game:GetService("Players").LocalPlayer:FindFirstChild(path, true)
-                            if originalParent then
-                                optionsContainer.Parent = originalParent
-                                optionsContainer.Position = UDim2.new(1, -100, 1, 0)
-                            end
-                        end)
-                        
-                        if not success then
-                            -- If restoring fails, at least put it back to dropdown container
-                            optionsContainer.Parent = dropdownContainer
-                            optionsContainer.Position = UDim2.new(1, -100, 1, 0)
-                        end
-                    end
                 end
             end)
         end
@@ -680,16 +636,10 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
     end)
     
-    -- Clean up connections when dropdown is destroyed
+    -- Clean up overlay when dropdown is destroyed
     dropdownContainer.AncestryChanged:Connect(function(_, newParent)
         if not newParent then
-            if dropdownClickConnection then
-                dropdownClickConnection:Disconnect()
-                dropdownClickConnection = nil
-            end
-            if optionsContainer.Parent ~= dropdownContainer then
-                optionsContainer:Destroy()
-            end
+            overlay:Destroy()
         end
     end)
     
