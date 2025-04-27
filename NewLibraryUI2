@@ -421,17 +421,17 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     
     local baseZIndex = getHighestZIndex()
     
-    -- Options Container (hidden by default)
-    local optionsContainer = Instance.new("Frame")
-    optionsContainer.Name = "OptionsContainer"
-    optionsContainer.Size = UDim2.new(0, 100, 0, 0) -- Will expand when opened
-    optionsContainer.Position = UDim2.new(1, -100, 1, 0)
-    optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    optionsContainer.BorderSizePixel = 0
-    optionsContainer.ClipsDescendants = true
-    optionsContainer.Visible = false
-    optionsContainer.ZIndex = baseZIndex
-    optionsContainer.Parent = dropdownContainer
+optionsContainer.Name = "OptionsContainer"
+optionsContainer.Size = UDim2.new(0, 100, 0, 0) -- Will expand when opened
+optionsContainer.Position = UDim2.new(1, -100, 1, 0)
+optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+optionsContainer.BorderSizePixel = 0
+optionsContainer.ClipsDescendants = true
+optionsContainer.Visible = false
+optionsContainer.ZIndex = baseZIndex
+
+-- Add this line to ensure dropdown renders properly:
+optionsContainer.Parent = ScreenGui -- Parent directly to ScreenGui instead of dropdownContainer
     
     -- Round the corners of options container
     local optionsCorner = Instance.new("UICorner")
@@ -510,6 +510,10 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         
         -- Option selection
         optionButton.MouseButton1Click:Connect(function()
+        -- Add this line to stop propagation of the click event
+    input:GetPropertyChangedSignal("UserInputState"):Wait()
+    input:GetPropertyChangedSignal("UserInputState"):Disconnect()
+    
             -- Update selected index and text
             selectedIndex = i
             selectedText.Text = optionText
@@ -533,6 +537,8 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
                 onSelect(optionText, i)
             end
         end)
+        overlay.BackgroundTransparency = 0.01 -- Almost invisible but still captures input
+overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     end
     
     -- Create background overlay to capture clicks outside the dropdown
@@ -561,20 +567,21 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
         
         if isOpen then
-            -- Show options container and overlay
-            optionsContainer.Visible = true
-            overlay.Visible = true
-            
-            -- Ensure dropdown is on top of everything
-            local newBaseZIndex = getHighestZIndex()
-            optionsContainer.ZIndex = newBaseZIndex
-            optionsScrollFrame.ZIndex = newBaseZIndex + 1
-            
-            for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
-                if btn:IsA("TextButton") then
-                    btn.ZIndex = newBaseZIndex + 2
-                end
-            end
+        -- Show options container and overlay
+    optionsContainer.Visible = true
+    overlay.Visible = true
+    
+    -- Significantly increase Z-index values to ensure dropdown is on top of everything
+    local newBaseZIndex = getHighestZIndex() + 100 -- Increased from +20 to +100
+    optionsContainer.ZIndex = newBaseZIndex
+    optionsScrollFrame.ZIndex = newBaseZIndex + 1
+    overlay.ZIndex = newBaseZIndex - 1 -- Just below dropdown but above everything else
+    
+    for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
+        if btn:IsA("TextButton") then
+            btn.ZIndex = newBaseZIndex + 2
+        end
+    end
             
             -- Animate arrow
             TweenService:Create(
