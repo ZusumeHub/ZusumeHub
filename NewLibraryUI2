@@ -535,15 +535,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end)
     end
     
-    -- Find the ScreenGui parent dynamically
-    local screenGui = dropdownContainer
-    while screenGui and not screenGui:IsA("ScreenGui") do
-        screenGui = screenGui.Parent
-    end
-    if not screenGui then
-        screenGui = game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("TeleportGUI")
-    end
-    
     -- Create background overlay to capture clicks outside the dropdown
     local overlay = Instance.new("Frame")
     overlay.Name = "DropdownOverlay"
@@ -552,7 +543,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     overlay.BackgroundTransparency = 1 -- Fully transparent
     overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
     overlay.Visible = false
-    overlay.Parent = screenGui -- Attach to the ScreenGui
+    overlay.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui -- Adjust to your GUI parent
     
     overlay.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
@@ -578,7 +569,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             local newBaseZIndex = getHighestZIndex()
             optionsContainer.ZIndex = newBaseZIndex
             optionsScrollFrame.ZIndex = newBaseZIndex + 1
-            overlay.ZIndex = newBaseZIndex - 1 -- Overlay just below dropdown
             
             for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
                 if btn:IsA("TextButton") then
@@ -613,15 +603,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         else
             -- Hide overlay
             overlay.Visible = false
-            
-            -- Reset ZIndex to default
-            optionsContainer.ZIndex = baseZIndex
-            optionsScrollFrame.ZIndex = baseZIndex + 1
-            for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
-                if btn:IsA("TextButton") then
-                    btn.ZIndex = baseZIndex + 2
-                end
-            end
             
             -- Animate arrow back
             TweenService:Create(
