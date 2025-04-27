@@ -346,6 +346,7 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
 end
 
 -- Function to create a dropdown with multiple options
+-- Function to create a dropdown with multiple options
 function TeleportGUILibrary.createDropdown(name, labelText, options, defaultIndex, position, parent, onSelect)
     -- Container for the dropdown
     local dropdownContainer = Instance.new("Frame")
@@ -416,22 +417,22 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
                 highest = descendant.ZIndex
             end
         end
-        return highest + 20 -- Add a large buffer to ensure it's on top
+        return highest + 100 -- Increased buffer to ensure it's on top
     end
     
     local baseZIndex = getHighestZIndex()
     
-optionsContainer.Name = "OptionsContainer"
-optionsContainer.Size = UDim2.new(0, 100, 0, 0) -- Will expand when opened
-optionsContainer.Position = UDim2.new(1, -100, 1, 0)
-optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-optionsContainer.BorderSizePixel = 0
-optionsContainer.ClipsDescendants = true
-optionsContainer.Visible = false
-optionsContainer.ZIndex = baseZIndex
-
--- Add this line to ensure dropdown renders properly:
-optionsContainer.Parent = ScreenGui -- Parent directly to ScreenGui instead of dropdownContainer
+    -- Options Container (hidden by default)
+    local optionsContainer = Instance.new("Frame")
+    optionsContainer.Name = "OptionsContainer"
+    optionsContainer.Size = UDim2.new(0, 100, 0, 0) -- Will expand when opened
+    optionsContainer.Position = UDim2.new(1, -100, 1, 0)
+    optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    optionsContainer.BorderSizePixel = 0
+    optionsContainer.ClipsDescendants = true
+    optionsContainer.Visible = false
+    optionsContainer.ZIndex = baseZIndex
+    optionsContainer.Parent = dropdownContainer -- Keep parented to dropdownContainer
     
     -- Round the corners of options container
     local optionsCorner = Instance.new("UICorner")
@@ -510,10 +511,6 @@ optionsContainer.Parent = ScreenGui -- Parent directly to ScreenGui instead of d
         
         -- Option selection
         optionButton.MouseButton1Click:Connect(function()
-        -- Add this line to stop propagation of the click event
-    input:GetPropertyChangedSignal("UserInputState"):Wait()
-    input:GetPropertyChangedSignal("UserInputState"):Disconnect()
-    
             -- Update selected index and text
             selectedIndex = i
             selectedText.Text = optionText
@@ -536,9 +533,10 @@ optionsContainer.Parent = ScreenGui -- Parent directly to ScreenGui instead of d
             if onSelect then
                 onSelect(optionText, i)
             end
+            
+            -- Return quickly to prevent event propagation
+            return
         end)
-        overlay.BackgroundTransparency = 0.01 -- Almost invisible but still captures input
-overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     end
     
     -- Create background overlay to capture clicks outside the dropdown
@@ -546,10 +544,11 @@ overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     overlay.Name = "DropdownOverlay"
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.Position = UDim2.new(0, 0, 0, 0)
-    overlay.BackgroundTransparency = 1 -- Fully transparent
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BackgroundTransparency = 0.01 -- Almost invisible but captures input
     overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
     overlay.Visible = false
-    overlay.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui -- Adjust to your GUI parent
+    overlay.Parent = ScreenGui -- Parent to ScreenGui to cover entire screen
     
     overlay.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
@@ -567,21 +566,37 @@ overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         end
         
         if isOpen then
-        -- Show options container and overlay
-    optionsContainer.Visible = true
-    overlay.Visible = true
-    
-    -- Significantly increase Z-index values to ensure dropdown is on top of everything
-    local newBaseZIndex = getHighestZIndex() + 100 -- Increased from +20 to +100
-    optionsContainer.ZIndex = newBaseZIndex
-    optionsScrollFrame.ZIndex = newBaseZIndex + 1
-    overlay.ZIndex = newBaseZIndex - 1 -- Just below dropdown but above everything else
-    
-    for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
-        if btn:IsA("TextButton") then
-            btn.ZIndex = newBaseZIndex + 2
-        end
-    end
+            -- Show options container and overlay
+            optionsContainer.Visible = true
+            overlay.Visible = true
+            
+            -- Ensure dropdown is on top of everything by repositioning in absolute terms
+            -- Get absolute position of dropdown container
+            local absPos = dropdownContainer.AbsolutePosition
+            local absSize = dropdownContainer.AbsoluteSize
+            
+            -- Calculate world position for options container
+            local worldPos = UDim2.new(0, absPos.X + absSize.X - 100, 0, absPos.Y + absSize.Y)
+            
+            -- Temporary reparent options container to ScreenGui for Z-index priority
+            local originalParent = optionsContainer.Parent
+            optionsContainer.Parent = ScreenGui
+            optionsContainer.Position = worldPos
+            
+            -- Update Z-indices
+            local newBaseZIndex = getHighestZIndex()
+            optionsContainer.ZIndex = newBaseZIndex
+            optionsScrollFrame.ZIndex = newBaseZIndex + 1
+            overlay.ZIndex = newBaseZIndex - 1
+            
+            for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    btn.ZIndex = newBaseZIndex + 2
+                end
+            end
+            
+            -- Store reference to restore parent later
+            optionsContainer:SetAttribute("OriginalParent", originalParent:GetFullName())
             
             -- Animate arrow
             TweenService:Create(
@@ -630,6 +645,24 @@ overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
             collapseTween.Completed:Connect(function()
                 if not isOpen then
                     optionsContainer.Visible = false
+                    
+                    -- Restore original parent if needed
+                    if optionsContainer:GetAttribute("OriginalParent") then
+                        local success, result = pcall(function()
+                            local path = optionsContainer:GetAttribute("OriginalParent")
+                            local originalParent = game:GetService("Players").LocalPlayer:FindFirstChild(path, true)
+                            if originalParent then
+                                optionsContainer.Parent = originalParent
+                                optionsContainer.Position = UDim2.new(1, -100, 1, 0)
+                            end
+                        end)
+                        
+                        if not success then
+                            -- If restoring fails, at least put it back to dropdown container
+                            optionsContainer.Parent = dropdownContainer
+                            optionsContainer.Position = UDim2.new(1, -100, 1, 0)
+                        end
+                    end
                 end
             end)
         end
@@ -647,6 +680,9 @@ overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     dropdownContainer.AncestryChanged:Connect(function(_, newParent)
         if not newParent then
             overlay:Destroy()
+            if optionsContainer.Parent ~= dropdownContainer then
+                optionsContainer:Destroy()
+            end
         end
     end)
     
