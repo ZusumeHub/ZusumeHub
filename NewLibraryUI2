@@ -345,49 +345,73 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     }
 end
 
-local TeleportGUILibrary = {}
-local TweenService = game:GetService("TweenService")
-
-function getHighestZIndex()
-    local highest = 1
-    for _, gui in ipairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
-        if gui:IsA("GuiObject") and gui.ZIndex > highest then
-            highest = gui.ZIndex
-        end
-    end
-    return highest + 20
-end
-
-function TeleportGUILibrary.createDropdown(parent, options, defaultText)
-    -- Dropdown Container
+-- Function to create a dropdown with multiple options
+function TeleportGUILibrary.createDropdown(name, labelText, options, defaultIndex, position, parent, onSelect)
+    -- Container for the dropdown
     local dropdownContainer = Instance.new("Frame")
+    dropdownContainer.Name = name .. "Container"
     dropdownContainer.Size = UDim2.new(0.9, 0, 0, 30)
-    dropdownContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    dropdownContainer.BorderSizePixel = 0
+    dropdownContainer.Position = position
+    dropdownContainer.BackgroundTransparency = 1
     dropdownContainer.Parent = parent
 
-    -- Selected Display
-    local selectedDisplay = Instance.new("TextLabel")
-    selectedDisplay.Size = UDim2.new(0.8, 0, 1, 0)
-    selectedDisplay.Position = UDim2.new(0, 5, 0, 0)
-    selectedDisplay.BackgroundTransparency = 1
-    selectedDisplay.Text = defaultText or "Select an option"
-    selectedDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
-    selectedDisplay.TextScaled = true
-    selectedDisplay.TextXAlignment = Enum.TextXAlignment.Left
+    -- Label (on the left)
+    local dropdownLabel = Instance.new("TextLabel")
+    dropdownLabel.Name = "Label"
+    dropdownLabel.Size = UDim2.new(0, 150, 1, 0)
+    dropdownLabel.Position = UDim2.new(0, 0, 0, 0)
+    dropdownLabel.BackgroundTransparency = 1
+    dropdownLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    dropdownLabel.TextSize = 14
+    dropdownLabel.Font = FONT
+    dropdownLabel.Text = labelText
+    dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
+    dropdownLabel.Parent = dropdownContainer
+
+    -- Selected Option Display (on the right)
+    local selectedDisplay = Instance.new("Frame")
+    selectedDisplay.Name = "SelectedDisplay"
+    selectedDisplay.Size = UDim2.new(0, 100, 0, 24)
+    selectedDisplay.Position = UDim2.new(1, -100, 0.5, -12)
+    selectedDisplay.BackgroundColor3 = COLORS.Input
+    selectedDisplay.BorderSizePixel = 0
     selectedDisplay.Parent = dropdownContainer
+
+    -- Round the corners
+    local displayCorner = Instance.new("UICorner")
+    displayCorner.CornerRadius = UDim.new(0, 5)
+    displayCorner.Parent = selectedDisplay
+
+    -- Selected Text
+    local selectedText = Instance.new("TextLabel")
+    selectedText.Name = "SelectedText"
+    selectedText.Size = UDim2.new(0.85, 0, 1, 0)
+    selectedText.Position = UDim2.new(0.05, 0, 0, 0)
+    selectedText.BackgroundTransparency = 1
+    selectedText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    selectedText.TextSize = 14
+    selectedText.Font = FONT
+    selectedText.Text = options[defaultIndex or 1]
+    selectedText.TextXAlignment = Enum.TextXAlignment.Left
+    selectedText.TextTruncate = Enum.TextTruncate.AtEnd
+    selectedText.Parent = selectedDisplay
 
     -- Arrow Icon
     local arrowIcon = Instance.new("TextLabel")
+    arrowIcon.Name = "ArrowIcon"
     arrowIcon.Size = UDim2.new(0, 20, 0, 20)
-    arrowIcon.Position = UDim2.new(1, -25, 0, 5)
+    arrowIcon.Position = UDim2.new(1, -20, 0.5, -10)
     arrowIcon.BackgroundTransparency = 1
-    arrowIcon.Text = "▼"
     arrowIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    arrowIcon.TextScaled = true
-    arrowIcon.Parent = dropdownContainer
+    arrowIcon.TextSize = 14
+    arrowIcon.Font = Enum.Font.GothamBold
+    arrowIcon.Text = "▼"
+    arrowIcon.Parent = selectedDisplay
 
-    -- Options Container
+    -- Get the ScreenGui
+    local ScreenGui = parent:FindFirstAncestorOfClass("ScreenGui") or game:GetService("Players").LocalPlayer.PlayerGui
+
+    -- Options Container (hidden by default)
     local optionsContainer = Instance.new("Frame")
     optionsContainer.Name = "OptionsContainer"
     optionsContainer.Size = UDim2.new(0, 100, 0, 0)
@@ -401,45 +425,109 @@ function TeleportGUILibrary.createDropdown(parent, options, defaultText)
     -- Save original parent and position
     local originalParent = optionsContainer.Parent
     local originalPosition = optionsContainer.Position
-    local ScreenGui = parent:FindFirstAncestorOfClass("ScreenGui") or game:GetService("Players").LocalPlayer.PlayerGui
 
-    -- Scrolling Frame for options
+    -- Round the corners of options container
+    local optionsCorner = Instance.new("UICorner")
+    optionsCorner.CornerRadius = UDim.new(0, 5)
+    optionsCorner.Parent = optionsContainer
+
+    -- Options Scrolling Frame
     local optionsScrollFrame = Instance.new("ScrollingFrame")
+    optionsScrollFrame.Name = "OptionsScrollFrame"
     optionsScrollFrame.Size = UDim2.new(1, 0, 1, 0)
     optionsScrollFrame.BackgroundTransparency = 1
+    optionsScrollFrame.BorderSizePixel = 0
     optionsScrollFrame.ScrollBarThickness = 4
+    optionsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
     optionsScrollFrame.Parent = optionsContainer
 
-    -- Overlay to close dropdown
+    -- Calculate content height based on number of options
+    local optionHeight = 24
+    local maxVisibleOptions = 2
+    local contentHeight = #options * optionHeight
+    local visibleHeight = math.min(contentHeight, maxVisibleOptions * optionHeight)
+
+    optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+
+    -- Create option buttons
+    local selectedIndex = defaultIndex or 1
+    local isOpen = false
+
+    for i, optionText in ipairs(options) do
+        local optionButton = Instance.new("TextButton")
+        optionButton.Name = "Option_" .. i
+        optionButton.Size = UDim2.new(1, -4, 0, optionHeight)
+        optionButton.Position = UDim2.new(0, 2, 0, (i-1) * optionHeight)
+        optionButton.BackgroundTransparency = 1
+        optionButton.TextColor3 = Color3.fromRGB(220, 220, 220)
+        optionButton.TextSize = 14
+        optionButton.Font = FONT
+        optionButton.Text = optionText
+        optionButton.TextXAlignment = Enum.TextXAlignment.Left
+        optionButton.TextYAlignment = Enum.TextYAlignment.Center
+        optionButton.Parent = optionsScrollFrame
+
+        -- Add padding to the left
+        local textPadding = Instance.new("UIPadding")
+        textPadding.PaddingLeft = UDim.new(0, 5)
+        textPadding.Parent = optionButton
+
+        -- Highlight current selection
+        if i == selectedIndex then
+            optionButton.TextColor3 = Color3.fromRGB(114, 137, 218) -- Highlight color
+        end
+
+        -- Hover effect
+        optionButton.MouseEnter:Connect(function()
+            if i ~= selectedIndex then
+                TweenService:Create(
+                    optionButton,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad),
+                    {BackgroundTransparency = 0.9, BackgroundColor3 = Color3.fromRGB(70, 70, 80)}
+                ):Play()
+            end
+        end)
+
+        optionButton.MouseLeave:Connect(function()
+            if i ~= selectedIndex then
+                TweenService:Create(
+                    optionButton,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad),
+                    {BackgroundTransparency = 1}
+                ):Play()
+            end
+        end)
+
+        -- Option selection
+        optionButton.MouseButton1Click:Connect(function()
+            selectedIndex = i
+            selectedText.Text = optionText
+            for j, btn in ipairs(optionsScrollFrame:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    if j == i then
+                        btn.TextColor3 = Color3.fromRGB(114, 137, 218)
+                    else
+                        btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+                    end
+                end
+            end
+            toggleDropdown(false)
+            if onSelect then
+                onSelect(optionText, i)
+            end
+        end)
+    end
+
+    -- Create background overlay
     local overlay = Instance.new("Frame")
     overlay.Name = "DropdownOverlay"
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.BackgroundTransparency = 1
-    overlay.ZIndex = getHighestZIndex() - 1
     overlay.Visible = false
     overlay.Parent = ScreenGui
 
-    -- Populate options
-    local contentHeight = 0
-    for i, option in ipairs(options) do
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 25)
-        btn.Position = UDim2.new(0, 0, 0, (i-1) * 25)
-        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
-        btn.BorderSizePixel = 0
-        btn.Text = option
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.TextScaled = true
-        btn.Parent = optionsScrollFrame
-        contentHeight = contentHeight + 25
-    end
-
-    local visibleHeight = math.min(contentHeight, 100)
-    optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-
-    -- Toggle logic
-    local isOpen = false
-    local function toggleDropdown(forceState)
+    -- Toggle dropdown function
+    function toggleDropdown(forceState)
         if forceState ~= nil then
             isOpen = forceState
         else
@@ -447,9 +535,9 @@ function TeleportGUILibrary.createDropdown(parent, options, defaultText)
         end
 
         if isOpen then
-            -- Reparent to ScreenGui for top layer
-            local absPos = dropdownContainer.AbsolutePosition
-            local dropdownHeight = dropdownContainer.Size.Y.Offset
+            -- Reparent to ScreenGui
+            local absPos = selectedDisplay.AbsolutePosition
+            local dropdownHeight = selectedDisplay.Size.Y.Offset
             optionsContainer.Parent = ScreenGui
             optionsContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + dropdownHeight)
             optionsContainer.Visible = true
@@ -464,6 +552,7 @@ function TeleportGUILibrary.createDropdown(parent, options, defaultText)
                 end
             end
             overlay.ZIndex = newBaseZIndex - 1
+            overlay.Visible = true
 
             -- Animate
             TweenService:Create(
@@ -476,7 +565,6 @@ function TeleportGUILibrary.createDropdown(parent, options, defaultText)
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
                 {Size = UDim2.new(0, 100, 0, visibleHeight)}
             ):Play()
-            overlay.Visible = true
         else
             overlay.Visible = false
             TweenService:Create(
@@ -500,29 +588,51 @@ function TeleportGUILibrary.createDropdown(parent, options, defaultText)
         end
     end
 
-    -- Connect events
-    dropdownContainer.InputBegan:Connect(function(input)
+    -- Click handler for dropdown
+    selectedDisplay.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             toggleDropdown()
         end
     end)
 
+    -- Overlay click to close
     overlay.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and isOpen then
             toggleDropdown(false)
         end
     end)
 
-    for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
-        if btn:IsA("TextButton") then
-            btn.MouseButton1Click:Connect(function()
-                selectedDisplay.Text = btn.Text
+    -- API
+    local api = {
+        getValue = function()
+            return options[selectedIndex], selectedIndex
+        end,
+        setValue = function(index)
+            if options[index] then
+                selectedIndex = index
+                selectedText.Text = options[index]
+                for j, btn in ipairs(optionsScrollFrame:GetChildren()) do
+                    if btn:IsA("TextButton") then
+                        if j == index then
+                            btn.TextColor3 = Color3.fromRGB(114, 137, 218)
+                        else
+                            btn.TextColor3 = Color3.fromRGB(220, 220, 220)
+                        end
+                    end
+                end
+                if onSelect then
+                    onSelect(options[index], index)
+                end
+            end
+        end,
+        close = function()
+            if isOpen then
                 toggleDropdown(false)
-            end)
+            end
         end
-    end
+    }
 
-    return dropdownContainer
+    return dropdownContainer, api
 end
 
 -- Function to create notification
