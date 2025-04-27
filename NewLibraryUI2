@@ -408,6 +408,19 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     arrowIcon.Text = "▼"
     arrowIcon.Parent = selectedDisplay
     
+    -- Get the highest ZIndex in the GUI and add a buffer to ensure our dropdown is on top
+    local function getHighestZIndex()
+        local highest = 0
+        for _, descendant in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+            if descendant:IsA("GuiObject") and descendant.ZIndex > highest then
+                highest = descendant.ZIndex
+            end
+        end
+        return highest + 20 -- Add a large buffer to ensure it's on top
+    end
+    
+    local baseZIndex = getHighestZIndex()
+    
     -- Options Container (hidden by default)
     local optionsContainer = Instance.new("Frame")
     optionsContainer.Name = "OptionsContainer"
@@ -417,7 +430,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     optionsContainer.BorderSizePixel = 0
     optionsContainer.ClipsDescendants = true
     optionsContainer.Visible = false
-    optionsContainer.ZIndex = 10
+    optionsContainer.ZIndex = baseZIndex
     optionsContainer.Parent = dropdownContainer
     
     -- Round the corners of options container
@@ -433,7 +446,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     optionsScrollFrame.BorderSizePixel = 0
     optionsScrollFrame.ScrollBarThickness = 4
     optionsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-    optionsScrollFrame.ZIndex = 11
+    optionsScrollFrame.ZIndex = baseZIndex + 1
     optionsScrollFrame.Parent = optionsContainer
     
     -- Calculate content height based on number of options
@@ -461,7 +474,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         optionButton.Text = optionText
         optionButton.TextXAlignment = Enum.TextXAlignment.Left
         optionButton.TextYAlignment = Enum.TextYAlignment.Center
-        optionButton.ZIndex = 12
+        optionButton.ZIndex = baseZIndex + 2 -- Higher than the scroll frame
         optionButton.Parent = optionsScrollFrame
         
         -- Add padding to the left
@@ -522,6 +535,23 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end)
     end
     
+    -- Create background overlay to capture clicks outside the dropdown
+    local overlay = Instance.new("Frame")
+    overlay.Name = "DropdownOverlay"
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.Position = UDim2.new(0, 0, 0, 0)
+    overlay.BackgroundTransparency = 1 -- Fully transparent
+    overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
+    overlay.Visible = false
+    overlay.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui -- Adjust to your GUI parent
+    
+    overlay.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
+            input.UserInputType == Enum.UserInputType.Touch) and isOpen then
+            toggleDropdown(false)
+        end
+    end)
+    
     -- Toggle dropdown function
     function toggleDropdown(forceState)
         if forceState ~= nil then
@@ -531,8 +561,20 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
         
         if isOpen then
-            -- Show options container
+            -- Show options container and overlay
             optionsContainer.Visible = true
+            overlay.Visible = true
+            
+            -- Ensure dropdown is on top of everything
+            local newBaseZIndex = getHighestZIndex()
+            optionsContainer.ZIndex = newBaseZIndex
+            optionsScrollFrame.ZIndex = newBaseZIndex + 1
+            
+            for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    btn.ZIndex = newBaseZIndex + 2
+                end
+            end
             
             -- Animate arrow
             TweenService:Create(
@@ -559,6 +601,9 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
                 optionsScrollFrame.CanvasPosition = Vector2.new(0, scrollPosition)
             end
         else
+            -- Hide overlay
+            overlay.Visible = false
+            
             -- Animate arrow back
             TweenService:Create(
                 arrowIcon,
@@ -591,24 +636,10 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
     end)
     
-    -- Close dropdown when clicking elsewhere
-    UIS.InputBegan:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
-            input.UserInputType == Enum.UserInputType.Touch) and isOpen then
-            
-            local guiObjects = PlayerGui:GetGuiObjectsAtPosition(input.Position.X, input.Position.Y)
-            local clickedOnDropdown = false
-            
-            for _, obj in pairs(guiObjects) do
-                if obj:IsDescendantOf(dropdownContainer) then
-                    clickedOnDropdown = true
-                    break
-                end
-            end
-            
-            if not clickedOnDropdown then
-                toggleDropdown(false)
-            end
+    -- Clean up overlay when dropdown is destroyed
+    dropdownContainer.AncestryChanged:Connect(function(_, newParent)
+        if not newParent then
+            overlay:Destroy()
         end
     end)
     
@@ -636,6 +667,12 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
                 if onSelect then
                     onSelect(options[index], index)
                 end
+            end
+        end,
+        -- Add method to manually close the dropdown
+        close = function()
+            if isOpen then
+                toggleDropdown(false)
             end
         end
     }
