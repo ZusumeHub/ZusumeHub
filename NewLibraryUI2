@@ -438,7 +438,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     
     -- Calculate content height based on number of options
     local optionHeight = 24
-    -- MODIFIED: Only show 2 options at a time instead of 5
+    -- Only show 2 options at a time
     local maxVisibleOptions = 2
     local contentHeight = #options * optionHeight
     local visibleHeight = math.min(contentHeight, maxVisibleOptions * optionHeight)
@@ -522,27 +522,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end)
     end
     
-    -- Add scroll indicator
-    local scrollIndicator = Instance.new("TextLabel")
-    scrollIndicator.Name = "ScrollIndicator"
-    scrollIndicator.Size = UDim2.new(1, -8, 0, 16)
-    scrollIndicator.Position = UDim2.new(0, 4, 1, -16)
-    scrollIndicator.BackgroundTransparency = 0.8
-    scrollIndicator.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-    scrollIndicator.TextColor3 = Color3.fromRGB(180, 180, 180)
-    scrollIndicator.TextSize = 10
-    scrollIndicator.Font = Enum.Font.GothamBold
-    scrollIndicator.Text = "▼ scroll for more ▼"
-    scrollIndicator.TextXAlignment = Enum.TextXAlignment.Center
-    scrollIndicator.ZIndex = 13
-    scrollIndicator.Visible = #options > maxVisibleOptions
-    scrollIndicator.Parent = optionsContainer
-    
-    -- Round corners of scroll indicator
-    local indicatorCorner = Instance.new("UICorner")
-    indicatorCorner.CornerRadius = UDim.new(0, 3)
-    indicatorCorner.Parent = scrollIndicator
-    
     -- Toggle dropdown function
     function toggleDropdown(forceState)
         if forceState ~= nil then
@@ -566,7 +545,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             TweenService:Create(
                 optionsContainer,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, 100, 0, visibleHeight + (scrollIndicator.Visible and 16 or 0))}
+                {Size = UDim2.new(0, 100, 0, visibleHeight)}
             ):Play()
             
             -- Adjust position to show current selection
