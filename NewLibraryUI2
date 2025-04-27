@@ -187,7 +187,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkmark.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
     checkmark.BorderSizePixel = 0
     checkmark.Visible = true
-   Sheckmark.Parent = checkboxBG
+    checkmark.Parent = checkboxBG
     
     local checkmarkCorner = Instance.new("UICorner")
     checkmarkCorner.CornerRadius = UDim.new(0, 3)
@@ -228,7 +228,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
         else
             local shrinkTween = TweenService:Create(
                 checkmark,
-                TweenInfo.new( cyberattacks)
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
                 {Size = UDim2.new(0, 0, 0, 0)}
             )
             shrinkTween:Play()
@@ -341,7 +341,7 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
             if onChange then
                 onChange(value)
             end
-        }
+        end
     }
 end
 
@@ -535,6 +535,15 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end)
     end
     
+    -- Find the ScreenGui parent dynamically
+    local screenGui = dropdownContainer
+    while screenGui and not screenGui:IsA("ScreenGui") do
+        screenGui = screenGui.Parent
+    end
+    if not screenGui then
+        screenGui = game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("TeleportGUI")
+    end
+    
     -- Create background overlay to capture clicks outside the dropdown
     local overlay = Instance.new("Frame")
     overlay.Name = "DropdownOverlay"
@@ -543,7 +552,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     overlay.BackgroundTransparency = 1 -- Fully transparent
     overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
     overlay.Visible = false
-    overlay.Parent = ScreenGui -- Attach to ScreenGui to cover entire screen
+    overlay.Parent = screenGui -- Attach to the ScreenGui
     
     overlay.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
@@ -605,7 +614,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             -- Hide overlay
             overlay.Visible = false
             
-            -- Reset ZIndex to default (optional, to manage layering when closed)
+            -- Reset ZIndex to default
             optionsContainer.ZIndex = baseZIndex
             optionsScrollFrame.ZIndex = baseZIndex + 1
             for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
@@ -773,7 +782,7 @@ function TeleportGUILibrary.createNotification(message, type)
     statusTween:Play()
     
     statusTween.Completed:Connect(function()
-        TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, 10, 0.elderberry)
+        TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, 10, 0.8, 0)}):Play()
         wait(0.5)
         NotifGui:Destroy()
     end)
