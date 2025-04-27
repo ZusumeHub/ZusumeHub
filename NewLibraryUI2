@@ -346,7 +346,6 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
 end
 
 -- Function to create a dropdown with multiple options
--- Function to create a dropdown with multiple options
 function TeleportGUILibrary.createDropdown(name, labelText, options, defaultIndex, position, parent, onSelect)
     -- Container for the dropdown
     local dropdownContainer = Instance.new("Frame")
@@ -539,136 +538,139 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end)
     end
     
-    -- Create background overlay to capture clicks outside the dropdown
-    local overlay = Instance.new("Frame")
-    overlay.Name = "DropdownOverlay"
-    overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.Position = UDim2.new(0, 0, 0, 0)
-    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    overlay.BackgroundTransparency = 0.01 -- Almost invisible but captures input
-    overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
-    overlay.Visible = false
-    overlay.Parent = ScreenGui -- Parent to ScreenGui to cover entire screen
+    -- Add UserInputService to handle clicks outside the dropdown
+    local UserInputService = game:GetService("UserInputService")
+    local dropdownClickConnection
     
-    overlay.InputBegan:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
-            input.UserInputType == Enum.UserInputType.Touch) and isOpen then
-            toggleDropdown(false)
-        end
-    end)
-    
--- Toggle dropdown function
-function toggleDropdown(forceState)
-    if forceState ~= nil then
-        isOpen = forceState
-    else
-        isOpen = not isOpen
-    end
-    
-    if isOpen then
-        -- Show options container and overlay
-        optionsContainer.Visible = true
-        overlay.Visible = true
-        
-        -- Ensure dropdown is on top of everything by repositioning in absolute terms
-        -- Get absolute position of dropdown container
-        local absPos = dropdownContainer.AbsolutePosition
-        local absSize = dropdownContainer.AbsoluteSize
-        
-        -- Calculate world position for options container
-        local worldPos = UDim2.new(0, absPos.X + absSize.X - 100, 0, absPos.Y + absSize.Y)
-        
-        -- Temporary reparent options container to ScreenGui for Z-index priority
-        local originalParent = optionsContainer.Parent
-        optionsContainer.Parent = ScreenGui
-        optionsContainer.Position = worldPos
-        
-        -- Update Z-indices
-        local newBaseZIndex = getHighestZIndex()
-        optionsContainer.ZIndex = newBaseZIndex
-        optionsScrollFrame.ZIndex = newBaseZIndex + 1
-        overlay.ZIndex = newBaseZIndex - 1
-        
-        for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
-            if btn:IsA("TextButton") then
-                btn.ZIndex = newBaseZIndex + 2
-            end
+    -- Toggle dropdown function
+    function toggleDropdown(forceState)
+        if forceState ~= nil then
+            isOpen = forceState
+        else
+            isOpen = not isOpen
         end
         
-        -- Store reference to restore parent later
-        optionsContainer:SetAttribute("OriginalParent", originalParent:GetFullName())
-        
-        -- Animate arrow
-        TweenService:Create(
-            arrowIcon,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Rotation = 180}
-        ):Play()
-        
-        -- Animate container expansion
-        TweenService:Create(
-            optionsContainer,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, 100, 0, visibleHeight)}
-        ):Play()
-        
-        -- Adjust position to show current selection
-        if optionsScrollFrame.CanvasSize.Y.Offset > visibleHeight then
-            local scrollPosition = (selectedIndex - 1) * optionHeight
-            -- Center the selected option if possible
-            scrollPosition = math.max(0, scrollPosition - (visibleHeight / 2) + (optionHeight / 2))
-            -- Ensure we don't scroll past the end
-            scrollPosition = math.min(scrollPosition, optionsScrollFrame.CanvasSize.Y.Offset - visibleHeight)
+        if isOpen then
+            -- Show options container
+            optionsContainer.Visible = true
             
-            optionsScrollFrame.CanvasPosition = Vector2.new(0, scrollPosition)
-        end
-    else
-        -- Immediately hide the overlay to prevent the black screen
-        overlay.Visible = false
-        
-        -- Animate arrow back
-        TweenService:Create(
-            arrowIcon,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Rotation = 0}
-        ):Play()
-        
-        -- Animate container collapsing
-        local collapseTween = TweenService:Create(
-            optionsContainer,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-            {Size = UDim2.new(0, 100, 0, 0)}
-        )
-        
-        collapseTween:Play()
-        
-        collapseTween.Completed:Connect(function()
-            if not isOpen then
-                -- Double-check overlay is hidden
-                overlay.Visible = false
-                optionsContainer.Visible = false
-                
-                -- Restore original parent if needed
-                if optionsContainer:GetAttribute("OriginalParent") then
-                    local success, result = pcall(function()
-                        local path = optionsContainer:GetAttribute("OriginalParent")
-                        local originalParent = game:GetService("Players").LocalPlayer:FindFirstChild(path, true)
-                        if originalParent then
-                            optionsContainer.Parent = originalParent
-                            optionsContainer.Position = UDim2.new(1, -100, 1, 0)
-                        end
-                    end)
-                    
-                    if not success then
-                        -- If restoring fails, at least put it back to dropdown container
-                        optionsContainer.Parent = dropdownContainer
-                        optionsContainer.Position = UDim2.new(1, -100, 1, 0)
-                    end
+            -- Ensure dropdown is on top of everything by repositioning in absolute terms
+            local absPos = dropdownContainer.AbsolutePosition
+            local absSize = dropdownContainer.AbsoluteSize
+            
+            -- Calculate world position for options container
+            local worldPos = UDim2.new(0, absPos.X + absSize.X - 100, 0, absPos.Y + absSize.Y)
+            
+            -- Temporary reparent options container to ScreenGui for Z-index priority
+            local originalParent = optionsContainer.Parent
+            optionsContainer.Parent = ScreenGui
+            optionsContainer.Position = worldPos
+            
+            -- Update Z-indices
+            local newBaseZIndex = getHighestZIndex()
+            optionsContainer.ZIndex = newBaseZIndex
+            optionsScrollFrame.ZIndex = newBaseZIndex + 1
+            
+            for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
+                if btn:IsA("TextButton") then
+                    btn.ZIndex = newBaseZIndex + 2
                 end
             end
-        end)
+            
+            -- Store reference to restore parent later
+            optionsContainer:SetAttribute("OriginalParent", originalParent:GetFullName())
+            
+            -- Animate arrow
+            TweenService:Create(
+                arrowIcon,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Rotation = 180}
+            ):Play()
+            
+            -- Animate container expansion
+            TweenService:Create(
+                optionsContainer,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 100, 0, visibleHeight)}
+            ):Play()
+            
+            -- Adjust position to show current selection
+            if optionsScrollFrame.CanvasSize.Y.Offset > visibleHeight then
+                local scrollPosition = (selectedIndex - 1) * optionHeight
+                -- Center the selected option if possible
+                scrollPosition = math.max(0, scrollPosition - (visibleHeight / 2) + (optionHeight / 2))
+                -- Ensure we don't scroll past the end
+                scrollPosition = math.min(scrollPosition, optionsScrollFrame.CanvasSize.Y.Offset - visibleHeight)
+                
+                optionsScrollFrame.CanvasPosition = Vector2.new(0, scrollPosition)
+            end
+            
+            -- Connect input event to detect clicks outside dropdown
+            if dropdownClickConnection then dropdownClickConnection:Disconnect() end
+            dropdownClickConnection = UserInputService.InputBegan:Connect(function(input)
+                if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
+                    input.UserInputType == Enum.UserInputType.Touch) then
+                    
+                    -- Check if click is outside the dropdown
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local dropdownAbsPos = optionsContainer.AbsolutePosition
+                    local dropdownAbsSize = optionsContainer.AbsoluteSize
+                    
+                    -- If click is outside the dropdown bounds, close it
+                    if mousePos.X < dropdownAbsPos.X or mousePos.Y < dropdownAbsPos.Y or
+                       mousePos.X > dropdownAbsPos.X + dropdownAbsSize.X or mousePos.Y > dropdownAbsPos.Y + dropdownAbsSize.Y then
+                        toggleDropdown(false)
+                    end
+                end
+            end)
+        else
+            -- Disconnect the input detection when dropdown is closed
+            if dropdownClickConnection then
+                dropdownClickConnection:Disconnect()
+                dropdownClickConnection = nil
+            end
+            
+            -- Animate arrow back
+            TweenService:Create(
+                arrowIcon,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Rotation = 0}
+            ):Play()
+            
+            -- Animate container collapsing
+            local collapseTween = TweenService:Create(
+                optionsContainer,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+                {Size = UDim2.new(0, 100, 0, 0)}
+            )
+            
+            collapseTween:Play()
+            
+            collapseTween.Completed:Connect(function()
+                if not isOpen then
+                    optionsContainer.Visible = false
+                    
+                    -- Restore original parent if needed
+                    if optionsContainer:GetAttribute("OriginalParent") then
+                        local success, result = pcall(function()
+                            local path = optionsContainer:GetAttribute("OriginalParent")
+                            local originalParent = game:GetService("Players").LocalPlayer:FindFirstChild(path, true)
+                            if originalParent then
+                                optionsContainer.Parent = originalParent
+                                optionsContainer.Position = UDim2.new(1, -100, 1, 0)
+                            end
+                        end)
+                        
+                        if not success then
+                            -- If restoring fails, at least put it back to dropdown container
+                            optionsContainer.Parent = dropdownContainer
+                            optionsContainer.Position = UDim2.new(1, -100, 1, 0)
+                        end
+                    end
+                end
+            end)
+        end
     end
-end
     
     -- Click handler for dropdown
     selectedDisplay.InputBegan:Connect(function(input)
@@ -678,10 +680,13 @@ end
         end
     end)
     
-    -- Clean up overlay when dropdown is destroyed
+    -- Clean up connections when dropdown is destroyed
     dropdownContainer.AncestryChanged:Connect(function(_, newParent)
         if not newParent then
-            overlay:Destroy()
+            if dropdownClickConnection then
+                dropdownClickConnection:Disconnect()
+                dropdownClickConnection = nil
+            end
             if optionsContainer.Parent ~= dropdownContainer then
                 optionsContainer:Destroy()
             end
