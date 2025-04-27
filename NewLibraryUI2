@@ -170,7 +170,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxBG = Instance.new("Frame")
     checkboxBG.Name = "Background"
     checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Checkbox on the far right
+    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Right aligned
     checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     checkboxBG.BorderSizePixel = 0
     checkboxBG.Parent = checkboxContainer
@@ -181,7 +181,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     
     local checkmark = Instance.new("Frame")
     checkmark.Name = "Checkmark"
-    checkmark.Size = UDim2.new(0, 0, 0, 0)
+    checkmark.Size = UDim2.new(0, 0, 0, 0) -- Starts invisible
     checkmark.AnchorPoint = Vector2.new(0.5, 0.5)
     checkmark.Position = UDim2.new(0.5, 0, 0.5, 0)
     checkmark.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
@@ -196,7 +196,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxLabel = Instance.new("TextLabel")
     checkboxLabel.Name = "Label"
     checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
+    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Left aligned
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
@@ -205,6 +205,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
     checkboxLabel.Parent = checkboxContainer
     
+    -- Use a transparent button that covers the whole container for better click detection
     local checkboxButton = Instance.new("TextButton")
     checkboxButton.Name = "Button"
     checkboxButton.Size = UDim2.new(1, 0, 1, 0)
@@ -214,10 +215,12 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     
     local checked = false
     
+    -- Handle checkbox toggling
     checkboxButton.MouseButton1Click:Connect(function()
         checked = not checked
         
         if checked then
+            -- Animate the checkmark expanding
             local expandTween = TweenService:Create(
                 checkmark,
                 TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
@@ -226,6 +229,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
             expandTween:Play()
             checkboxLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
+            -- Animate the checkmark shrinking
             local shrinkTween = TweenService:Create(
                 checkmark,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
@@ -235,11 +239,13 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
             checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
         end
         
+        -- Call the callback function if provided
         if onToggle then
             onToggle(checked)
         end
     end)
     
+    -- Public API
     return checkboxContainer, function() return checked end
 end
 
@@ -421,16 +427,17 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     
     local baseZIndex = getHighestZIndex()
     
-    -- Create separate options container that will be added to the screen GUI directly
-    -- This ensures it's not clipped by parent frames and can float above other UI elements
+    -- Options Container (hidden by default)
     local optionsContainer = Instance.new("Frame")
-    optionsContainer.Name = name .. "_OptionsContainer"
+    optionsContainer.Name = "OptionsContainer"
     optionsContainer.Size = UDim2.new(0, 100, 0, 0) -- Will expand when opened
+    optionsContainer.Position = UDim2.new(1, -100, 1, 0)
     optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
     optionsContainer.BorderSizePixel = 0
     optionsContainer.ClipsDescendants = true
     optionsContainer.Visible = false
     optionsContainer.ZIndex = baseZIndex
+    optionsContainer.Parent = dropdownContainer
     
     -- Round the corners of options container
     local optionsCorner = Instance.new("UICorner")
@@ -536,16 +543,13 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
     
     -- Create background overlay to capture clicks outside the dropdown
     local overlay = Instance.new("Frame")
-    overlay.Name = "DropdownOverlay_" .. name
+    overlay.Name = "DropdownOverlay"
     overlay.Size = UDim2.new(1, 0, 1, 0)
     overlay.Position = UDim2.new(0, 0, 0, 0)
     overlay.BackgroundTransparency = 1 -- Fully transparent
     overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
     overlay.Visible = false
-    
-    -- Add them to the screen GUI directly
-    optionsContainer.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui
-    overlay.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui
+    overlay.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui -- Adjust to your GUI parent
     
     overlay.InputBegan:Connect(function(input)
         if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
@@ -554,15 +558,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
     end)
     
-    -- Update the options container position to match the dropdown
-    local function updateOptionsPosition()
-        local absolutePosition = selectedDisplay.AbsolutePosition
-        local absoluteSize = selectedDisplay.AbsoluteSize
-        
-        optionsContainer.Position = UDim2.new(0, absolutePosition.X, 0, absolutePosition.Y + absoluteSize.Y)
-        optionsContainer.Size = UDim2.new(0, absoluteSize.X, 0, isOpen and visibleHeight or 0)
-    end
-    
     -- Toggle dropdown function
     function toggleDropdown(forceState)
         if forceState ~= nil then
@@ -570,8 +565,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         else
             isOpen = not isOpen
         end
-        
-        updateOptionsPosition()
         
         if isOpen then
             -- Show options container and overlay
@@ -600,7 +593,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             TweenService:Create(
                 optionsContainer,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(0, optionsContainer.Size.X.Offset, 0, visibleHeight)}
+                {Size = UDim2.new(0, 100, 0, visibleHeight)}
             ):Play()
             
             -- Adjust position to show current selection
@@ -628,7 +621,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
             local collapseTween = TweenService:Create(
                 optionsContainer,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                {Size = UDim2.new(0, optionsContainer.Size.X.Offset, 0, 0)}
+                {Size = UDim2.new(0, 100, 0, 0)}
             )
             
             collapseTween:Play()
@@ -641,14 +634,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
     end
     
-    -- Update options position when MainFrame is moved
-    game:GetService("RunService").RenderStepped:Connect(function()
-        if isOpen then
-            updateOptionsPosition()
-        end
-    end)
-    
-    -- Click handler for dropdown display
+    -- Click handler for dropdown
     selectedDisplay.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or 
            input.UserInputType == Enum.UserInputType.Touch then
@@ -656,10 +642,9 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultInde
         end
     end)
     
-    -- Clean up elements when the dropdown is destroyed
+    -- Clean up overlay when dropdown is destroyed
     dropdownContainer.AncestryChanged:Connect(function(_, newParent)
         if not newParent then
-            optionsContainer:Destroy()
             overlay:Destroy()
         end
     end)
