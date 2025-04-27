@@ -170,7 +170,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxBG = Instance.new("Frame")
     checkboxBG.Name = "Background"
     checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Right aligned
+    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Checkbox on the far right
     checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     checkboxBG.BorderSizePixel = 0
     checkboxBG.Parent = checkboxContainer
@@ -181,7 +181,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     
     local checkmark = Instance.new("Frame")
     checkmark.Name = "Checkmark"
-    checkmark.Size = UDim2.new(0, 0, 0, 0) -- Starts invisible
+    checkmark.Size = UDim2.new(0, 0, 0, 0)
     checkmark.AnchorPoint = Vector2.new(0.5, 0.5)
     checkmark.Position = UDim2.new(0.5, 0, 0.5, 0)
     checkmark.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
@@ -196,7 +196,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxLabel = Instance.new("TextLabel")
     checkboxLabel.Name = "Label"
     checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Left aligned
+    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
@@ -205,7 +205,6 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
     checkboxLabel.Parent = checkboxContainer
     
-    -- Use a transparent button that covers the whole container for better click detection
     local checkboxButton = Instance.new("TextButton")
     checkboxButton.Name = "Button"
     checkboxButton.Size = UDim2.new(1, 0, 1, 0)
@@ -215,12 +214,10 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     
     local checked = false
     
-    -- Handle checkbox toggling
     checkboxButton.MouseButton1Click:Connect(function()
         checked = not checked
         
         if checked then
-            -- Animate the checkmark expanding
             local expandTween = TweenService:Create(
                 checkmark,
                 TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
@@ -229,7 +226,6 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
             expandTween:Play()
             checkboxLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         else
-            -- Animate the checkmark shrinking
             local shrinkTween = TweenService:Create(
                 checkmark,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
@@ -239,13 +235,11 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
             checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
         end
         
-        -- Call the callback function if provided
         if onToggle then
             onToggle(checked)
         end
     end)
     
-    -- Public API
     return checkboxContainer, function() return checked end
 end
 
