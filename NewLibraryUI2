@@ -345,339 +345,184 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     }
 end
 
--- Function to create a dropdown with multiple options
-function TeleportGUILibrary.createDropdown(name, labelText, options, defaultIndex, position, parent, onSelect)
-    -- Container for the dropdown
+local TeleportGUILibrary = {}
+local TweenService = game:GetService("TweenService")
+
+function getHighestZIndex()
+    local highest = 1
+    for _, gui in ipairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+        if gui:IsA("GuiObject") and gui.ZIndex > highest then
+            highest = gui.ZIndex
+        end
+    end
+    return highest + 20
+end
+
+function TeleportGUILibrary.createDropdown(parent, options, defaultText)
+    -- Dropdown Container
     local dropdownContainer = Instance.new("Frame")
-    dropdownContainer.Name = name .. "Container"
     dropdownContainer.Size = UDim2.new(0.9, 0, 0, 30)
-    dropdownContainer.Position = position
-    dropdownContainer.BackgroundTransparency = 1
+    dropdownContainer.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    dropdownContainer.BorderSizePixel = 0
     dropdownContainer.Parent = parent
-    
-    -- Label (on the left)
-    local dropdownLabel = Instance.new("TextLabel")
-    dropdownLabel.Name = "Label"
-    dropdownLabel.Size = UDim2.new(0, 150, 1, 0)
-    dropdownLabel.Position = UDim2.new(0, 0, 0, 0)
-    dropdownLabel.BackgroundTransparency = 1
-    dropdownLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    dropdownLabel.TextSize = 14
-    dropdownLabel.Font = FONT
-    dropdownLabel.Text = labelText
-    dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
-    dropdownLabel.Parent = dropdownContainer
-    
-    -- Selected Option Display (on the right)
-    local selectedDisplay = Instance.new("Frame")
-    selectedDisplay.Name = "SelectedDisplay"
-    selectedDisplay.Size = UDim2.new(0, 100, 0, 24)
-    selectedDisplay.Position = UDim2.new(1, -100, 0.5, -12)
-    selectedDisplay.BackgroundColor3 = COLORS.Input
-    selectedDisplay.BorderSizePixel = 0
+
+    -- Selected Display
+    local selectedDisplay = Instance.new("TextLabel")
+    selectedDisplay.Size = UDim2.new(0.8, 0, 1, 0)
+    selectedDisplay.Position = UDim2.new(0, 5, 0, 0)
+    selectedDisplay.BackgroundTransparency = 1
+    selectedDisplay.Text = defaultText or "Select an option"
+    selectedDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+    selectedDisplay.TextScaled = true
+    selectedDisplay.TextXAlignment = Enum.TextXAlignment.Left
     selectedDisplay.Parent = dropdownContainer
-    
-    -- Round the corners
-    local displayCorner = Instance.new("UICorner")
-    displayCorner.CornerRadius = UDim.new(0, 5)
-    displayCorner.Parent = selectedDisplay
-    
-    -- Selected Text
-    local selectedText = Instance.new("TextLabel")
-    selectedText.Name = "SelectedText"
-    selectedText.Size = UDim2.new(0.85, 0, 1, 0)
-    selectedText.Position = UDim2.new(0.05, 0, 0, 0)
-    selectedText.BackgroundTransparency = 1
-    selectedText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    selectedText.TextSize = 14
-    selectedText.Font = FONT
-    selectedText.Text = options[defaultIndex or 1]
-    selectedText.TextXAlignment = Enum.TextXAlignment.Left
-    selectedText.TextTruncate = Enum.TextTruncate.AtEnd
-    selectedText.Parent = selectedDisplay
-    
+
     -- Arrow Icon
     local arrowIcon = Instance.new("TextLabel")
-    arrowIcon.Name = "ArrowIcon"
     arrowIcon.Size = UDim2.new(0, 20, 0, 20)
-    arrowIcon.Position = UDim2.new(1, -20, 0.5, -10)
+    arrowIcon.Position = UDim2.new(1, -25, 0, 5)
     arrowIcon.BackgroundTransparency = 1
-    arrowIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    arrowIcon.TextSize = 14
-    arrowIcon.Font = Enum.Font.GothamBold
     arrowIcon.Text = "▼"
-    arrowIcon.Parent = selectedDisplay
-    
-    -- Get the highest ZIndex in the GUI and add a buffer to ensure our dropdown is on top
-    local function getHighestZIndex()
-        local highest = 0
-        for _, descendant in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
-            if descendant:IsA("GuiObject") and descendant.ZIndex > highest then
-                highest = descendant.ZIndex
-            end
-        end
-        return highest + 20 -- Add a large buffer to ensure it's on top
-    end
-    
-    local baseZIndex = getHighestZIndex()
-    
-    -- Options Container (hidden by default)
+    arrowIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+    arrowIcon.TextScaled = true
+    arrowIcon.Parent = dropdownContainer
+
+    -- Options Container
     local optionsContainer = Instance.new("Frame")
     optionsContainer.Name = "OptionsContainer"
-    optionsContainer.Size = UDim2.new(1, 0, 0, 0) -- Full width
-    optionsContainer.Position = UDim2.new(0, 0, 1, 0) -- Start at left edge
+    optionsContainer.Size = UDim2.new(0, 100, 0, 0)
+    optionsContainer.Position = UDim2.new(1, -100, 1, 0)
     optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
     optionsContainer.BorderSizePixel = 0
     optionsContainer.ClipsDescendants = true
     optionsContainer.Visible = false
-    optionsContainer.ZIndex = baseZIndex
     optionsContainer.Parent = dropdownContainer
-    
-    -- Round the corners of options container
-    local optionsCorner = Instance.new("UICorner")
-    optionsCorner.CornerRadius = UDim.new(0, 5)
-    optionsCorner.Parent = optionsContainer
-    
-    -- Options Scrolling Frame
+
+    -- Save original parent and position
+    local originalParent = optionsContainer.Parent
+    local originalPosition = optionsContainer.Position
+    local ScreenGui = parent:FindFirstAncestorOfClass("ScreenGui") or game:GetService("Players").LocalPlayer.PlayerGui
+
+    -- Scrolling Frame for options
     local optionsScrollFrame = Instance.new("ScrollingFrame")
-    optionsScrollFrame.Name = "OptionsScrollFrame"
     optionsScrollFrame.Size = UDim2.new(1, 0, 1, 0)
     optionsScrollFrame.BackgroundTransparency = 1
-    optionsScrollFrame.BorderSizePixel = 0
     optionsScrollFrame.ScrollBarThickness = 4
-    optionsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-    optionsScrollFrame.ZIndex = baseZIndex + 1
     optionsScrollFrame.Parent = optionsContainer
-    
-    -- Calculate content height based on number of options
-    local optionHeight = 24
-    -- Only show 2 options at a time
-    local maxVisibleOptions = 2
-    local contentHeight = #options * optionHeight
-    local visibleHeight = math.min(contentHeight, maxVisibleOptions * optionHeight)
-    
-    optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-    
-    -- Create option buttons
-    local selectedIndex = defaultIndex or 1
-    local isOpen = false
-    
-    for i, optionText in ipairs(options) do
-        local optionButton = Instance.new("TextButton")
-        optionButton.Name = "Option_" .. i
-        optionButton.Size = UDim2.new(1, -4, 0, optionHeight)
-        optionButton.Position = UDim2.new(0, 2, 0, (i-1) * optionHeight)
-        optionButton.BackgroundTransparency = 1
-        optionButton.TextColor3 = Color3.fromRGB(220, 220, 220)
-        optionButton.TextSize = 14
-        optionButton.Font = FONT
-        optionButton.Text = optionText
-        optionButton.TextXAlignment = Enum.TextXAlignment.Left
-        optionButton.TextYAlignment = Enum.TextYAlignment.Center
-        optionButton.ZIndex = baseZIndex + 2 -- Higher than the scroll frame
-        optionButton.Parent = optionsScrollFrame
-        
-        -- Add padding to the left
-        local textPadding = Instance.new("UIPadding")
-        textPadding.PaddingLeft = UDim.new(0, 5)
-        textPadding.Parent = optionButton
-        
-        -- Highlight current selection
-        if i == selectedIndex then
-            optionButton.TextColor3 = Color3.fromRGB(114, 137, 218) -- Highlight color
-        end
-        
-        -- Hover effect
-        optionButton.MouseEnter:Connect(function()
-            if i ~= selectedIndex then
-                TweenService:Create(
-                    optionButton, 
-                    TweenInfo.new(0.2, Enum.EasingStyle.Quad), 
-                    {BackgroundTransparency = 0.9, BackgroundColor3 = Color3.fromRGB(70, 70, 80)}
-                ):Play()
-            end
-        end)
-        
-        optionButton.MouseLeave:Connect(function()
-            if i ~= selectedIndex then
-                TweenService:Create(
-                    optionButton, 
-                    TweenInfo.new(0.2, Enum.EasingStyle.Quad), 
-                    {BackgroundTransparency = 1}
-                ):Play()
-            end
-        end)
-        
-        -- Option selection
-        optionButton.MouseButton1Click:Connect(function()
-            -- Update selected index and text
-            selectedIndex = i
-            selectedText.Text = optionText
-            
-            -- Update visuals
-            for j, btn in ipairs(optionsScrollFrame:GetChildren()) do
-                if btn:IsA("TextButton") then
-                    if j == i then
-                        btn.TextColor3 = Color3.fromRGB(114, 137, 218) -- Highlight color
-                    else
-                        btn.TextColor3 = Color3.fromRGB(220, 220, 220)
-                    end
-                end
-            end
-            
-            -- Close dropdown
-            toggleDropdown(false)
-            
-            -- Callback
-            if onSelect then
-                onSelect(optionText, i)
-            end
-        end)
-    end
-    
-    -- Create background overlay to capture clicks outside the dropdown
+
+    -- Overlay to close dropdown
     local overlay = Instance.new("Frame")
     overlay.Name = "DropdownOverlay"
     overlay.Size = UDim2.new(1, 0, 1, 0)
-    overlay.Position = UDim2.new(0, 0, 0, 0)
-    overlay.BackgroundTransparency = 1 -- Fully transparent
-    overlay.ZIndex = baseZIndex - 1 -- Just below the dropdown
+    overlay.BackgroundTransparency = 1
+    overlay.ZIndex = getHighestZIndex() - 1
     overlay.Visible = false
-    overlay.Parent = game:GetService("Players").LocalPlayer.PlayerGui.ScreenGui -- Adjust to your GUI parent
-    
-    overlay.InputBegan:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseButton1 or 
-            input.UserInputType == Enum.UserInputType.Touch) and isOpen then
-            toggleDropdown(false)
-        end
-    end)
-    
-    -- Toggle dropdown function
-    function toggleDropdown(forceState)
+    overlay.Parent = ScreenGui
+
+    -- Populate options
+    local contentHeight = 0
+    for i, option in ipairs(options) do
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(1, 0, 0, 25)
+        btn.Position = UDim2.new(0, 0, 0, (i-1) * 25)
+        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+        btn.BorderSizePixel = 0
+        btn.Text = option
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.TextScaled = true
+        btn.Parent = optionsScrollFrame
+        contentHeight = contentHeight + 25
+    end
+
+    local visibleHeight = math.min(contentHeight, 100)
+    optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+
+    -- Toggle logic
+    local isOpen = false
+    local function toggleDropdown(forceState)
         if forceState ~= nil then
             isOpen = forceState
         else
             isOpen = not isOpen
         end
-        
+
         if isOpen then
-            -- Show options container and overlay
+            -- Reparent to ScreenGui for top layer
+            local absPos = dropdownContainer.AbsolutePosition
+            local dropdownHeight = dropdownContainer.Size.Y.Offset
+            optionsContainer.Parent = ScreenGui
+            optionsContainer.Position = UDim2.new(0, absPos.X, 0, absPos.Y + dropdownHeight)
             optionsContainer.Visible = true
-            overlay.Visible = true
-            
-            -- Ensure dropdown is on top of everything
+
+            -- Set high ZIndex
             local newBaseZIndex = getHighestZIndex()
             optionsContainer.ZIndex = newBaseZIndex
             optionsScrollFrame.ZIndex = newBaseZIndex + 1
-            
             for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
                 if btn:IsA("TextButton") then
                     btn.ZIndex = newBaseZIndex + 2
                 end
             end
-            
-            -- Animate arrow
+            overlay.ZIndex = newBaseZIndex - 1
+
+            -- Animate
             TweenService:Create(
                 arrowIcon,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
                 {Rotation = 180}
             ):Play()
-            
-            -- Animate container expansion
             TweenService:Create(
                 optionsContainer,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(1, 0, 0, visibleHeight)} -- Updated to full width
+                {Size = UDim2.new(0, 100, 0, visibleHeight)}
             ):Play()
-            
-            -- Adjust position to show current selection
-            if optionsScrollFrame.CanvasSize.Y.Offset > visibleHeight then
-                local scrollPosition = (selectedIndex - 1) * optionHeight
-                -- Center the selected option if possible
-                scrollPosition = math.max(0, scrollPosition - (visibleHeight / 2) + (optionHeight / 2))
-                -- Ensure we don't scroll past the end
-                scrollPosition = math.min(scrollPosition, optionsScrollFrame.CanvasSize.Y.Offset - visibleHeight)
-                
-                optionsScrollFrame.CanvasPosition = Vector2.new(0, scrollPosition)
-            end
+            overlay.Visible = true
         else
-            -- Hide overlay
             overlay.Visible = false
-            
-            -- Animate arrow back
             TweenService:Create(
                 arrowIcon,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
                 {Rotation = 0}
             ):Play()
-            
-            -- Animate container collapsing
             local collapseTween = TweenService:Create(
                 optionsContainer,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                {Size = UDim2.new(1, 0, 0, 0)} -- Updated to full width
+                {Size = UDim2.new(0, 100, 0, 0)}
             )
-            
             collapseTween:Play()
-            
             collapseTween.Completed:Connect(function()
                 if not isOpen then
+                    optionsContainer.Parent = originalParent
+                    optionsContainer.Position = originalPosition
                     optionsContainer.Visible = false
                 end
             end)
         end
     end
-    
-    -- Click handler for dropdown
-    selectedDisplay.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or 
-           input.UserInputType == Enum.UserInputType.Touch then
+
+    -- Connect events
+    dropdownContainer.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             toggleDropdown()
         end
     end)
-    
-    -- Clean up overlay when dropdown is destroyed
-    dropdownContainer.AncestryChanged:Connect(function(_, newParent)
-        if not newParent then
-            overlay:Destroy()
+
+    overlay.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) and isOpen then
+            toggleDropdown(false)
         end
     end)
-    
-    -- Public methods
-    local api = {
-        getValue = function()
-            return options[selectedIndex], selectedIndex
-        end,
-        setValue = function(index)
-            if options[index] then
-                selectedIndex = index
-                selectedText.Text = options[index]
-                
-                -- Update visuals
-                for j, btn in ipairs(optionsScrollFrame:GetChildren()) do
-                    if btn:IsA("TextButton") then
-                        if j == index then
-                            btn.TextColor3 = Color3.fromRGB(114, 137, 218) -- Highlight color
-                        else
-                            btn.TextColor3 = Color3.fromRGB(220, 220, 220)
-                        end
-                    end
-                end
-                
-                if onSelect then
-                    onSelect(options[index], index)
-                end
-            end
-        end,
-        -- Add method to manually close the dropdown
-        close = function()
-            if isOpen then
+
+    for _, btn in ipairs(optionsScrollFrame:GetChildren()) do
+        if btn:IsA("TextButton") then
+            btn.MouseButton1Click:Connect(function()
+                selectedDisplay.Text = btn.Text
                 toggleDropdown(false)
-            end
+            end)
         end
-    }
-    
-    return dropdownContainer, api
+    end
+
+    return dropdownContainer
 end
 
 -- Function to create notification
