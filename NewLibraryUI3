@@ -21,12 +21,6 @@ local COLORS = {
     Input = Color3.fromRGB(55, 55, 60),
 }
 
--- Auto-destroy existing instances of the GUI
-local existingGUI = PlayerGui:FindFirstChild("TeleportGUI")
-if existingGUI then
-    existingGUI:Destroy()
-end
-
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TeleportGUI"
@@ -60,22 +54,39 @@ TopBar.Parent = MainFrame
 -- Title
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(1, 0, 1, 0) -- Full width of TopBar
-Title.Position = UDim2.new(0, 0, 0, 0) -- No offset, starting from the left edge
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
-Title.Text = "Minds-Fall Survival"
-Title.TextXAlignment = Enum.TextXAlignment.Center
-Title.TextYAlignment = Enum.TextYAlignment.Center -- Ensure vertical centering as well
+Title.Text = "you noob Sv_Azidan lol"
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
--- Minimize Button (in Close Button position)
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(1, -28, 0, 2)
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+CloseButton.BorderSizePixel = 0
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Text = "X"
+CloseButton.TextSize = 14
+CloseButton.Parent = TopBar
+
+-- Round the close button
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.Parent = CloseButton
+
+-- Minimize Button
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -28, 0, 2) -- Now in Close Button position
+MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
@@ -108,28 +119,19 @@ ContentFrame.Size = UDim2.new(1, 0, 0, 0) -- Will be updated dynamically
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = ScrollingFrame
 
--- Bottom bar for YouTube label background
-local BottomBar = Instance.new("Frame")
-BottomBar.Name = "BottomBar"
-BottomBar.Size = UDim2.new(1, 0, 0, 30)
-BottomBar.Position = UDim2.new(0, 0, 1, -30)
-BottomBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-BottomBar.BorderSizePixel = 0
-BottomBar.Parent = MainFrame
-BottomBar.ZIndex = 1
-
--- YouTube Label (moved to left side with padding)
+-- YouTube Label (fixed at the bottom of MainFrame)
 local YouTubeLabel = Instance.new("TextLabel")
 YouTubeLabel.Name = "YouTubeLabel"
-YouTubeLabel.Size = UDim2.new(0.9, 0, 1, 0) -- Match the width of other elements (90% of parent)
-YouTubeLabel.Position = UDim2.new(0.05, 0, 0, 0) -- 5% padding from the left, matching other elements
-YouTubeLabel.BackgroundTransparency = 1
+YouTubeLabel.Size = UDim2.new(1, 0, 0, 30)
+YouTubeLabel.Position = UDim2.new(0, 0, 1, -30)
+YouTubeLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+YouTubeLabel.BorderSizePixel = 0
 YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YouTubeLabel.TextSize = 16
 YouTubeLabel.Font = Enum.Font.GothamBold
 YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Left
-YouTubeLabel.Parent = BottomBar
+YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center
+YouTubeLabel.Parent = MainFrame
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
 
@@ -158,7 +160,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     return sectionLabel, separator
 end
 
--- Function to create custom checkbox with auto-apply (Option 2: Label on left, Checkbox on right)
+-- Function to create custom checkbox with auto-apply
 function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name .. "Container"
@@ -170,7 +172,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxBG = Instance.new("Frame")
     checkboxBG.Name = "Background"
     checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Checkbox on the far right
+    checkboxBG.Position = UDim2.new(0, 0, 0.5, -10)
     checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     checkboxBG.BorderSizePixel = 0
     checkboxBG.Parent = checkboxContainer
@@ -196,7 +198,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxLabel = Instance.new("TextLabel")
     checkboxLabel.Name = "Label"
     checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
+    checkboxLabel.Position = UDim2.new(0, 28, 0, 0)
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
@@ -243,21 +245,20 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     return checkboxContainer, function() return checked end
 end
 
--- Updated Text Input Function (Option 2: Label on left, Input on right)
+-- NEW FEATURE: Text Input with label
 function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
     -- Container for the whole input element
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = name .. "Container"
-    inputContainer.Size = UDim2.new(0.9, 0, 0, 30)
+    inputContainer.Size = UDim2.new(0.9, 0, 0, 32)
     inputContainer.Position = position
     inputContainer.BackgroundTransparency = 1
     inputContainer.Parent = parent
     
-    -- Label (on the left)
+    -- Label
     local inputLabel = Instance.new("TextLabel")
     inputLabel.Name = "Label"
-    inputLabel.Size = UDim2.new(0, 150, 1, 0)
-    inputLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
+    inputLabel.Size = UDim2.new(0.5, -10, 1, 0)
     inputLabel.BackgroundTransparency = 1
     inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     inputLabel.TextSize = 14
@@ -266,11 +267,11 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputLabel.TextXAlignment = Enum.TextXAlignment.Left
     inputLabel.Parent = inputContainer
     
-    -- Input Box Background (on the far right)
+    -- Input Box Background
     local inputBG = Instance.new("Frame")
     inputBG.Name = "Background"
-    inputBG.Size = UDim2.new(0, 60, 0, 24)
-    inputBG.Position = UDim2.new(1, -60, 0.5, -12) -- Input on the far right
+    inputBG.Size = UDim2.new(0.5, 0, 0, 25)
+    inputBG.Position = UDim2.new(0.5, 0, 0.5, -12.5)
     inputBG.BackgroundColor3 = COLORS.Input
     inputBG.BorderSizePixel = 0
     inputBG.Parent = inputContainer
@@ -283,8 +284,8 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     -- The actual TextBox
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
-    textBox.Size = UDim2.new(0.9, 0, 0.8, 0)
-    textBox.Position = UDim2.new(0.05, 0, 0.1, 0)
+    textBox.Size = UDim2.new(0.9, 0, 1, 0)
+    textBox.Position = UDim2.new(0.05, 0, 0, 0)
     textBox.BackgroundTransparency = 1
     textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
     textBox.TextSize = 14
@@ -317,11 +318,13 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
         
         if enterPressed then
             local newValue = textBox.Text
+            -- Try to convert to number if possible
             local numValue = tonumber(newValue)
             if numValue then
                 newValue = numValue
             end
             
+            -- Only call onChange if the value actually changed
             if newValue ~= currentValue then
                 currentValue = newValue
                 if onChange then
@@ -329,10 +332,12 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
                 end
             end
         else
+            -- Revert to current value if user didn't press enter
             textBox.Text = tostring(currentValue)
         end
     end)
     
+    -- Return the container and functions to get/set the value
     return inputContainer, {
         getValue = function() return currentValue end,
         setValue = function(value)
@@ -345,18 +350,13 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     }
 end
 
-function TeleportGUILibrary.createDropdown(props)
-    local name = props.Name or "Dropdown"
-    local default = props.Default or ""
-    local options = props.Options or {}
-    local callback = props.Callback or function() end
-    local position = props.Position or UDim2.new(0.05, 0, 0, 0)
-    local parent = props.Parent or TeleportGUILibrary.ContentFrame
-    
-    -- Main container
+-- Add this function to the TeleportGUILibrary
+
+function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOption, position, parent, callback)
+    -- Container for the whole dropdown element
     local dropdownContainer = Instance.new("Frame")
     dropdownContainer.Name = name .. "Container"
-    dropdownContainer.Size = UDim2.new(0.9, 0, 0, 35)
+    dropdownContainer.Size = UDim2.new(0.9, 0, 0, 32)
     dropdownContainer.Position = position
     dropdownContainer.BackgroundTransparency = 1
     dropdownContainer.Parent = parent
@@ -364,297 +364,268 @@ function TeleportGUILibrary.createDropdown(props)
     -- Label
     local dropdownLabel = Instance.new("TextLabel")
     dropdownLabel.Name = "Label"
-    dropdownLabel.Size = UDim2.new(1, 0, 0, 20)
+    dropdownLabel.Size = UDim2.new(0.5, -10, 1, 0)
     dropdownLabel.BackgroundTransparency = 1
     dropdownLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     dropdownLabel.TextSize = 14
     dropdownLabel.Font = FONT
-    dropdownLabel.Text = name
+    dropdownLabel.Text = labelText
     dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
     dropdownLabel.Parent = dropdownContainer
     
-    -- Main button (shows selected option)
-    local dropdownButton = Instance.new("TextButton")
-    dropdownButton.Name = "DropdownButton"
-    dropdownButton.Size = UDim2.new(1, 0, 0, 35)
-    dropdownButton.Position = UDim2.new(0, 0, 0, 20)
-    dropdownButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    dropdownButton.BorderSizePixel = 0
-    dropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdownButton.TextSize = 14
-    dropdownButton.Font = FONT
-    dropdownButton.Text = default
-    dropdownButton.TextXAlignment = Enum.TextXAlignment.Left
-    dropdownButton.TextTruncate = Enum.TextTruncate.AtEnd
-    dropdownButton.AutoButtonColor = false
-    dropdownButton.ClipsDescendants = true
-    dropdownButton.Parent = dropdownContainer
+    -- Dropdown Button Background
+    local dropdownBG = Instance.new("Frame")
+    dropdownBG.Name = "Background"
+    dropdownBG.Size = UDim2.new(0.5, 0, 0, 25)
+    dropdownBG.Position = UDim2.new(0.5, 0, 0.5, -12.5)
+    dropdownBG.BackgroundColor3 = COLORS.Input
+    dropdownBG.BorderSizePixel = 0
+    dropdownBG.Parent = dropdownContainer
     
-    -- Add padding to text
-    local textPadding = Instance.new("UIPadding")
-    textPadding.PaddingLeft = UDim.new(0, 10)
-    textPadding.Parent = dropdownButton
-    
-    -- Round the button corners
+    -- Round the corners of the dropdown button
     local dropdownCorner = Instance.new("UICorner")
-    dropdownCorner.CornerRadius = UDim.new(0, 6)
-    dropdownCorner.Parent = dropdownButton
+    dropdownCorner.CornerRadius = UDim.new(0, 5)
+    dropdownCorner.Parent = dropdownBG
     
-    -- Arrow indicator
-    local arrowIndicator = Instance.new("TextLabel")
-    arrowIndicator.Name = "ArrowIndicator"
-    arrowIndicator.Size = UDim2.new(0, 20, 0, 20)
-    arrowIndicator.Position = UDim2.new(1, -25, 0.5, -10)
-    arrowIndicator.BackgroundTransparency = 1
-    arrowIndicator.TextColor3 = Color3.fromRGB(255, 255, 255)
-    arrowIndicator.TextSize = 18
-    arrowIndicator.Font = FONT
-    arrowIndicator.Text = "▼"
-    arrowIndicator.Parent = dropdownButton
+    -- The selected value text
+    local selectedText = Instance.new("TextLabel")
+    selectedText.Name = "SelectedText"
+    selectedText.Size = UDim2.new(0.85, 0, 1, 0) 
+    selectedText.Position = UDim2.new(0.05, 0, 0, 0)
+    selectedText.BackgroundTransparency = 1
+    selectedText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    selectedText.TextSize = 14
+    selectedText.Font = FONT
+    selectedText.Text = defaultOption or "Select..."
+    selectedText.TextXAlignment = Enum.TextXAlignment.Left
+    selectedText.Parent = dropdownBG
     
-    -- Options container (initially hidden)
-    local optionsContainer = Instance.new("Frame")
-    optionsContainer.Name = "OptionsContainer"
-    optionsContainer.Size = UDim2.new(1, 0, 0, 0) -- Will be set dynamically
-    optionsContainer.Position = UDim2.new(0, 0, 1, 0)
-    optionsContainer.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    optionsContainer.BorderSizePixel = 0
-    optionsContainer.Visible = false
-    optionsContainer.ZIndex = 10
-    optionsContainer.ClipsDescendants = true
-    optionsContainer.Parent = dropdownButton
+    -- Arrow icon
+    local arrowIcon = Instance.new("TextLabel")
+    arrowIcon.Name = "ArrowIcon"
+    arrowIcon.Size = UDim2.new(0, 20, 0, 20)
+    arrowIcon.Position = UDim2.new(1, -25, 0.5, -10)
+    arrowIcon.BackgroundTransparency = 1
+    arrowIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+    arrowIcon.TextSize = 16
+    arrowIcon.Font = FONT
+    arrowIcon.Text = "▼"
+    arrowIcon.TextYAlignment = Enum.TextYAlignment.Center
+    arrowIcon.Parent = dropdownBG
     
-    -- Round the options container corners
-    local optionsCorner = Instance.new("UICorner")
-    optionsCorner.CornerRadius = UDim.new(0, 6)
-    optionsCorner.Parent = optionsContainer
+    -- Dropdown Button
+    local dropdownButton = Instance.new("TextButton")
+    dropdownButton.Name = "Button"
+    dropdownButton.Size = UDim2.new(1, 0, 1, 0)
+    dropdownButton.BackgroundTransparency = 1
+    dropdownButton.Text = ""
+    dropdownButton.Parent = dropdownBG
     
-    -- ScrollingFrame for options when there are many
-    local optionsScrollingFrame = Instance.new("ScrollingFrame")
-    optionsScrollingFrame.Name = "OptionsScrollingFrame"
-    optionsScrollingFrame.Size = UDim2.new(1, 0, 1, 0)
-    optionsScrollingFrame.BackgroundTransparency = 1
-    optionsScrollingFrame.BorderSizePixel = 0
-    optionsScrollingFrame.ScrollBarThickness = 4
-    optionsScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-    optionsScrollingFrame.ZIndex = 11
-    optionsScrollingFrame.Parent = optionsContainer
+    -- Dropdown Menu Container (initially hidden)
+    local menuContainer = Instance.new("Frame")
+    menuContainer.Name = "MenuContainer"
+    menuContainer.Size = UDim2.new(1, 0, 0, 0) -- Will expand when opened
+    menuContainer.Position = UDim2.new(0, 0, 1, 0)
+    menuContainer.BackgroundColor3 = COLORS.Input
+    menuContainer.BorderSizePixel = 0
+    menuContainer.ClipsDescendants = true
+    menuContainer.Visible = false
+    menuContainer.ZIndex = 10
+    menuContainer.Parent = dropdownBG
     
-    -- Options list layout
-    local optionsLayout = Instance.new("UIListLayout")
-    optionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    optionsLayout.Parent = optionsScrollingFrame
+    -- Round the corners of the menu container
+    local menuCorner = Instance.new("UICorner")
+    menuCorner.CornerRadius = UDim.new(0, 5)
+    menuCorner.Parent = menuContainer
     
-    -- Track the current selected option
-    local currentSelected = default
+    -- ScrollingFrame for options
+    local optionsScrollFrame = Instance.new("ScrollingFrame")
+    optionsScrollFrame.Name = "OptionsScrollFrame"
+    optionsScrollFrame.Size = UDim2.new(1, 0, 1, 0)
+    optionsScrollFrame.BackgroundTransparency = 1
+    optionsScrollFrame.BorderSizePixel = 0
+    optionsScrollFrame.ScrollBarThickness = 4
+    optionsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+    optionsScrollFrame.ZIndex = 11
+    optionsScrollFrame.Parent = menuContainer
     
-    -- Function to update dropdown
-    local function updateDropdown()
-        dropdownButton.Text = currentSelected
-        if callback then
-            callback(currentSelected)
-        end
-    end
+    -- List layout for options
+    local optionsList = Instance.new("UIListLayout")
+    optionsList.Name = "OptionsList"
+    optionsList.SortOrder = Enum.SortOrder.LayoutOrder
+    optionsList.Padding = UDim.new(0, 2)
+    optionsList.Parent = optionsScrollFrame
     
-    -- Function to toggle dropdown visibility
+    -- Create option buttons
+    local currentValue = defaultOption or options[1] or "Select..."
     local isOpen = false
-    local function toggleDropdown()
-        isOpen = not isOpen
+    local optionHeight = 25
+    local maxVisibleOptions = 4
+    
+    -- Function to create option buttons
+    local function createOptions()
+        -- Clear existing options
+        for _, child in pairs(optionsScrollFrame:GetChildren()) do
+            if child:IsA("TextButton") then
+                child:Destroy()
+            end
+        end
         
-        if isOpen then
-            -- Show options
-            optionsContainer.Visible = true
-            arrowIndicator.Text = "▲"
+        -- Calculate total height needed
+        local totalOptionsHeight = #options * (optionHeight + 2) -- Height + padding
+        optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, totalOptionsHeight)
+        
+        -- Create new option buttons
+        for i, option in ipairs(options) do
+            local optionButton = Instance.new("TextButton")
+            optionButton.Name = "Option_" .. option
+            optionButton.Size = UDim2.new(1, -8, 0, optionHeight)
+            optionButton.Position = UDim2.new(0, 4, 0, (i-1) * (optionHeight + 2))
+            optionButton.BackgroundColor3 = COLORS.Frame
+            optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+            optionButton.TextSize = 14
+            optionButton.Font = FONT
+            optionButton.Text = option
+            optionButton.TextXAlignment = Enum.TextXAlignment.Left
+            optionButton.TextYAlignment = Enum.TextYAlignment.Center
+            optionButton.ZIndex = 12
+            optionButton.Parent = optionsScrollFrame
             
-            -- Calculate height based on number of options (max of 4 visible at once)
-            local optionsHeight = math.min(#options * 35, 4 * 35)
+            -- Option button corner
+            local optionCorner = Instance.new("UICorner")
+            optionCorner.CornerRadius = UDim.new(0, 3)
+            optionCorner.Parent = optionButton
             
-            -- Animate opening
-            local openTween = TweenService:Create(
-                optionsContainer,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {Size = UDim2.new(1, 0, 0, optionsHeight)}
-            )
-            openTween:Play()
+            -- Left padding for text
+            local textPadding = Instance.new("UIPadding")
+            textPadding.PaddingLeft = UDim.new(0, 8)
+            textPadding.Parent = optionButton
             
-            -- Update scroll frame canvas size
-            optionsScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, #options * 35)
-        else
-            -- Animate closing
-            local closeTween = TweenService:Create(
-                optionsContainer,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-                {Size = UDim2.new(1, 0, 0, 0)}
-            )
-            closeTween:Play()
+            -- Hover effect
+            optionButton.MouseEnter:Connect(function()
+                TweenService:Create(optionButton, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Accent}):Play()
+            end)
             
-            closeTween.Completed:Connect(function()
-                if not isOpen then -- Check again in case it was reopened during animation
-                    optionsContainer.Visible = false
-                    arrowIndicator.Text = "▼"
+            optionButton.MouseLeave:Connect(function()
+                TweenService:Create(optionButton, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Frame}):Play()
+            end)
+            
+            -- Option selection
+            optionButton.MouseButton1Click:Connect(function()
+                currentValue = option
+                selectedText.Text = option
+                
+                -- Close the dropdown
+                isOpen = false
+                arrowIcon.Text = "▼"
+                
+                -- Collapse the menu with animation
+                TweenService:Create(
+                    menuContainer, 
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
+                    {Size = UDim2.new(1, 0, 0, 0)}
+                ):Play()
+                
+                -- Hide after animation completes
+                wait(0.3)
+                menuContainer.Visible = false
+                
+                -- Call the callback
+                if callback then
+                    callback(option)
                 end
             end)
         end
     end
     
-    -- Create option buttons
-    for i, option in ipairs(options) do
-        local optionButton = Instance.new("TextButton")
-        optionButton.Name = "Option_" .. option
-        optionButton.Size = UDim2.new(1, 0, 0, 35)
-        optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-        optionButton.BorderSizePixel = 0
-        optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        optionButton.TextSize = 14
-        optionButton.Font = FONT
-        optionButton.Text = option
-        optionButton.TextXAlignment = Enum.TextXAlignment.Left
-        optionButton.ZIndex = 12
-        optionButton.LayoutOrder = i
-        optionButton.AutoButtonColor = false
-        optionButton.Parent = optionsScrollingFrame
+    -- Toggle dropdown menu
+    dropdownButton.MouseButton1Click:Connect(function()
+        isOpen = not isOpen
         
-        -- Add text padding
-        local optionPadding = Instance.new("UIPadding")
-        optionPadding.PaddingLeft = UDim.new(0, 10)
-        optionPadding.Parent = optionButton
-        
-        -- Hover effect
-        optionButton.MouseEnter:Connect(function()
+        if isOpen then
+            -- Update options before opening
+            createOptions()
+            
+            -- Change arrow direction
+            arrowIcon.Text = "▲"
+            
+            -- Show and expand the menu with animation
+            menuContainer.Visible = true
+            local visibleOptionsHeight = math.min(#options, maxVisibleOptions) * (optionHeight + 2)
+            
             TweenService:Create(
-                optionButton,
-                TweenInfo.new(0.1, Enum.EasingStyle.Quad),
-                {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}
+                menuContainer, 
+                TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+                {Size = UDim2.new(1, 0, 0, visibleOptionsHeight)}
             ):Play()
-        end)
-        
-        optionButton.MouseLeave:Connect(function()
+        else
+            -- Change arrow direction
+            arrowIcon.Text = "▼"
+            
+            -- Collapse the menu with animation
             TweenService:Create(
-                optionButton,
-                TweenInfo.new(0.1, Enum.EasingStyle.Quad),
-                {BackgroundColor3 = Color3.fromRGB(55, 55, 55)}
+                menuContainer, 
+                TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
+                {Size = UDim2.new(1, 0, 0, 0)}
             ):Play()
-        end)
-        
-        -- Select option
-        optionButton.MouseButton1Click:Connect(function()
-            currentSelected = option
-            updateDropdown()
-            toggleDropdown()
-        end)
+            
+            -- Hide after animation completes
+            wait(0.3)
+            menuContainer.Visible = false
+        end
+    end)
+    
+    -- Initialize with default options
+    if options and #options > 0 then
+        if not defaultOption then
+            selectedText.Text = options[1]
+            currentValue = options[1]
+        end
     end
     
-    -- Toggle dropdown visibility when clicked
-    dropdownButton.MouseButton1Click:Connect(toggleDropdown)
-    
-    -- Close dropdown when clicking outside
-    local closeDetector
-    closeDetector = UIS.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            local position = input.Position
-            local guiObjects = PlayerGui:GetGuiObjectsAtPosition(position.X, position.Y)
-            
-            local isClickInside = false
-            for _, obj in pairs(guiObjects) do
-                if obj:IsDescendantOf(dropdownContainer) then
-                    isClickInside = true
+    -- Return the container and methods for getting/setting the value
+    return dropdownContainer, {
+        getValue = function() return currentValue end,
+        setValue = function(value)
+            -- Check if value is in options
+            local found = false
+            for _, option in ipairs(options) do
+                if option == value then
+                    found = true
                     break
                 end
             end
             
-            if not isClickInside and isOpen then
-                toggleDropdown()
-            end
-        end
-    end)
-    
-    -- Clean up connection when button is destroyed
-    dropdownButton.AncestryChanged:Connect(function()
-        if not dropdownButton:IsDescendantOf(game) then
-            if closeDetector then
-                closeDetector:Disconnect()
-            end
-        end
-    end)
-    
-    -- Initialize with default value
-    updateDropdown()
-    
-    return {
-        container = dropdownContainer,
-        getValue = function() return currentSelected end,
-        setValue = function(value)
-            if table.find(options, value) then
-                currentSelected = value
-                updateDropdown()
+            if found then
+                currentValue = value
+                selectedText.Text = value
+                if callback then
+                    callback(value)
+                end
             else
-                warn("Invalid dropdown value: " .. tostring(value))
+                warn("Dropdown setValue: Value '" .. tostring(value) .. "' not found in options")
             end
         end,
-        setOptions = function(newOptions)
+        setOptions = function(newOptions, newDefault)
             options = newOptions
-            
-            -- Clear existing options
-            for _, child in pairs(optionsScrollingFrame:GetChildren()) do
-                if child:IsA("TextButton") then
-                    child:Destroy()
-                end
+            if newDefault then
+                currentValue = newDefault
+                selectedText.Text = newDefault
+            elseif #newOptions > 0 then
+                currentValue = newOptions[1]
+                selectedText.Text = newOptions[1]
+            else
+                currentValue = "Select..."
+                selectedText.Text = "Select..."
             end
             
-            -- Create new option buttons
-            for i, option in ipairs(options) do
-                local optionButton = Instance.new("TextButton")
-                optionButton.Name = "Option_" .. option
-                optionButton.Size = UDim2.new(1, 0, 0, 35)
-                optionButton.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-                optionButton.BorderSizePixel = 0
-                optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-                optionButton.TextSize = 14
-                optionButton.Font = FONT
-                optionButton.Text = option
-                optionButton.TextXAlignment = Enum.TextXAlignment.Left
-                optionButton.ZIndex = 12
-                optionButton.LayoutOrder = i
-                optionButton.AutoButtonColor = false
-                optionButton.Parent = optionsScrollingFrame
-                
-                -- Add text padding
-                local optionPadding = Instance.new("UIPadding")
-                optionPadding.PaddingLeft = UDim.new(0, 10)
-                optionPadding.Parent = optionButton
-                
-                -- Hover effect
-                optionButton.MouseEnter:Connect(function()
-                    TweenService:Create(
-                        optionButton,
-                        TweenInfo.new(0.1, Enum.EasingStyle.Quad),
-                        {BackgroundColor3 = Color3.fromRGB(70, 70, 70)}
-                    ):Play()
-                end)
-                
-                optionButton.MouseLeave:Connect(function()
-                    TweenService:Create(
-                        optionButton,
-                        TweenInfo.new(0.1, Enum.EasingStyle.Quad),
-                        {BackgroundColor3 = Color3.fromRGB(55, 55, 55)}
-                    ):Play()
-                end)
-                
-                -- Select option
-                optionButton.MouseButton1Click:Connect(function()
-                    currentSelected = option
-                    updateDropdown()
-                    toggleDropdown()
-                end)
+            -- If dropdown is open, update the options
+            if isOpen then
+                createOptions()
             end
             
-            -- Update canvas size
-            optionsScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, #options * 35)
-            
-            -- Reset selected value if it's no longer in options
-            if not table.find(options, currentSelected) and #options > 0 then
-                currentSelected = options[1]
-                updateDropdown()
+            if callback then
+                callback(currentValue)
             end
         end
     }
@@ -678,6 +649,7 @@ function TeleportGUILibrary.createNotification(message, type)
     local StatusBar = Instance.new("Frame")
     local StatusBarCorner = Instance.new("UICorner")
     
+    -- Configure notification GUI
     NotifGui.Name = "TeleportNotification"
     NotifGui.DisplayOrder = 999
     NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -737,8 +709,10 @@ function TeleportGUILibrary.createNotification(message, type)
     StatusBarCorner.Parent = StatusBar
     StatusBarCorner.CornerRadius = UDim.new(1, 0)
     
+    -- Animate notification
     TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
     
+    -- Create countdown tween
     local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
     statusTween:Play()
     
@@ -749,7 +723,7 @@ function TeleportGUILibrary.createNotification(message, type)
     end)
 end
 
--- Expose ContentFrame for adding sections
+-- Expose ContentFrame for adding sectionss
 TeleportGUILibrary.ContentFrame = ContentFrame
 
 -- Expose a function to update CanvasSize
@@ -765,18 +739,21 @@ local dragStart
 local startPos
 local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
 
+-- Function to update drag position
 local function updateDrag(input)
     local delta = input.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
+-- Function to disable camera movement
 local function disableCamera(actionName, inputState, inputObject)
     if dragging then
-        return Enum.ContextActionResult.Sink
+        return Enum.ContextActionResult.Sink -- Consume the input to prevent camera movement
     end
     return Enum.ContextActionResult.Pass
 end
 
+-- Dragging for PC (Mouse)
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -803,10 +780,12 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
+-- Dragging for Mobile (Touch)
 if isMobile then
     local touchConnection
     local touchEndedConnection
 
+    -- Bind action to disable camera movement during drag
     ContextActionService:BindAction("DisableCameraMovement", disableCamera, false, Enum.UserInputType.Touch)
 
     TopBar.InputBegan:Connect(function(input)
@@ -815,12 +794,14 @@ if isMobile then
             dragStart = input.Position
             startPos = MainFrame.Position
 
+            -- Handle touch movement
             touchConnection = UIS.TouchMoved:Connect(function(touchInput)
                 if touchInput == input and dragging then
                     updateDrag(touchInput)
                 end
             end)
 
+            -- Clean up when touch ends
             touchEndedConnection = UIS.TouchEnded:Connect(function(touchInput)
                 if touchInput == input then
                     dragging = false
@@ -835,6 +816,7 @@ if isMobile then
         end
     end)
 
+    -- Unbind the action when the GUI is destroyed
     ScreenGui.AncestryChanged:Connect(function()
         if not ScreenGui:IsDescendantOf(game) then
             ContextActionService:UnbindAction("DisableCameraMovement")
@@ -846,27 +828,29 @@ end
 local isMinimized = false
 local originalSize = MainFrame.Size
 
--- Fixed MinimizeButton click event
+-- Close GUI function
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui.Enabled = false
+end)
+
+-- Minimize function
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
-        -- Expand back to original size
         MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
         ScrollingFrame.Visible = true
-        BottomBar.Visible = true
+        YouTubeLabel.Visible = true
         MinimizeButton.Text = "-"
     else
-        -- Save original size before minimizing
         originalSize = MainFrame.Size
-        -- When minimizing, keep the TopBar visible by setting the height to 30 (TopBar's height)
         MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        -- Hide content but keep TopBar visible
         ScrollingFrame.Visible = false
-        BottomBar.Visible = false
+        YouTubeLabel.Visible = false
         MinimizeButton.Text = "+"
     end
     isMinimized = not isMinimized
 end)
 
+-- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
 UIS.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.M then
         ScreenGui.Enabled = not ScreenGui.Enabled
