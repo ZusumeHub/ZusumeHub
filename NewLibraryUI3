@@ -14,11 +14,18 @@ local CORNER_RADIUS = UDim.new(0, 6)
 local COLORS = {
     Frame = Color3.fromRGB(35, 35, 40),
     Text = Color3.fromRGB(255, 255, 255),
-    Accent = Color3.fromRGB(114, 137, 218), -- Discord blue 
+    Accent = Color3.fromRGB(114, 137, 218), -- Discord blue
     Success = Color3.fromRGB(87, 242, 135),
     Error = Color3.fromRGB(255, 89, 89),
     Warning = Color3.fromRGB(255, 201, 79),
+    Input = Color3.fromRGB(55, 55, 60),
 }
+
+-- Auto-destroy existing instances of the GUI
+local existingGUI = PlayerGui:FindFirstChild("TeleportGUI")
+if existingGUI then
+    existingGUI:Destroy()
+end
 
 -- Create GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -53,39 +60,22 @@ TopBar.Parent = MainFrame
 -- Title
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(1, -60, 1, 0)
-Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Size = UDim2.new(1, 0, 1, 0) -- Full width of TopBar
+Title.Position = UDim2.new(0, 0, 0, 0) -- No offset, starting from the left edge
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
-Title.Text = "you noob Sv_Azidan lol"
-Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Text = "Minds-Fall Survival"
+Title.TextXAlignment = Enum.TextXAlignment.Center
+Title.TextYAlignment = Enum.TextYAlignment.Center -- Ensure vertical centering as well
 Title.Parent = TopBar
 
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -28, 0, 2)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BorderSizePixel = 0
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.TextSize = 14
-CloseButton.Parent = TopBar
-
--- Round the close button
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
-CloseCorner.Parent = CloseButton
-
--- Minimize Button
+-- Minimize Button (in Close Button position)
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
+MinimizeButton.Position = UDim2.new(1, -28, 0, 2) -- Now in Close Button position
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
@@ -118,19 +108,28 @@ ContentFrame.Size = UDim2.new(1, 0, 0, 0) -- Will be updated dynamically
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = ScrollingFrame
 
--- YouTube Label (fixed at the bottom of MainFrame)
+-- Bottom bar for YouTube label background
+local BottomBar = Instance.new("Frame")
+BottomBar.Name = "BottomBar"
+BottomBar.Size = UDim2.new(1, 0, 0, 30)
+BottomBar.Position = UDim2.new(0, 0, 1, -30)
+BottomBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+BottomBar.BorderSizePixel = 0
+BottomBar.Parent = MainFrame
+BottomBar.ZIndex = 1
+
+-- YouTube Label (moved to left side with padding)
 local YouTubeLabel = Instance.new("TextLabel")
 YouTubeLabel.Name = "YouTubeLabel"
-YouTubeLabel.Size = UDim2.new(1, 0, 0, 30)
-YouTubeLabel.Position = UDim2.new(0, 0, 1, -30)
-YouTubeLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-YouTubeLabel.BorderSizePixel = 0
+YouTubeLabel.Size = UDim2.new(0.9, 0, 1, 0) -- Match the width of other elements (90% of parent)
+YouTubeLabel.Position = UDim2.new(0.05, 0, 0, 0) -- 5% padding from the left, matching other elements
+YouTubeLabel.BackgroundTransparency = 1
 YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YouTubeLabel.TextSize = 16
 YouTubeLabel.Font = Enum.Font.GothamBold
 YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center
-YouTubeLabel.Parent = MainFrame
+YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Left
+YouTubeLabel.Parent = BottomBar
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
 
@@ -159,7 +158,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     return sectionLabel, separator
 end
 
--- Function to create custom checkbox with auto-apply
+-- Function to create custom checkbox with auto-apply (Option 2: Label on left, Checkbox on right)
 function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name .. "Container"
@@ -171,7 +170,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxBG = Instance.new("Frame")
     checkboxBG.Name = "Background"
     checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(0, 0, 0.5, -10)
+    checkboxBG.Position = UDim2.new(1, -20, 0.5, -10) -- Checkbox on the far right
     checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     checkboxBG.BorderSizePixel = 0
     checkboxBG.Parent = checkboxContainer
@@ -197,11 +196,11 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkboxLabel = Instance.new("TextLabel")
     checkboxLabel.Name = "Label"
     checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 28, 0, 0)
+    checkboxLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
     checkboxLabel.BackgroundTransparency = 1
     checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     checkboxLabel.TextSize = 14
-    checkboxLabel.Font = FONT -- Changed to use bold font
+    checkboxLabel.Font = FONT
     checkboxLabel.Text = text
     checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
     checkboxLabel.Parent = checkboxContainer
@@ -244,7 +243,107 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     return checkboxContainer, function() return checked end
 end
 
--- Add this function to your TeleportGUILibrary
+-- Updated Text Input Function (Option 2: Label on left, Input on right)
+function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
+    -- Container for the whole input element
+    local inputContainer = Instance.new("Frame")
+    inputContainer.Name = name .. "Container"
+    inputContainer.Size = UDim2.new(0.9, 0, 0, 30)
+    inputContainer.Position = position
+    inputContainer.BackgroundTransparency = 1
+    inputContainer.Parent = parent
+    
+    -- Label (on the left)
+    local inputLabel = Instance.new("TextLabel")
+    inputLabel.Name = "Label"
+    inputLabel.Size = UDim2.new(0, 150, 1, 0)
+    inputLabel.Position = UDim2.new(0, 0, 0, 0) -- Label on the left
+    inputLabel.BackgroundTransparency = 1
+    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    inputLabel.TextSize = 14
+    inputLabel.Font = FONT
+    inputLabel.Text = labelText
+    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
+    inputLabel.Parent = inputContainer
+    
+    -- Input Box Background (on the far right)
+    local inputBG = Instance.new("Frame")
+    inputBG.Name = "Background"
+    inputBG.Size = UDim2.new(0, 60, 0, 24)
+    inputBG.Position = UDim2.new(1, -60, 0.5, -12) -- Input on the far right
+    inputBG.BackgroundColor3 = COLORS.Input
+    inputBG.BorderSizePixel = 0
+    inputBG.Parent = inputContainer
+    
+    -- Round the corners of the input box
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 5)
+    inputCorner.Parent = inputBG
+    
+    -- The actual TextBox
+    local textBox = Instance.new("TextBox")
+    textBox.Name = "TextBox"
+    textBox.Size = UDim2.new(0.9, 0, 0.8, 0)
+    textBox.Position = UDim2.new(0.05, 0, 0.1, 0)
+    textBox.BackgroundTransparency = 1
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.TextSize = 14
+    textBox.Font = FONT
+    textBox.Text = tostring(defaultValue)
+    textBox.PlaceholderText = "Enter value..."
+    textBox.PlaceholderColor3 = Color3.fromRGB(180, 180, 180)
+    textBox.TextXAlignment = Enum.TextXAlignment.Center
+    textBox.ClearTextOnFocus = false
+    textBox.Parent = inputBG
+    
+    -- Store the current value
+    local currentValue = defaultValue
+    
+    -- Handle focus
+    textBox.Focused:Connect(function()
+        TweenService:Create(
+            inputBG,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(70, 70, 80)}
+        ):Play()
+    end)
+    
+    textBox.FocusLost:Connect(function(enterPressed)
+        TweenService:Create(
+            inputBG,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = COLORS.Input}
+        ):Play()
+        
+        if enterPressed then
+            local newValue = textBox.Text
+            local numValue = tonumber(newValue)
+            if numValue then
+                newValue = numValue
+            end
+            
+            if newValue ~= currentValue then
+                currentValue = newValue
+                if onChange then
+                    onChange(newValue)
+                end
+            end
+        else
+            textBox.Text = tostring(currentValue)
+        end
+    end)
+    
+    return inputContainer, {
+        getValue = function() return currentValue end,
+        setValue = function(value)
+            currentValue = value
+            textBox.Text = tostring(value)
+            if onChange then
+                onChange(value)
+            end
+        end
+    }
+end
 
 function TeleportGUILibrary.createDropdown(props)
     local name = props.Name or "Dropdown"
@@ -579,7 +678,6 @@ function TeleportGUILibrary.createNotification(message, type)
     local StatusBar = Instance.new("Frame")
     local StatusBarCorner = Instance.new("UICorner")
     
-    -- Configure notification GUI
     NotifGui.Name = "TeleportNotification"
     NotifGui.DisplayOrder = 999
     NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -639,10 +737,8 @@ function TeleportGUILibrary.createNotification(message, type)
     StatusBarCorner.Parent = StatusBar
     StatusBarCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Animate notification
     TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
     
-    -- Create countdown tween
     local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
     statusTween:Play()
     
@@ -669,21 +765,18 @@ local dragStart
 local startPos
 local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
 
--- Function to update drag position
 local function updateDrag(input)
     local delta = input.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
--- Function to disable camera movement
 local function disableCamera(actionName, inputState, inputObject)
     if dragging then
-        return Enum.ContextActionResult.Sink -- Consume the input to prevent camera movement
+        return Enum.ContextActionResult.Sink
     end
     return Enum.ContextActionResult.Pass
 end
 
--- Dragging for PC (Mouse)
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -710,12 +803,10 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
--- Dragging for Mobile (Touch)
 if isMobile then
     local touchConnection
     local touchEndedConnection
 
-    -- Bind action to disable camera movement during drag
     ContextActionService:BindAction("DisableCameraMovement", disableCamera, false, Enum.UserInputType.Touch)
 
     TopBar.InputBegan:Connect(function(input)
@@ -724,14 +815,12 @@ if isMobile then
             dragStart = input.Position
             startPos = MainFrame.Position
 
-            -- Handle touch movement
             touchConnection = UIS.TouchMoved:Connect(function(touchInput)
                 if touchInput == input and dragging then
                     updateDrag(touchInput)
                 end
             end)
 
-            -- Clean up when touch ends
             touchEndedConnection = UIS.TouchEnded:Connect(function(touchInput)
                 if touchInput == input then
                     dragging = false
@@ -746,7 +835,6 @@ if isMobile then
         end
     end)
 
-    -- Unbind the action when the GUI is destroyed
     ScreenGui.AncestryChanged:Connect(function()
         if not ScreenGui:IsDescendantOf(game) then
             ContextActionService:UnbindAction("DisableCameraMovement")
@@ -758,29 +846,27 @@ end
 local isMinimized = false
 local originalSize = MainFrame.Size
 
--- Close GUI function
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
-end)
-
--- Minimize function
+-- Fixed MinimizeButton click event
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
+        -- Expand back to original size
         MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
         ScrollingFrame.Visible = true
-        YouTubeLabel.Visible = true
+        BottomBar.Visible = true
         MinimizeButton.Text = "-"
     else
+        -- Save original size before minimizing
         originalSize = MainFrame.Size
+        -- When minimizing, keep the TopBar visible by setting the height to 30 (TopBar's height)
         MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        -- Hide content but keep TopBar visible
         ScrollingFrame.Visible = false
-        YouTubeLabel.Visible = false
+        BottomBar.Visible = false
         MinimizeButton.Text = "+"
     end
     isMinimized = not isMinimized
 end)
 
--- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
 UIS.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.M then
         ScreenGui.Enabled = not ScreenGui.Enabled
