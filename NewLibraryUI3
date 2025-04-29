@@ -41,7 +41,7 @@ MainFrame.Parent = ScreenGui
 -- Round the corners
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainFrame -- Fixed: Removed trailing dot
+UICorner.Parent = MainFrame
 
 -- Top Bar
 local TopBar = Instance.new("Frame")
@@ -797,7 +797,7 @@ end)
 
 UIS.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.M then
-        ScreenGui.Enabled = not ScreenGui.Enabled -- Fixed: Removed invalid "Eucharist" reference
+        ScreenGui.Enabled = not ScreenGui.Enabled
     end
 end)
 
