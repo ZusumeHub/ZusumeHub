@@ -60,33 +60,14 @@ Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
-Title.Text = "you noob Sv_Azidan lol"
-Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Text = "Nothing"
+Title.TextXAlignment = Enum.TextXAlignment.Center
 Title.Parent = TopBar
 
--- Close Button
-local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(1, -28, 0, 2)
-CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
-CloseButton.BorderSizePixel = 0
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.Text = "X"
-CloseButton.TextSize = 14
-CloseButton.Parent = TopBar
-
--- Round the close button
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
-CloseCorner.Parent = CloseButton
-
--- Minimize Button
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
+MinimizeButton.Position = UDim2.new(1, -28, 0, 2)
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
@@ -160,45 +141,27 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     return sectionLabel, separator
 end
 
--- Function to create custom checkbox with label on left and checkbox on right
+-- Function to create custom checkbox with auto-apply
 function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name .. "Container"
-    checkboxContainer.Size = UDim2.new(0.9, 0, 0, 32) -- Match height of dropdown/text input
+    checkboxContainer.Size = UDim2.new(0.9, 0, 0, 28)
     checkboxContainer.Position = position
     checkboxContainer.BackgroundTransparency = 1
-    checkboxContainer.ZIndex = 10
     checkboxContainer.Parent = parent
     
-    -- Label (on the left)
-    local checkboxLabel = Instance.new("TextLabel")
-    checkboxLabel.Name = "Label"
-    checkboxLabel.Size = UDim2.new(0.5, -10, 1, 0) -- Match text input/dropdown label width
-    checkboxLabel.Position = UDim2.new(0, 0, 0, 0)
-    checkboxLabel.BackgroundTransparency = 1
-    checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    checkboxLabel.TextSize = 14
-    checkboxLabel.Font = FONT
-    checkboxLabel.Text = text
-    checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
-    checkboxLabel.ZIndex = 11
-    checkboxLabel.Parent = checkboxContainer
-    
-    -- Checkbox Background (on the right)
     local checkboxBG = Instance.new("Frame")
-    checkboxBG.Name = "Background"
-    checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(0.5, 0, 0.5, -10) -- Right side, vertically centered
-    checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    checkboxBG.BorderSizePixel = 0
-    checkboxBG.ZIndex = 11
-    checkboxBG.Parent = checkboxContainer
+checkboxBG.Name = "Background"
+checkboxBG.Size = UDim2.new(0, 20, 0, 20)
+checkboxBG.Position = UDim2.new(1, -20, 0.5, -10)
+checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+checkboxBG.BorderSizePixel = 0
+checkboxBG.Parent = checkboxContainer
     
     local checkboxCorner = Instance.new("UICorner")
     checkboxCorner.CornerRadius = UDim.new(0, 5)
     checkboxCorner.Parent = checkboxBG
     
-    -- Checkmark
     local checkmark = Instance.new("Frame")
     checkmark.Name = "Checkmark"
     checkmark.Size = UDim2.new(0, 0, 0, 0)
@@ -207,20 +170,29 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkmark.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
     checkmark.BorderSizePixel = 0
     checkmark.Visible = true
-    checkmark.ZIndex = 11
     checkmark.Parent = checkboxBG
     
     local checkmarkCorner = Instance.new("UICorner")
     checkmarkCorner.CornerRadius = UDim.new(0, 3)
     checkmarkCorner.Parent = checkmark
     
-    -- Checkbox Button
+    local checkboxLabel = Instance.new("TextLabel")
+checkboxLabel.Name = "Label"
+checkboxLabel.Size = UDim2.new(1, -28, 1, 0)
+checkboxLabel.Position = UDim2.new(0, 0, 0, 0)
+checkboxLabel.BackgroundTransparency = 1
+checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+checkboxLabel.TextSize = 14
+checkboxLabel.Font = FONT
+checkboxLabel.Text = text
+checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
+checkboxLabel.Parent = checkboxContainer
+    
     local checkboxButton = Instance.new("TextButton")
     checkboxButton.Name = "Button"
     checkboxButton.Size = UDim2.new(1, 0, 1, 0)
     checkboxButton.BackgroundTransparency = 1
     checkboxButton.Text = ""
-    checkboxButton.ZIndex = 11
     checkboxButton.Parent = checkboxContainer
     
     local checked = false
@@ -254,8 +226,9 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     return checkboxContainer, function() return checked end
 end
 
--- Function to create text input with label
+-- NEW FEATURE: Text Input with label
 function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
+    -- Container for the whole input element
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = name .. "Container"
     inputContainer.Size = UDim2.new(0.9, 0, 0, 32)
@@ -263,6 +236,7 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputContainer.BackgroundTransparency = 1
     inputContainer.Parent = parent
     
+    -- Label
     local inputLabel = Instance.new("TextLabel")
     inputLabel.Name = "Label"
     inputLabel.Size = UDim2.new(0.5, -10, 1, 0)
@@ -274,6 +248,7 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputLabel.TextXAlignment = Enum.TextXAlignment.Left
     inputLabel.Parent = inputContainer
     
+    -- Input Box Background
     local inputBG = Instance.new("Frame")
     inputBG.Name = "Background"
     inputBG.Size = UDim2.new(0.5, 0, 0, 25)
@@ -282,10 +257,12 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputBG.BorderSizePixel = 0
     inputBG.Parent = inputContainer
     
+    -- Round the corners of the input box
     local inputCorner = Instance.new("UICorner")
     inputCorner.CornerRadius = UDim.new(0, 5)
     inputCorner.Parent = inputBG
     
+    -- The actual TextBox
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
     textBox.Size = UDim2.new(0.9, 0, 1, 0)
@@ -301,8 +278,10 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     textBox.ClearTextOnFocus = false
     textBox.Parent = inputBG
     
+    -- Store the current value
     local currentValue = defaultValue
     
+    -- Handle focus
     textBox.Focused:Connect(function()
         TweenService:Create(
             inputBG,
@@ -320,11 +299,13 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
         
         if enterPressed then
             local newValue = textBox.Text
+            -- Try to convert to number if possible
             local numValue = tonumber(newValue)
             if numValue then
                 newValue = numValue
             end
             
+            -- Only call onChange if the value actually changed
             if newValue ~= currentValue then
                 currentValue = newValue
                 if onChange then
@@ -332,10 +313,12 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
                 end
             end
         else
+            -- Revert to current value if user didn't press enter
             textBox.Text = tostring(currentValue)
         end
     end)
     
+    -- Return the container and functions to get/set the value
     return inputContainer, {
         getValue = function() return currentValue end,
         setValue = function(value)
@@ -348,8 +331,10 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     }
 end
 
--- Function to create dropdown
+-- Add this function to the TeleportGUILibrary
+
 function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOption, position, parent, callback)
+    -- Container for the whole dropdown element
     local dropdownContainer = Instance.new("Frame")
     dropdownContainer.Name = name .. "Container"
     dropdownContainer.Size = UDim2.new(0.9, 0, 0, 32)
@@ -357,6 +342,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     dropdownContainer.BackgroundTransparency = 1
     dropdownContainer.Parent = parent
     
+    -- Label
     local dropdownLabel = Instance.new("TextLabel")
     dropdownLabel.Name = "Label"
     dropdownLabel.Size = UDim2.new(0.5, -10, 1, 0)
@@ -368,6 +354,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
     dropdownLabel.Parent = dropdownContainer
     
+    -- Dropdown Button Background
     local dropdownBG = Instance.new("Frame")
     dropdownBG.Name = "Background"
     dropdownBG.Size = UDim2.new(0.5, 0, 0, 25)
@@ -376,13 +363,15 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     dropdownBG.BorderSizePixel = 0
     dropdownBG.Parent = dropdownContainer
     
+    -- Round the corners of the dropdown button
     local dropdownCorner = Instance.new("UICorner")
     dropdownCorner.CornerRadius = UDim.new(0, 5)
     dropdownCorner.Parent = dropdownBG
     
+    -- The selected value text
     local selectedText = Instance.new("TextLabel")
     selectedText.Name = "SelectedText"
-    selectedText.Size = UDim2.new(0.85, 0, 1, 0)
+    selectedText.Size = UDim2.new(0.85, 0, 1, 0) 
     selectedText.Position = UDim2.new(0.05, 0, 0, 0)
     selectedText.BackgroundTransparency = 1
     selectedText.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -392,6 +381,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     selectedText.TextXAlignment = Enum.TextXAlignment.Left
     selectedText.Parent = dropdownBG
     
+    -- Arrow icon
     local arrowIcon = Instance.new("TextLabel")
     arrowIcon.Name = "ArrowIcon"
     arrowIcon.Size = UDim2.new(0, 20, 0, 20)
@@ -404,6 +394,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     arrowIcon.TextYAlignment = Enum.TextYAlignment.Center
     arrowIcon.Parent = dropdownBG
     
+    -- Dropdown Button
     local dropdownButton = Instance.new("TextButton")
     dropdownButton.Name = "Button"
     dropdownButton.Size = UDim2.new(1, 0, 1, 0)
@@ -411,9 +402,10 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     dropdownButton.Text = ""
     dropdownButton.Parent = dropdownBG
     
+    -- Dropdown Menu Container (initially hidden)
     local menuContainer = Instance.new("Frame")
     menuContainer.Name = "MenuContainer"
-    menuContainer.Size = UDim2.new(1, 0, 0, 0)
+    menuContainer.Size = UDim2.new(1, 0, 0, 0) -- Will expand when opened
     menuContainer.Position = UDim2.new(0, 0, 1, 0)
     menuContainer.BackgroundColor3 = COLORS.Input
     menuContainer.BorderSizePixel = 0
@@ -422,10 +414,12 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     menuContainer.ZIndex = 10
     menuContainer.Parent = dropdownBG
     
+    -- Round the corners of the menu container
     local menuCorner = Instance.new("UICorner")
     menuCorner.CornerRadius = UDim.new(0, 5)
     menuCorner.Parent = menuContainer
     
+    -- ScrollingFrame for options
     local optionsScrollFrame = Instance.new("ScrollingFrame")
     optionsScrollFrame.Name = "OptionsScrollFrame"
     optionsScrollFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -436,27 +430,33 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     optionsScrollFrame.ZIndex = 11
     optionsScrollFrame.Parent = menuContainer
     
+    -- List layout for options
     local optionsList = Instance.new("UIListLayout")
     optionsList.Name = "OptionsList"
     optionsList.SortOrder = Enum.SortOrder.LayoutOrder
     optionsList.Padding = UDim.new(0, 2)
     optionsList.Parent = optionsScrollFrame
     
+    -- Create option buttons
     local currentValue = defaultOption or options[1] or "Select..."
     local isOpen = false
     local optionHeight = 25
     local maxVisibleOptions = 4
     
+    -- Function to create option buttons
     local function createOptions()
+        -- Clear existing options
         for _, child in pairs(optionsScrollFrame:GetChildren()) do
             if child:IsA("TextButton") then
                 child:Destroy()
             end
         end
         
-        local totalOptionsHeight = #options * (optionHeight + 2)
+        -- Calculate total height needed
+        local totalOptionsHeight = #options * (optionHeight + 2) -- Height + padding
         optionsScrollFrame.CanvasSize = UDim2.new(0, 0, 0, totalOptionsHeight)
         
+        -- Create new option buttons
         for i, option in ipairs(options) do
             local optionButton = Instance.new("TextButton")
             optionButton.Name = "Option_" .. option
@@ -472,14 +472,17 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
             optionButton.ZIndex = 12
             optionButton.Parent = optionsScrollFrame
             
+            -- Option button corner
             local optionCorner = Instance.new("UICorner")
             optionCorner.CornerRadius = UDim.new(0, 3)
             optionCorner.Parent = optionButton
             
+            -- Left padding for text
             local textPadding = Instance.new("UIPadding")
             textPadding.PaddingLeft = UDim.new(0, 8)
             textPadding.Parent = optionButton
             
+            -- Hover effect
             optionButton.MouseEnter:Connect(function()
                 TweenService:Create(optionButton, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Accent}):Play()
             end)
@@ -488,21 +491,27 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
                 TweenService:Create(optionButton, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Frame}):Play()
             end)
             
+            -- Option selection
             optionButton.MouseButton1Click:Connect(function()
                 currentValue = option
                 selectedText.Text = option
+                
+                -- Close the dropdown
                 isOpen = false
                 arrowIcon.Text = "▼"
                 
+                -- Collapse the menu with animation
                 TweenService:Create(
-                    menuContainer,
+                    menuContainer, 
                     TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
                     {Size = UDim2.new(1, 0, 0, 0)}
                 ):Play()
                 
+                -- Hide after animation completes
                 wait(0.3)
                 menuContainer.Visible = false
                 
+                -- Call the callback
                 if callback then
                     callback(option)
                 end
@@ -510,34 +519,44 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
         end
     end
     
+    -- Toggle dropdown menu
     dropdownButton.MouseButton1Click:Connect(function()
         isOpen = not isOpen
         
         if isOpen then
+            -- Update options before opening
             createOptions()
+            
+            -- Change arrow direction
             arrowIcon.Text = "▲"
+            
+            -- Show and expand the menu with animation
             menuContainer.Visible = true
             local visibleOptionsHeight = math.min(#options, maxVisibleOptions) * (optionHeight + 2)
             
             TweenService:Create(
-                menuContainer,
+                menuContainer, 
                 TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
                 {Size = UDim2.new(1, 0, 0, visibleOptionsHeight)}
             ):Play()
         else
+            -- Change arrow direction
             arrowIcon.Text = "▼"
             
+            -- Collapse the menu with animation
             TweenService:Create(
-                menuContainer,
+                menuContainer, 
                 TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In),
                 {Size = UDim2.new(1, 0, 0, 0)}
             ):Play()
             
+            -- Hide after animation completes
             wait(0.3)
             menuContainer.Visible = false
         end
     end)
     
+    -- Initialize with default options
     if options and #options > 0 then
         if not defaultOption then
             selectedText.Text = options[1]
@@ -545,9 +564,11 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
         end
     end
     
+    -- Return the container and methods for getting/setting the value
     return dropdownContainer, {
         getValue = function() return currentValue end,
         setValue = function(value)
+            -- Check if value is in options
             local found = false
             for _, option in ipairs(options) do
                 if option == value then
@@ -579,6 +600,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
                 selectedText.Text = "Select..."
             end
             
+            -- If dropdown is open, update the options
             if isOpen then
                 createOptions()
             end
@@ -608,6 +630,7 @@ function TeleportGUILibrary.createNotification(message, type)
     local StatusBar = Instance.new("Frame")
     local StatusBarCorner = Instance.new("UICorner")
     
+    -- Configure notification GUI
     NotifGui.Name = "TeleportNotification"
     NotifGui.DisplayOrder = 999
     NotifGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -667,8 +690,10 @@ function TeleportGUILibrary.createNotification(message, type)
     StatusBarCorner.Parent = StatusBar
     StatusBarCorner.CornerRadius = UDim.new(1, 0)
     
+    -- Animate notification
     TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
     
+    -- Create countdown tween
     local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
     statusTween:Play()
     
@@ -679,7 +704,7 @@ function TeleportGUILibrary.createNotification(message, type)
     end)
 end
 
--- Expose ContentFrame for adding sections
+-- Expose ContentFrame for adding sectionss
 TeleportGUILibrary.ContentFrame = ContentFrame
 
 -- Expose a function to update CanvasSize
@@ -695,18 +720,21 @@ local dragStart
 local startPos
 local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
 
+-- Function to update drag position
 local function updateDrag(input)
     local delta = input.Position - dragStart
     MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
+-- Function to disable camera movement
 local function disableCamera(actionName, inputState, inputObject)
     if dragging then
-        return Enum.ContextActionResult.Sink
+        return Enum.ContextActionResult.Sink -- Consume the input to prevent camera movement
     end
     return Enum.ContextActionResult.Pass
 end
 
+-- Dragging for PC (Mouse)
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
@@ -733,10 +761,12 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
+-- Dragging for Mobile (Touch)
 if isMobile then
     local touchConnection
     local touchEndedConnection
 
+    -- Bind action to disable camera movement during drag
     ContextActionService:BindAction("DisableCameraMovement", disableCamera, false, Enum.UserInputType.Touch)
 
     TopBar.InputBegan:Connect(function(input)
@@ -745,12 +775,14 @@ if isMobile then
             dragStart = input.Position
             startPos = MainFrame.Position
 
+            -- Handle touch movement
             touchConnection = UIS.TouchMoved:Connect(function(touchInput)
                 if touchInput == input and dragging then
                     updateDrag(touchInput)
                 end
             end)
 
+            -- Clean up when touch ends
             touchEndedConnection = UIS.TouchEnded:Connect(function(touchInput)
                 if touchInput == input then
                     dragging = false
@@ -765,6 +797,7 @@ if isMobile then
         end
     end)
 
+    -- Unbind the action when the GUI is destroyed
     ScreenGui.AncestryChanged:Connect(function()
         if not ScreenGui:IsDescendantOf(game) then
             ContextActionService:UnbindAction("DisableCameraMovement")
@@ -772,13 +805,13 @@ if isMobile then
     end)
 end
 
+-- Minimize Status
 local isMinimized = false
 local originalSize = MainFrame.Size
 
-CloseButton.MouseButton1Click:Connect(function()
-    ScreenGui.Enabled = false
-end)
+-- Close GUI function we dont need this for now
 
+-- Minimize function
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
         MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
@@ -795,6 +828,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
 end)
 
+-- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
 UIS.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.M then
         ScreenGui.Enabled = not ScreenGui.Enabled
