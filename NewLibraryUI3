@@ -51,24 +51,42 @@ TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
 
--- Title (centered)
+-- Title
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(0.7, 0, 1, 0)
-Title.Position = UDim2.new(0.15, 0, 0, 0) -- Centered position
+Title.Size = UDim2.new(1, -60, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
 Title.Text = "you noob Sv_Azidan lol"
-Title.TextXAlignment = Enum.TextXAlignment.Center -- Centered text
+Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TopBar
 
--- Minimize Button (moved to close button position)
+-- Close Button
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(1, -28, 0, 2)
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
+CloseButton.BorderSizePixel = 0
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Text = "X"
+CloseButton.TextSize = 14
+CloseButton.Parent = TopBar
+
+-- Round the close button
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.Parent = CloseButton
+
+-- Minimize Button
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -28, 0, 2) -- Using old close button position
+MinimizeButton.Position = UDim2.new(1, -58, 0, 2)
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
@@ -101,7 +119,7 @@ ContentFrame.Size = UDim2.new(1, 0, 0, 0) -- Will be updated dynamically
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = ScrollingFrame
 
--- YouTube Label (left-aligned at the bottom of MainFrame)
+-- YouTube Label (fixed at the bottom of MainFrame)
 local YouTubeLabel = Instance.new("TextLabel")
 YouTubeLabel.Name = "YouTubeLabel"
 YouTubeLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -112,15 +130,10 @@ YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YouTubeLabel.TextSize = 16
 YouTubeLabel.Font = Enum.Font.GothamBold
 YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Left -- Left-aligned
+YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center
 YouTubeLabel.Parent = MainFrame
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
-
--- Add padding to YouTube label to align with other labels
-local YouTubePadding = Instance.new("UIPadding")
-YouTubePadding.PaddingLeft = UDim.new(0, 15) -- Match the left padding of other labels
-YouTubePadding.Parent = YouTubeLabel
 
 -- Function to create a section (label + separator)
 function TeleportGUILibrary.createSection(sectionName, positionY)
@@ -147,7 +160,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     return sectionLabel, separator
 end
 
--- Function to create custom checkbox with auto-apply (checkbox moved to right side)
+-- Function to create custom checkbox with auto-apply
 function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name .. "Container"
@@ -156,29 +169,10 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkboxContainer.BackgroundTransparency = 1
     checkboxContainer.Parent = parent
     
-    -- Checkbox label on left side
-    local checkboxLabel = Instance.new("TextLabel")
-    checkboxLabel.Name = "Label"
-    checkboxLabel.Size = UDim2.new(0.8, -10, 1, 0)
-    checkboxLabel.Position = UDim2.new(0, 0, 0, 0)
-    checkboxLabel.BackgroundTransparency = 1
-    checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    checkboxLabel.TextSize = 14
-    checkboxLabel.Font = FONT
-    checkboxLabel.Text = text
-    checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
-    checkboxLabel.Parent = checkboxContainer
-    
-    -- Add padding to the checkbox label
-    local labelPadding = Instance.new("UIPadding")
-    labelPadding.PaddingLeft = UDim.new(0, 10)
-    labelPadding.Parent = checkboxLabel
-    
-    -- Checkbox on right side
     local checkboxBG = Instance.new("Frame")
     checkboxBG.Name = "Background"
     checkboxBG.Size = UDim2.new(0, 20, 0, 20)
-    checkboxBG.Position = UDim2.new(1, -25, 0.5, -10)
+    checkboxBG.Position = UDim2.new(0, 0, 0.5, -10)
     checkboxBG.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     checkboxBG.BorderSizePixel = 0
     checkboxBG.Parent = checkboxContainer
@@ -200,6 +194,18 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     local checkmarkCorner = Instance.new("UICorner")
     checkmarkCorner.CornerRadius = UDim.new(0, 3)
     checkmarkCorner.Parent = checkmark
+    
+    local checkboxLabel = Instance.new("TextLabel")
+    checkboxLabel.Name = "Label"
+    checkboxLabel.Size = UDim2.new(0, 180, 1, 0)
+    checkboxLabel.Position = UDim2.new(0, 28, 0, 0)
+    checkboxLabel.BackgroundTransparency = 1
+    checkboxLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    checkboxLabel.TextSize = 14
+    checkboxLabel.Font = FONT
+    checkboxLabel.Text = text
+    checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
+    checkboxLabel.Parent = checkboxContainer
     
     local checkboxButton = Instance.new("TextButton")
     checkboxButton.Name = "Button"
@@ -260,11 +266,6 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputLabel.Text = labelText
     inputLabel.TextXAlignment = Enum.TextXAlignment.Left
     inputLabel.Parent = inputContainer
-    
-    -- Add padding to the input label
-    local labelPadding = Instance.new("UIPadding")
-    labelPadding.PaddingLeft = UDim.new(0, 10)
-    labelPadding.Parent = inputLabel
     
     -- Input Box Background
     local inputBG = Instance.new("Frame")
@@ -350,6 +351,7 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
 end
 
 -- Add this function to the TeleportGUILibrary
+
 function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOption, position, parent, callback)
     -- Container for the whole dropdown element
     local dropdownContainer = Instance.new("Frame")
@@ -370,11 +372,6 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     dropdownLabel.Text = labelText
     dropdownLabel.TextXAlignment = Enum.TextXAlignment.Left
     dropdownLabel.Parent = dropdownContainer
-    
-    -- Add padding to the dropdown label
-    local labelPadding = Instance.new("UIPadding")
-    labelPadding.PaddingLeft = UDim.new(0, 10)
-    labelPadding.Parent = dropdownLabel
     
     -- Dropdown Button Background
     local dropdownBG = Instance.new("Frame")
@@ -680,211 +677,184 @@ function TeleportGUILibrary.createNotification(message, type)
     NotifFrame.Parent = NotifGui
     NotifFrame.BackgroundColor3 = COLORS.Frame
     NotifFrame.Position = UDim2.new(1, 10, 0.8, 0)
-    NotifFrame.Size = UDim2.new(0, 280, 0, 80)
+    NotifFrame.Size = UDim2.new(0, 280, 0, 60)
+    NotifFrame.BackgroundTransparency = 0.1
     NotifFrame.BorderSizePixel = 0
+    NotifFrame.ZIndex = 100
     
-    UICorner.CornerRadius = UDim.new(0, 8)
     UICorner.Parent = NotifFrame
-    
-    StatusBar.Name = "StatusBar"
-    StatusBar.Parent = NotifFrame
-    StatusBar.BackgroundColor3 = notifColor
-    StatusBar.Size = UDim2.new(0, 5, 1, 0)
-    StatusBar.BorderSizePixel = 0
-    
-    StatusBarCorner.CornerRadius = UDim.new(0, 2)
-    StatusBarCorner.Parent = StatusBar
+    UICorner.CornerRadius = CORNER_RADIUS
     
     NotifText.Name = "NotifText"
     NotifText.Parent = NotifFrame
     NotifText.BackgroundTransparency = 1
-    NotifText.Position = UDim2.new(0, 15, 0, 0)
-    NotifText.Size = UDim2.new(1, -20, 1, 0)
+    NotifText.Position = UDim2.new(0, 10, 0, 5)
+    NotifText.Size = UDim2.new(1, -20, 1, -15)
     NotifText.Font = FONT
+    NotifText.Text = message
     NotifText.TextColor3 = COLORS.Text
     NotifText.TextSize = 16
-    NotifText.Text = message
     NotifText.TextWrapped = true
     NotifText.TextXAlignment = Enum.TextXAlignment.Left
+    NotifText.TextYAlignment = Enum.TextYAlignment.Top
+    NotifText.ZIndex = 101
     
-    -- Animation
-    TweenService:Create(
-        NotifFrame,
-        TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-        {Position = UDim2.new(0.85, -140, 0.8, 0)}
-    ):Play()
+    StatusBar.Name = "StatusBar"
+    StatusBar.Parent = NotifFrame
+    StatusBar.BackgroundColor3 = notifColor
+    StatusBar.Position = UDim2.new(0, 10, 1, -8)
+    StatusBar.Size = UDim2.new(1, -20, 0, 3)
+    StatusBar.ZIndex = 101
     
-    local fadeOutTime = 2.5
-    if type == "error" then
-        fadeOutTime = 4
-    end
+    StatusBarCorner.Parent = StatusBar
+    StatusBarCorner.CornerRadius = UDim.new(1, 0)
     
-    spawn(function()
-        wait(fadeOutTime)
-        local fadeTween = TweenService:Create(
-            NotifFrame,
-            TweenInfo.new(0.8, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {Position = UDim2.new(1.1, 0, 0.8, 0)}
-        )
-        fadeTween:Play()
-        fadeTween.Completed:Wait()
+    -- Animate notification
+    TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, -300, 0.8, 0)}):Play()
+    
+    -- Create countdown tween
+    local statusTween = TweenService:Create(StatusBar, TweenInfo.new(3, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 3)})
+    statusTween:Play()
+    
+    statusTween.Completed:Connect(function()
+        TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), {Position = UDim2.new(1, 10, 0.8, 0)}):Play()
+        wait(0.5)
         NotifGui:Destroy()
     end)
 end
 
--- Function to create a button
-function TeleportGUILibrary.createButton(text, posY, parent, callback)
-    local buttonContainer = Instance.new("Frame")
-    buttonContainer.Name = text .. "ButtonContainer"
-    buttonContainer.Size = UDim2.new(0.9, 0, 0, 35)
-    buttonContainer.Position = UDim2.new(0.05, 0, 0, posY)
-    buttonContainer.BackgroundTransparency = 1
-    buttonContainer.Parent = parent or ContentFrame
-    
-    local button = Instance.new("TextButton")
-    button.Name = text .. "Button"
-    button.Size = UDim2.new(1, 0, 1, 0)
-    button.BackgroundColor3 = COLORS.Accent
-    button.BorderSizePixel = 0
-    button.Text = text
-    button.TextColor3 = COLORS.Text
-    button.TextSize = 16
-    button.Font = FONT
-    button.Parent = buttonContainer
-    
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
-    buttonCorner.Parent = button
-    
-    -- Button effects
-    button.MouseEnter:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(130, 150, 230)}
-        ):Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = COLORS.Accent}
-        ):Play()
-    end)
-    
-    button.MouseButton1Down:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0.98, 0, 0.95, 0), Position = UDim2.new(0.01, 0, 0.025, 0)}
-        ):Play()
-    end)
-    
-    button.MouseButton1Up:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0)}
-        ):Play()
-    end)
-    
-    button.MouseButton1Click:Connect(function()
-        if callback then
-            callback()
-        end
-    end)
-    
-    return buttonContainer
+-- Expose ContentFrame for adding sectionss
+TeleportGUILibrary.ContentFrame = ContentFrame
+
+-- Expose a function to update CanvasSize
+function TeleportGUILibrary.updateCanvasSize(contentHeight)
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+    ContentFrame.Size = UDim2.new(1, 0, 0, contentHeight)
 end
 
--- Function to update ContentFrame and ScrollingFrame
-function TeleportGUILibrary.updateLayout()
-    -- Find the lowest position
-    local lowestY = 0
-    for _, child in pairs(ContentFrame:GetChildren()) do
-        if child:IsA("Frame") or child:IsA("TextLabel") then
-            local childPos = child.Position.Y.Offset + child.Size.Y.Offset
-            if childPos > lowestY then
-                lowestY = childPos
-            end
-        end
+-- Make GUI draggable (both vertically and horizontally)
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+local isMobile = UIS.TouchEnabled and not UIS.KeyboardEnabled and not UIS.MouseEnabled
+
+-- Function to update drag position
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+-- Function to disable camera movement
+local function disableCamera(actionName, inputState, inputObject)
+    if dragging then
+        return Enum.ContextActionResult.Sink -- Consume the input to prevent camera movement
     end
-    
-    -- Update ContentFrame size
-    ContentFrame.Size = UDim2.new(1, 0, 0, lowestY + 10)
-    
-    -- Update ScrollingFrame canvas size
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, lowestY + 10)
+    return Enum.ContextActionResult.Pass
 end
 
--- Make the window draggable
-do
-    local isDragging = false
-    local dragStartPos = nil
-    local startPos = nil
-    
-    TopBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = true
-            dragStartPos = input.Position
-            startPos = MainFrame.Position
-        end
-    end)
-    
-    UIS.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            if isDragging then
-                local delta = input.Position - dragStartPos
-                MainFrame.Position = UDim2.new(
-                    startPos.X.Scale,
-                    startPos.X.Offset + delta.X,
-                    startPos.Y.Scale,
-                    startPos.Y.Offset + delta.Y
-                )
+-- Dragging for PC (Mouse)
+TopBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
             end
-        end
-    end)
-    
-    UIS.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDragging = false
-        end
-    end)
-end
-
--- Handle minimize button
-local minimized = false
-MinimizeButton.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    
-    if minimized then
-        MinimizeButton.Text = "+"
-        TweenService:Create(
-            MainFrame,
-            TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, 250, 0, 30)}
-        ):Play()
-        ScrollingFrame.Visible = false
-        YouTubeLabel.Visible = false
-    else
-        MinimizeButton.Text = "-"
-        TweenService:Create(
-            MainFrame,
-            TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, 250, 0, 300)}
-        ):Play()
-        ScrollingFrame.Visible = true
-        YouTubeLabel.Visible = true
+        end)
     end
 end)
 
--- Initialize the GUI (example)
-function TeleportGUILibrary.init(windowTitle)
-    -- Set window title
-    Title.Text = windowTitle or "Teleport GUI"
-    
-    return TeleportGUILibrary
+TopBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        updateDrag(input)
+    end
+end)
+
+-- Dragging for Mobile (Touch)
+if isMobile then
+    local touchConnection
+    local touchEndedConnection
+
+    -- Bind action to disable camera movement during drag
+    ContextActionService:BindAction("DisableCameraMovement", disableCamera, false, Enum.UserInputType.Touch)
+
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+
+            -- Handle touch movement
+            touchConnection = UIS.TouchMoved:Connect(function(touchInput)
+                if touchInput == input and dragging then
+                    updateDrag(touchInput)
+                end
+            end)
+
+            -- Clean up when touch ends
+            touchEndedConnection = UIS.TouchEnded:Connect(function(touchInput)
+                if touchInput == input then
+                    dragging = false
+                    if touchConnection then
+                        touchConnection:Disconnect()
+                    end
+                    if touchEndedConnection then
+                        touchEndedConnection:Disconnect()
+                    end
+                end
+            end)
+        end
+    end)
+
+    -- Unbind the action when the GUI is destroyed
+    ScreenGui.AncestryChanged:Connect(function()
+        if not ScreenGui:IsDescendantOf(game) then
+            ContextActionService:UnbindAction("DisableCameraMovement")
+        end
+    end)
 end
+
+-- Minimize Status
+local isMinimized = false
+local originalSize = MainFrame.Size
+
+-- Close GUI function
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui.Enabled = false
+end)
+
+-- Minimize function
+MinimizeButton.MouseButton1Click:Connect(function()
+    if isMinimized then
+        MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        ScrollingFrame.Visible = true
+        YouTubeLabel.Visible = true
+        MinimizeButton.Text = "-"
+    else
+        originalSize = MainFrame.Size
+        MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        ScrollingFrame.Visible = false
+        YouTubeLabel.Visible = false
+        MinimizeButton.Text = "+"
+    end
+    isMinimized = not isMinimized
+end)
+
+-- Make the GUI reappear with a keybind (Press "M" to toggle visibility)
+UIS.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.M then
+        ScreenGui.Enabled = not ScreenGui.Enabled
+    end
+end)
 
 return TeleportGUILibrary
