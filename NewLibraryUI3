@@ -14,7 +14,7 @@ local CORNER_RADIUS = UDim.new(0, 6)
 local COLORS = {
     Frame = Color3.fromRGB(35, 35, 40),
     Text = Color3.fromRGB(255, 255, 255),
-    Accent = Color3.fromRGB(0, 0, 0), -- Discord blue
+    Accent = Color3.fromRGB(114, 137, 218), -- Discord blue
     Success = Color3.fromRGB(87, 242, 135),
     Error = Color3.fromRGB(255, 89, 89),
     Warning = Color3.fromRGB(255, 201, 79),
@@ -111,15 +111,14 @@ YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YouTubeLabel.TextSize = 16
 YouTubeLabel.Font = Enum.Font.GothamBold
 YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center  -- Center the text
+YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Left  -- Left alignment
 YouTubeLabel.Parent = MainFrame
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
 
--- Add padding for YouTube Label (alternative approach)
+-- Add padding for YouTube Label
 local UIPadding = Instance.new("UIPadding")
-UIPadding.PaddingLeft = UDim.new(0, 18)  -- 10 pixel padding from left
-UIPadding.PaddingRight = UDim.new(0, 10) -- 10 pixel padding from right
+UIPadding.PaddingLeft = UDim.new(0, 15)  -- 15 pixel padding from left
 UIPadding.Parent = YouTubeLabel
 
 -- Function to create a section (label + separator)
