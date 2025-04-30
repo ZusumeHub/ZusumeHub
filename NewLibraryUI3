@@ -612,160 +612,128 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     }
 end
 
--- Function to create a stylish button with touch effect
 function TeleportGUILibrary.createButton(name, text, position, parent, onClick)
-    -- Button container
-    local buttonContainer = Instance.new("Frame")
-    buttonContainer.Name = name .. "Container"
-    buttonContainer.Size = UDim2.new(0.9, 0, 0, 35)
-    buttonContainer.Position = position
-    buttonContainer.BackgroundTransparency = 1
-    buttonContainer.Parent = parent
+    -- Create main container
+    local container = Instance.new("Frame")
+    container.Name = name .. "Container"
+    container.Size = UDim2.new(0.9, 0, 0, 35)
+    container.Position = position
+    container.BackgroundTransparency = 1
+    container.Parent = parent
     
-    -- Button background
-    local buttonBG = Instance.new("Frame")
-    buttonBG.Name = "Background"
-    buttonBG.Size = UDim2.new(1, 0, 1, 0)
-    buttonBG.BackgroundColor3 = Color3.fromRGB(55, 55, 60) -- Default button color (dark)
-    buttonBG.BorderSizePixel = 0
-    buttonBG.Parent = buttonContainer
+    -- Create label (left side)
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Size = UDim2.new(0.7, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0) -- Add padding
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextSize = 16
+    label.Font = Enum.Font.GothamBold
+    label.Text = text
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = container
     
-    -- Round the corners of the button
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6) -- Match your CORNER_RADIUS constant
-    buttonCorner.Parent = buttonBG
+    -- Create button (right side)
+    local buttonFrame = Instance.new("Frame")
+    buttonFrame.Name = "ButtonFrame"
+    buttonFrame.Size = UDim2.new(0.25, 0, 0.8, 0)
+    buttonFrame.Position = UDim2.new(0.75, -10, 0.1, 0) -- Right aligned with padding
+    buttonFrame.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
+    buttonFrame.BorderSizePixel = 0
+    buttonFrame.Parent = container
     
-    -- Button text
-    local buttonText = Instance.new("TextLabel")
-    buttonText.Name = "Text"
-    buttonText.Size = UDim2.new(0.95, 0, 0.8, 0)
-    buttonText.Position = UDim2.new(0.025, 0, 0.1, 0)
-    buttonText.BackgroundTransparency = 1
-    buttonText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    buttonText.TextSize = 16
-    buttonText.Font = Enum.Font.GothamBold -- Match your FONT constant
-    buttonText.Text = text
-    buttonText.TextXAlignment = Enum.TextXAlignment.Center
-    buttonText.Parent = buttonBG
+    -- Round corners
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = buttonFrame
     
-    -- Touch ripple effect (initially invisible)
-    local touchRipple = Instance.new("Frame")
-    touchRipple.Name = "TouchRipple"
-    touchRipple.Size = UDim2.new(0, 0, 0, 0) -- Starts as a point
-    touchRipple.Position = UDim2.new(0.5, 0, 0.5, 0) -- Center of button
-    touchRipple.AnchorPoint = Vector2.new(0.5, 0.5)
-    touchRipple.BackgroundColor3 = Color3.fromRGB(70, 200, 120) -- Green color when clicked
-    touchRipple.BackgroundTransparency = 0.5
-    touchRipple.BorderSizePixel = 0
-    touchRipple.ZIndex = 2 -- Above button background but below text
-    touchRipple.Visible = false
-    touchRipple.Parent = buttonBG
+    -- Ripple effect (contained within button only)
+    local ripple = Instance.new("Frame")
+    ripple.Name = "Ripple"
+    ripple.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
+    ripple.BackgroundTransparency = 0.5
+    ripple.BorderSizePixel = 0
+    ripple.Size = UDim2.new(0, 0, 0, 0)
+    ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+    ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+    ripple.ZIndex = 2
+    ripple.Visible = false
+    ripple.Parent = buttonFrame
     
-    -- Round the corners of the ripple
+    -- Round ripple corners
     local rippleCorner = Instance.new("UICorner")
-    rippleCorner.CornerRadius = UDim.new(1, 0) -- Fully rounded (circle)
-    rippleCorner.Parent = touchRipple
+    rippleCorner.CornerRadius = UDim.new(1, 0)
+    rippleCorner.Parent = ripple
     
     -- Interactive button
-    local buttonInteractive = Instance.new("TextButton")
-    buttonInteractive.Name = "Button"
-    buttonInteractive.Size = UDim2.new(1, 0, 1, 0)
-    buttonInteractive.BackgroundTransparency = 1
-    buttonInteractive.Text = ""
-    buttonInteractive.ZIndex = 3 -- Above everything else to capture clicks
-    buttonInteractive.Parent = buttonContainer
+    local button = Instance.new("TextButton")
+    button.Name = "Button"
+    button.Size = UDim2.new(1, 0, 1, 0)
+    button.BackgroundTransparency = 1
+    button.Text = ""
+    button.ZIndex = 3
+    button.Parent = buttonFrame
     
     -- Hover effect
-    buttonInteractive.MouseEnter:Connect(function()
-        TweenService:Create(
-            buttonBG,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(65, 65, 70)} -- Slightly lighter when hovered
-        ):Play()
+    button.MouseEnter:Connect(function()
+        TweenService:Create(buttonFrame, TweenInfo.new(0.3), 
+            {BackgroundColor3 = Color3.fromRGB(65, 65, 70)}):Play()
     end)
     
-    buttonInteractive.MouseLeave:Connect(function()
-        TweenService:Create(
-            buttonBG,
-            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(55, 55, 60)} -- Back to default color
-        ):Play()
+    button.MouseLeave:Connect(function()
+        TweenService:Create(buttonFrame, TweenInfo.new(0.3), 
+            {BackgroundColor3 = Color3.fromRGB(55, 55, 60)}):Play()
     end)
     
-    -- Click effect with touch ripple
-    buttonInteractive.MouseButton1Down:Connect(function(x, y)
-        -- Get position of click relative to button
-        local clickPosition
-        if x and y then -- For mouse input
-            local buttonPos = buttonBG.AbsolutePosition
-            local relativeX = x - buttonPos.X
-            local relativeY = y - buttonPos.Y
-            clickPosition = UDim2.new(0, relativeX, 0, relativeY)
-        else -- Default to center for touch input
-            clickPosition = UDim2.new(0.5, 0, 0.5, 0)
-        end
+    -- Click effect
+    button.MouseButton1Down:Connect(function(x, y)
+        local btnPos = buttonFrame.AbsolutePosition
+        local clickPos = x and y and 
+            UDim2.new(0, x - btnPos.X, 0, y - btnPos.Y) or 
+            UDim2.new(0.5, 0, 0.5, 0)
         
-        -- Position the ripple at click position
-        touchRipple.Position = clickPosition
-        touchRipple.Size = UDim2.new(0, 0, 0, 0)
-        touchRipple.Visible = true
+        ripple.Position = clickPos
+        ripple.Size = UDim2.new(0, 0, 0, 0)
+        ripple.Visible = true
         
-        -- Expand the ripple
-        local maxSize = math.max(buttonBG.AbsoluteSize.X, buttonBG.AbsoluteSize.Y) * 2
-        TweenService:Create(
-            touchRipple,
-            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0, maxSize, 0, maxSize)}
-        ):Play()
+        local maxSize = math.max(buttonFrame.AbsoluteSize.X, buttonFrame.AbsoluteSize.Y) * 2
+        TweenService:Create(ripple, TweenInfo.new(0.5), 
+            {Size = UDim2.new(0, maxSize, 0, maxSize)}):Play()
     end)
     
-    buttonInteractive.MouseButton1Click:Connect(function()
-        -- Change button color to green for 2 seconds
-        TweenService:Create(
-            buttonBG,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(70, 200, 120)} -- Green when clicked
-        ):Play()
+    button.MouseButton1Click:Connect(function()
+        -- Button color change
+        TweenService:Create(buttonFrame, TweenInfo.new(0.2), 
+            {BackgroundColor3 = Color3.fromRGB(70, 200, 120)}):Play()
         
-        -- Call the onClick callback
-        if onClick then
-            onClick()
-        end
+        if onClick then onClick() end
         
-        -- Schedule color return after 2 seconds
-        task.delay(2, function()
-            -- Check if the button still exists
-            if buttonBG and buttonBG.Parent then
-                TweenService:Create(
-                    buttonBG,
-                    TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                    {BackgroundColor3 = Color3.fromRGB(55, 55, 60)} -- Back to default color
-                ):Play()
+        -- Return to normal color after delay
+        task.delay(1, function()
+            if buttonFrame and buttonFrame.Parent then
+                TweenService:Create(buttonFrame, TweenInfo.new(0.5), 
+                    {BackgroundColor3 = Color3.fromRGB(55, 55, 60)}):Play()
             end
         end)
         
-        -- Fade out ripple effect after animation completes
-        task.delay(0.5, function()
-            if touchRipple and touchRipple.Parent then
-                TweenService:Create(
-                    touchRipple,
-                    TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                    {BackgroundTransparency = 1}
-                ):Play()
+        -- Fade out ripple
+        task.delay(0.3, function()
+            if ripple and ripple.Parent then
+                TweenService:Create(ripple, TweenInfo.new(0.5), 
+                    {BackgroundTransparency = 1}):Play()
                 
-                -- Hide ripple after fade out
                 task.delay(0.5, function()
-                    if touchRipple and touchRipple.Parent then
-                        touchRipple.Visible = false
-                        touchRipple.BackgroundTransparency = 0.5 -- Reset for next use
+                    if ripple and ripple.Parent then
+                        ripple.Visible = false
+                        ripple.BackgroundTransparency = 0.5
                     end
                 end)
             end
         end)
     end)
     
-    -- Return the container and the button itself
-    return buttonContainer, buttonInteractive
+    return container, button
 end
 
 -- Function to create notification
