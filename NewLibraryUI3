@@ -612,7 +612,8 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     }
 end
 
--- Function to create a slider
+-- FIXED SLIDER FUNCTION
+-- This improved version ensures proper dragging behavior
 function TeleportGUILibrary.createSlider(name, labelText, min, max, defaultValue, position, parent, onChange)
     -- Container for the whole slider element
     local sliderContainer = Instance.new("Frame")
@@ -689,14 +690,15 @@ function TeleportGUILibrary.createSlider(name, labelText, min, max, defaultValue
     knobCorner.CornerRadius = UDim.new(1, 0)
     knobCorner.Parent = sliderKnob
     
-    -- Interactive area
+    -- Interactive area - FIXED: Made this cover the entire slider area
     local sliderInteractive = Instance.new("TextButton")
     sliderInteractive.Name = "Interactive"
-    sliderInteractive.Size = UDim2.new(1, 0, 1, 16)
-    sliderInteractive.Position = UDim2.new(0, 0, 0, -8)
+    sliderInteractive.Size = UDim2.new(1, 0, 1, 20) -- Increased clickable area
+    sliderInteractive.Position = UDim2.new(0, 0, 0, -10) -- Positioned to cover entire slider
     sliderInteractive.BackgroundTransparency = 1
     sliderInteractive.Text = ""
     sliderInteractive.Parent = sliderTrack
+    sliderInteractive.ZIndex = 3 -- Ensure it's on top for input detection
     
     -- Current value
     local currentValue = defaultValue
@@ -712,21 +714,10 @@ function TeleportGUILibrary.createSlider(name, labelText, min, max, defaultValue
             
             -- Update the fill and knob position
             local percent = (value - min) / (max - min)
-            sliderFill:TweenSize(
-                UDim2.new(percent, 0, 1, 0),
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
-                0.1,
-                true
-            )
             
-            sliderKnob:TweenPosition(
-                UDim2.new(percent, -8, 0.5, -8),
-                Enum.EasingDirection.Out,
-                Enum.EasingStyle.Quad,
-                0.1,
-                true
-            )
+            -- FIXED: Immediate update for better responsiveness
+            sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+            sliderKnob.Position = UDim2.new(percent, -8, 0.5, -8)
             
             if onChange then
                 onChange(value)
@@ -734,65 +725,84 @@ function TeleportGUILibrary.createSlider(name, labelText, min, max, defaultValue
         end
     end
     
-    -- Handle dragging
+    -- FIXED: Better dragging implementation
     local isDragging = false
     
+    -- Function to calculate value from mouse position
+    local function calculateValueFromMouse()
+        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+        local trackStart = sliderTrack.AbsolutePosition.X
+        local trackEnd = trackStart + sliderTrack.AbsoluteSize.X
+        local mouseX = math.clamp(mousePos.X, trackStart, trackEnd)
+        
+        local percentage = (mouseX - trackStart) / (trackEnd - trackStart)
+        return min + (max - min) * percentage
+    end
+    
+    -- Mouse button down event
     sliderInteractive.MouseButton1Down:Connect(function()
         isDragging = true
-        
-        -- Get initial mouse position relative to the track
-        local mousePos = UIS:GetMouseLocation() - sliderTrack.AbsolutePosition
-        local percentage = math.clamp(mousePos.X / sliderTrack.AbsoluteSize.X, 0, 1)
-        local value = min + (max - min) * percentage
-        
-        updateSlider(value)
+        updateSlider(calculateValueFromMouse())
     end)
     
-    UIS.InputChanged:Connect(function(input)
+    -- Input changed event for drag tracking
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
         if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            -- Get mouse position relative to the track
-            local mousePos = UIS:GetMouseLocation() - sliderTrack.AbsolutePosition
-            local percentage = math.clamp(mousePos.X / sliderTrack.AbsoluteSize.X, 0, 1)
-            local value = min + (max - min) * percentage
-            
-            updateSlider(value)
+            updateSlider(calculateValueFromMouse())
         end
     end)
     
-    UIS.InputEnded:Connect(function(input)
-        if isDragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+    -- Input ended event
+    game:GetService("UserInputService").InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
             isDragging = false
         end
     end)
     
     -- Handle touch input for mobile
-    if UIS.TouchEnabled then
+    if game:GetService("UserInputService").TouchEnabled then
+        -- Touch began event
         sliderInteractive.TouchStarted:Connect(function(touch)
             isDragging = true
             
-            -- Get initial touch position relative to the track
-            local touchPos = touch.Position - sliderTrack.AbsolutePosition
-            local percentage = math.clamp(touchPos.X / sliderTrack.AbsoluteSize.X, 0, 1)
+            -- Calculate touch position relative to track
+            local touchPos = touch.Position
+            local trackStart = sliderTrack.AbsolutePosition.X
+            local trackEnd = trackStart + sliderTrack.AbsoluteSize.X
+            local touchX = math.clamp(touchPos.X, trackStart, trackEnd)
+            
+            local percentage = (touchX - trackStart) / (trackEnd - trackStart)
             local value = min + (max - min) * percentage
             
             updateSlider(value)
         end)
         
+        -- Touch moved event
         sliderInteractive.TouchMoved:Connect(function(touch)
             if isDragging then
-                -- Get touch position relative to the track
-                local touchPos = touch.Position - sliderTrack.AbsolutePosition
-                local percentage = math.clamp(touchPos.X / sliderTrack.AbsoluteSize.X, 0, 1)
+                -- Calculate touch position relative to track
+                local touchPos = touch.Position
+                local trackStart = sliderTrack.AbsolutePosition.X
+                local trackEnd = trackStart + sliderTrack.AbsoluteSize.X
+                local touchX = math.clamp(touchPos.X, trackStart, trackEnd)
+                
+                local percentage = (touchX - trackStart) / (trackEnd - trackStart)
                 local value = min + (max - min) * percentage
                 
                 updateSlider(value)
             end
         end)
         
-        sliderInteractive.TouchEnded:Connect(function()
+        -- Touch ended event
+        game:GetService("UserInputService").TouchEnded:Connect(function()
             isDragging = false
         end)
     end
+    
+    -- DEBUG: Print information about slider creation
+    print("Created slider: " .. name)
+    print("- Parent: " .. (parent and parent.Name or "nil"))
+    print("- Position: " .. tostring(position))
     
     -- Return the container and methods for getting/setting the value
     return sliderContainer, {
@@ -803,12 +813,18 @@ function TeleportGUILibrary.createSlider(name, labelText, min, max, defaultValue
     }
 end
 
--- Function to create a stylish button
+-- FIXED BUTTON FUNCTION
+-- This improved version fixes rendering issues and ensures proper interaction
 function TeleportGUILibrary.createButton(name, buttonText, position, parent, onClick)
+    -- DEBUG: Print button creation info
+    print("Creating button: " .. name)
+    print("- Position: " .. tostring(position))
+    print("- Parent: " .. (parent and parent.Name or "nil"))
+    
     -- Button container
     local buttonContainer = Instance.new("Frame")
     buttonContainer.Name = name .. "Container"
-    buttonContainer.Size = UDim2.new(0.9, 0, 0, 30)
+    buttonContainer.Size = UDim2.new(0.9, 0, 0, 36) -- Slightly taller for better visibility
     buttonContainer.Position = position
     buttonContainer.BackgroundTransparency = 1
     buttonContainer.Parent = parent
@@ -819,6 +835,7 @@ function TeleportGUILibrary.createButton(name, buttonText, position, parent, onC
     buttonBG.Size = UDim2.new(1, 0, 1, 0)
     buttonBG.BackgroundColor3 = Color3.fromRGB(70, 70, 255) -- Blue color
     buttonBG.BorderSizePixel = 0
+    buttonBG.ZIndex = 2 -- Ensure proper layering
     buttonBG.Parent = buttonContainer
     
     -- Round the corners of the button
@@ -835,19 +852,35 @@ function TeleportGUILibrary.createButton(name, buttonText, position, parent, onC
     buttonLabel.TextSize = 16
     buttonLabel.Font = FONT
     buttonLabel.Text = buttonText
+    buttonLabel.ZIndex = 3 -- Above background
     buttonLabel.Parent = buttonBG
     
-    -- Button click area
+    -- Button click area (full size of container)
     local buttonButton = Instance.new("TextButton")
     buttonButton.Name = "Button"
     buttonButton.Size = UDim2.new(1, 0, 1, 0)
     buttonButton.BackgroundTransparency = 1
     buttonButton.Text = ""
+    buttonButton.ZIndex = 4 -- Topmost layer for interactions
     buttonButton.Parent = buttonBG
+    
+    -- DEBUG: Add visual indicator for click detection
+    local clickIndicator = Instance.new("Frame")
+    clickIndicator.Name = "ClickIndicator"
+    clickIndicator.Size = UDim2.new(0, 6, 0, 6)
+    clickIndicator.Position = UDim2.new(1, -10, 0, 4)
+    clickIndicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red indicator
+    clickIndicator.ZIndex = 5
+    clickIndicator.Visible = false -- Only show when debugging
+    clickIndicator.Parent = buttonBG
+    
+    local indicatorCorner = Instance.new("UICorner")
+    indicatorCorner.CornerRadius = UDim.new(1, 0)
+    indicatorCorner.Parent = clickIndicator
     
     -- Hover and click effects
     buttonButton.MouseEnter:Connect(function()
-        TweenService:Create(
+        game:GetService("TweenService"):Create(
             buttonBG,
             TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             {BackgroundColor3 = Color3.fromRGB(90, 90, 255)}
@@ -855,47 +888,48 @@ function TeleportGUILibrary.createButton(name, buttonText, position, parent, onC
     end)
     
     buttonButton.MouseLeave:Connect(function()
-        TweenService:Create(
+        game:GetService("TweenService"):Create(
             buttonBG,
             TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
             {BackgroundColor3 = Color3.fromRGB(70, 70, 255)}
         ):Play()
     end)
     
+    -- FIXED: Better visual feedback for button presses
     buttonButton.MouseButton1Down:Connect(function()
-        TweenService:Create(
-            buttonBG,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(50, 50, 200)}
-        ):Play()
+        -- Visual feedback - darken and shrink
+        buttonBG.BackgroundColor3 = Color3.fromRGB(50, 50, 200)
+        buttonBG.Size = UDim2.new(0.98, 0, 0.95, 0)
+        buttonBG.Position = UDim2.new(0.01, 0, 0.025, 0)
         
-        TweenService:Create(
-            buttonBG,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(0.98, 0, 0.95, 0), Position = UDim2.new(0.01, 0, 0.025, 0)}
-        ):Play()
+        -- Debug indicator
+        clickIndicator.Visible = true
+        clickIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Green when pressed
     end)
     
     buttonButton.MouseButton1Up:Connect(function()
-        TweenService:Create(
-            buttonBG,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(90, 90, 255)}
-        ):Play()
+        -- Restore appearance
+        buttonBG.BackgroundColor3 = Color3.fromRGB(90, 90, 255)
+        buttonBG.Size = UDim2.new(1, 0, 1, 0)
+        buttonBG.Position = UDim2.new(0, 0, 0, 0)
         
-        TweenService:Create(
-            buttonBG,
-            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0)}
-        ):Play()
+        -- Reset debug indicator
+        clickIndicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        clickIndicator.Visible = false
     end)
     
-    -- Handle click event
+    -- Handle click event - FIXED to ensure it fires correctly
     buttonButton.MouseButton1Click:Connect(function()
+        print("Button clicked: " .. name)
         if onClick then
             onClick()
         end
     end)
+    
+    -- DEBUG: Verify button is created
+    print("Button creation complete: " .. name)
+    print("- Visible: " .. tostring(buttonContainer.Visible))
+    print("- ZIndex: " .. tostring(buttonContainer.ZIndex))
     
     -- Return the container and some API functions
     return buttonContainer, {
@@ -903,7 +937,7 @@ function TeleportGUILibrary.createButton(name, buttonText, position, parent, onC
             buttonLabel.Text = text
         end,
         setColor = function(color)
-            TweenService:Create(
+            game:GetService("TweenService"):Create(
                 buttonBG,
                 TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
                 {BackgroundColor3 = color}
@@ -912,22 +946,51 @@ function TeleportGUILibrary.createButton(name, buttonText, position, parent, onC
         disable = function()
             buttonButton.Visible = false
             buttonLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-            TweenService:Create(
-                buttonBG,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {BackgroundColor3 = Color3.fromRGB(100, 100, 100)}
-            ):Play()
+            buttonBG.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
         end,
         enable = function()
             buttonButton.Visible = true
             buttonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            TweenService:Create(
+            buttonBG.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
+        end,
+        getContainer = function()
+            return buttonContainer
+        end,
+        flash = function()
+            -- Flash animation to make button noticeable
+            local originalColor = buttonBG.BackgroundColor3
+            game:GetService("TweenService"):Create(
                 buttonBG,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {BackgroundColor3 = Color3.fromRGB(70, 70, 255)}
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}
             ):Play()
+            
+            delay(0.2, function()
+                game:GetService("TweenService"):Create(
+                    buttonBG,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {BackgroundColor3 = originalColor}
+                ):Play()
+            end)
         end
     }
+end
+
+-- Helper function to fix button visibility issues
+function TeleportGUILibrary.fixButtonVisibility(buttonContainer)
+    if buttonContainer then
+        -- Force a layout update
+        buttonContainer.Visible = false
+        buttonContainer.Position = buttonContainer.Position + UDim2.new(0, 0, 0, 0.01)
+        
+        -- Re-enable after a small delay
+        delay(0.05, function()
+            buttonContainer.Visible = true
+        end)
+        
+        return true
+    end
+    return false
 end
 
 -- Function to create notification
