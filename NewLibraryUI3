@@ -51,17 +51,16 @@ TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TopBar.BorderSizePixel = 0
 TopBar.Parent = MainFrame
 
--- Title
+-- Title (centered properly regardless of other elements)
 local Title = Instance.new("TextLabel")
 Title.Name = "Title"
-Title.Size = UDim2.new(1, -60, 1, 0)
-Title.Position = UDim2.new(0, 1, 0, 0)
+Title.Size = UDim2.new(1, 0, 1, 0)  -- Full width of TopBar
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBold
 Title.Text = "Nothing"
-Title.TextXAlignment = Enum.TextXAlignment.Center
+Title.TextXAlignment = Enum.TextXAlignment.Center  -- Center alignment
 Title.Parent = TopBar
 
 local MinimizeButton = Instance.new("TextButton")
@@ -75,6 +74,7 @@ MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeButton.Text = "-"
 MinimizeButton.TextSize = 16
 MinimizeButton.Parent = TopBar
+MinimizeButton.ZIndex = 2  -- Higher ZIndex to appear above the title
 
 -- Round the minimize button
 local MinimizeCorner = Instance.new("UICorner")
@@ -100,7 +100,7 @@ ContentFrame.Size = UDim2.new(1, 0, 0, 0) -- Will be updated dynamically
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.Parent = ScrollingFrame
 
--- YouTube Label (fixed at the bottom of MainFrame)
+-- YouTube Label (adjusted with padding)
 local YouTubeLabel = Instance.new("TextLabel")
 YouTubeLabel.Name = "YouTubeLabel"
 YouTubeLabel.Size = UDim2.new(1, 0, 0, 30)
@@ -111,10 +111,16 @@ YouTubeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 YouTubeLabel.TextSize = 16
 YouTubeLabel.Font = Enum.Font.GothamBold
 YouTubeLabel.Text = "Youtube: Zysume"
-YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Left
+YouTubeLabel.TextXAlignment = Enum.TextXAlignment.Center  -- Center the text
 YouTubeLabel.Parent = MainFrame
 YouTubeLabel.ZIndex = 2
 YouTubeLabel.Visible = true
+
+-- Add padding for YouTube Label (alternative approach)
+local UIPadding = Instance.new("UIPadding")
+UIPadding.PaddingLeft = UDim.new(0, 10)  -- 10 pixel padding from left
+UIPadding.PaddingRight = UDim.new(0, 10) -- 10 pixel padding from right
+UIPadding.Parent = YouTubeLabel
 
 -- Function to create a section (label + separator)
 function TeleportGUILibrary.createSection(sectionName, positionY)
