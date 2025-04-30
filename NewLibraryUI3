@@ -612,6 +612,324 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     }
 end
 
+-- Function to create a slider
+function TeleportGUILibrary.createSlider(name, labelText, min, max, defaultValue, position, parent, onChange)
+    -- Container for the whole slider element
+    local sliderContainer = Instance.new("Frame")
+    sliderContainer.Name = name .. "Container"
+    sliderContainer.Size = UDim2.new(0.9, 0, 0, 40)
+    sliderContainer.Position = position
+    sliderContainer.BackgroundTransparency = 1
+    sliderContainer.Parent = parent
+    
+    -- Label
+    local sliderLabel = Instance.new("TextLabel")
+    sliderLabel.Name = "Label"
+    sliderLabel.Size = UDim2.new(1, 0, 0, 20)
+    sliderLabel.BackgroundTransparency = 1
+    sliderLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    sliderLabel.TextSize = 14
+    sliderLabel.Font = FONT
+    sliderLabel.Text = labelText
+    sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
+    sliderLabel.Parent = sliderContainer
+    
+    -- Value Display
+    local valueDisplay = Instance.new("TextLabel")
+    valueDisplay.Name = "ValueDisplay"
+    valueDisplay.Size = UDim2.new(0, 40, 0, 20)
+    valueDisplay.Position = UDim2.new(1, -40, 0, 0)
+    valueDisplay.BackgroundTransparency = 1
+    valueDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+    valueDisplay.TextSize = 14
+    valueDisplay.Font = FONT
+    valueDisplay.Text = tostring(defaultValue)
+    valueDisplay.TextXAlignment = Enum.TextXAlignment.Right
+    valueDisplay.Parent = sliderContainer
+    
+    -- Slider Track
+    local sliderTrack = Instance.new("Frame")
+    sliderTrack.Name = "Track"
+    sliderTrack.Size = UDim2.new(1, 0, 0, 6)
+    sliderTrack.Position = UDim2.new(0, 0, 0.5, 5)
+    sliderTrack.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    sliderTrack.BorderSizePixel = 0
+    sliderTrack.Parent = sliderContainer
+    
+    -- Round the corners of the track
+    local trackCorner = Instance.new("UICorner")
+    trackCorner.CornerRadius = UDim.new(1, 0)
+    trackCorner.Parent = sliderTrack
+    
+    -- Slider Fill
+    local sliderFill = Instance.new("Frame")
+    sliderFill.Name = "Fill"
+    sliderFill.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0)
+    sliderFill.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
+    sliderFill.BorderSizePixel = 0
+    sliderFill.Parent = sliderTrack
+    
+    -- Round the corners of the fill
+    local fillCorner = Instance.new("UICorner")
+    fillCorner.CornerRadius = UDim.new(1, 0)
+    fillCorner.Parent = sliderFill
+    
+    -- Slider Knob
+    local sliderKnob = Instance.new("Frame")
+    sliderKnob.Name = "Knob"
+    sliderKnob.Size = UDim2.new(0, 16, 0, 16)
+    sliderKnob.Position = UDim2.new((defaultValue - min) / (max - min), -8, 0.5, -8)
+    sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    sliderKnob.BorderSizePixel = 0
+    sliderKnob.ZIndex = 2
+    sliderKnob.Parent = sliderTrack
+    
+    -- Round the corners of the knob
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(1, 0)
+    knobCorner.Parent = sliderKnob
+    
+    -- Interactive area
+    local sliderInteractive = Instance.new("TextButton")
+    sliderInteractive.Name = "Interactive"
+    sliderInteractive.Size = UDim2.new(1, 0, 1, 16)
+    sliderInteractive.Position = UDim2.new(0, 0, 0, -8)
+    sliderInteractive.BackgroundTransparency = 1
+    sliderInteractive.Text = ""
+    sliderInteractive.Parent = sliderTrack
+    
+    -- Current value
+    local currentValue = defaultValue
+    
+    -- Update the slider based on value
+    local function updateSlider(value)
+        value = math.clamp(value, min, max)
+        value = math.floor(value * 10) / 10 -- Round to 1 decimal place
+        
+        if value ~= currentValue then
+            currentValue = value
+            valueDisplay.Text = tostring(value)
+            
+            -- Update the fill and knob position
+            local percent = (value - min) / (max - min)
+            sliderFill:TweenSize(
+                UDim2.new(percent, 0, 1, 0),
+                Enum.EasingDirection.Out,
+                Enum.EasingStyle.Quad,
+                0.1,
+                true
+            )
+            
+            sliderKnob:TweenPosition(
+                UDim2.new(percent, -8, 0.5, -8),
+                Enum.EasingDirection.Out,
+                Enum.EasingStyle.Quad,
+                0.1,
+                true
+            )
+            
+            if onChange then
+                onChange(value)
+            end
+        end
+    end
+    
+    -- Handle dragging
+    local isDragging = false
+    
+    sliderInteractive.MouseButton1Down:Connect(function()
+        isDragging = true
+        
+        -- Get initial mouse position relative to the track
+        local mousePos = UIS:GetMouseLocation() - sliderTrack.AbsolutePosition
+        local percentage = math.clamp(mousePos.X / sliderTrack.AbsoluteSize.X, 0, 1)
+        local value = min + (max - min) * percentage
+        
+        updateSlider(value)
+    end)
+    
+    UIS.InputChanged:Connect(function(input)
+        if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            -- Get mouse position relative to the track
+            local mousePos = UIS:GetMouseLocation() - sliderTrack.AbsolutePosition
+            local percentage = math.clamp(mousePos.X / sliderTrack.AbsoluteSize.X, 0, 1)
+            local value = min + (max - min) * percentage
+            
+            updateSlider(value)
+        end
+    end)
+    
+    UIS.InputEnded:Connect(function(input)
+        if isDragging and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            isDragging = false
+        end
+    end)
+    
+    -- Handle touch input for mobile
+    if UIS.TouchEnabled then
+        sliderInteractive.TouchStarted:Connect(function(touch)
+            isDragging = true
+            
+            -- Get initial touch position relative to the track
+            local touchPos = touch.Position - sliderTrack.AbsolutePosition
+            local percentage = math.clamp(touchPos.X / sliderTrack.AbsoluteSize.X, 0, 1)
+            local value = min + (max - min) * percentage
+            
+            updateSlider(value)
+        end)
+        
+        sliderInteractive.TouchMoved:Connect(function(touch)
+            if isDragging then
+                -- Get touch position relative to the track
+                local touchPos = touch.Position - sliderTrack.AbsolutePosition
+                local percentage = math.clamp(touchPos.X / sliderTrack.AbsoluteSize.X, 0, 1)
+                local value = min + (max - min) * percentage
+                
+                updateSlider(value)
+            end
+        end)
+        
+        sliderInteractive.TouchEnded:Connect(function()
+            isDragging = false
+        end)
+    end
+    
+    -- Return the container and methods for getting/setting the value
+    return sliderContainer, {
+        getValue = function() return currentValue end,
+        setValue = function(value)
+            updateSlider(value)
+        end
+    }
+end
+
+-- Function to create a stylish button
+function TeleportGUILibrary.createButton(name, buttonText, position, parent, onClick)
+    -- Button container
+    local buttonContainer = Instance.new("Frame")
+    buttonContainer.Name = name .. "Container"
+    buttonContainer.Size = UDim2.new(0.9, 0, 0, 30)
+    buttonContainer.Position = position
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.Parent = parent
+    
+    -- Button background
+    local buttonBG = Instance.new("Frame")
+    buttonBG.Name = "Background"
+    buttonBG.Size = UDim2.new(1, 0, 1, 0)
+    buttonBG.BackgroundColor3 = Color3.fromRGB(70, 70, 255) -- Blue color
+    buttonBG.BorderSizePixel = 0
+    buttonBG.Parent = buttonContainer
+    
+    -- Round the corners of the button
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.Parent = buttonBG
+    
+    -- Button text
+    local buttonLabel = Instance.new("TextLabel")
+    buttonLabel.Name = "Label"
+    buttonLabel.Size = UDim2.new(1, 0, 1, 0)
+    buttonLabel.BackgroundTransparency = 1
+    buttonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    buttonLabel.TextSize = 16
+    buttonLabel.Font = FONT
+    buttonLabel.Text = buttonText
+    buttonLabel.Parent = buttonBG
+    
+    -- Button click area
+    local buttonButton = Instance.new("TextButton")
+    buttonButton.Name = "Button"
+    buttonButton.Size = UDim2.new(1, 0, 1, 0)
+    buttonButton.BackgroundTransparency = 1
+    buttonButton.Text = ""
+    buttonButton.Parent = buttonBG
+    
+    -- Hover and click effects
+    buttonButton.MouseEnter:Connect(function()
+        TweenService:Create(
+            buttonBG,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(90, 90, 255)}
+        ):Play()
+    end)
+    
+    buttonButton.MouseLeave:Connect(function()
+        TweenService:Create(
+            buttonBG,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(70, 70, 255)}
+        ):Play()
+    end)
+    
+    buttonButton.MouseButton1Down:Connect(function()
+        TweenService:Create(
+            buttonBG,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(50, 50, 200)}
+        ):Play()
+        
+        TweenService:Create(
+            buttonBG,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0.98, 0, 0.95, 0), Position = UDim2.new(0.01, 0, 0.025, 0)}
+        ):Play()
+    end)
+    
+    buttonButton.MouseButton1Up:Connect(function()
+        TweenService:Create(
+            buttonBG,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(90, 90, 255)}
+        ):Play()
+        
+        TweenService:Create(
+            buttonBG,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(1, 0, 1, 0), Position = UDim2.new(0, 0, 0, 0)}
+        ):Play()
+    end)
+    
+    -- Handle click event
+    buttonButton.MouseButton1Click:Connect(function()
+        if onClick then
+            onClick()
+        end
+    end)
+    
+    -- Return the container and some API functions
+    return buttonContainer, {
+        setText = function(text)
+            buttonLabel.Text = text
+        end,
+        setColor = function(color)
+            TweenService:Create(
+                buttonBG,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = color}
+            ):Play()
+        end,
+        disable = function()
+            buttonButton.Visible = false
+            buttonLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+            TweenService:Create(
+                buttonBG,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(100, 100, 100)}
+            ):Play()
+        end,
+        enable = function()
+            buttonButton.Visible = true
+            buttonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            TweenService:Create(
+                buttonBG,
+                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {BackgroundColor3 = Color3.fromRGB(70, 70, 255)}
+            ):Play()
+        end
+    }
+end
+
 -- Function to create notification
 function TeleportGUILibrary.createNotification(message, type)
     local notifColor = COLORS.Accent
