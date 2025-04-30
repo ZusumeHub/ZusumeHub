@@ -612,219 +612,12 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     }
 end
 
--- FIXED SLIDER FUNCTION
--- This improved version ensures proper dragging behavior
-function TeleportGUILibrary.createSlider(name, labelText, min, max, defaultValue, position, parent, onChange)
-    -- Container for the whole slider element
-    local sliderContainer = Instance.new("Frame")
-    sliderContainer.Name = name .. "Container"
-    sliderContainer.Size = UDim2.new(0.9, 0, 0, 40)
-    sliderContainer.Position = position
-    sliderContainer.BackgroundTransparency = 1
-    sliderContainer.Parent = parent
-    
-    -- Label
-    local sliderLabel = Instance.new("TextLabel")
-    sliderLabel.Name = "Label"
-    sliderLabel.Size = UDim2.new(1, 0, 0, 20)
-    sliderLabel.BackgroundTransparency = 1
-    sliderLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    sliderLabel.TextSize = 14
-    sliderLabel.Font = FONT
-    sliderLabel.Text = labelText
-    sliderLabel.TextXAlignment = Enum.TextXAlignment.Left
-    sliderLabel.Parent = sliderContainer
-    
-    -- Value Display
-    local valueDisplay = Instance.new("TextLabel")
-    valueDisplay.Name = "ValueDisplay"
-    valueDisplay.Size = UDim2.new(0, 40, 0, 20)
-    valueDisplay.Position = UDim2.new(1, -40, 0, 0)
-    valueDisplay.BackgroundTransparency = 1
-    valueDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
-    valueDisplay.TextSize = 14
-    valueDisplay.Font = FONT
-    valueDisplay.Text = tostring(defaultValue)
-    valueDisplay.TextXAlignment = Enum.TextXAlignment.Right
-    valueDisplay.Parent = sliderContainer
-    
-    -- Slider Track
-    local sliderTrack = Instance.new("Frame")
-    sliderTrack.Name = "Track"
-    sliderTrack.Size = UDim2.new(1, 0, 0, 6)
-    sliderTrack.Position = UDim2.new(0, 0, 0.5, 5)
-    sliderTrack.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    sliderTrack.BorderSizePixel = 0
-    sliderTrack.Parent = sliderContainer
-    
-    -- Round the corners of the track
-    local trackCorner = Instance.new("UICorner")
-    trackCorner.CornerRadius = UDim.new(1, 0)
-    trackCorner.Parent = sliderTrack
-    
-    -- Slider Fill
-    local sliderFill = Instance.new("Frame")
-    sliderFill.Name = "Fill"
-    sliderFill.Size = UDim2.new((defaultValue - min) / (max - min), 0, 1, 0)
-    sliderFill.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
-    sliderFill.BorderSizePixel = 0
-    sliderFill.Parent = sliderTrack
-    
-    -- Round the corners of the fill
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(1, 0)
-    fillCorner.Parent = sliderFill
-    
-    -- Slider Knob
-    local sliderKnob = Instance.new("Frame")
-    sliderKnob.Name = "Knob"
-    sliderKnob.Size = UDim2.new(0, 16, 0, 16)
-    sliderKnob.Position = UDim2.new((defaultValue - min) / (max - min), -8, 0.5, -8)
-    sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    sliderKnob.BorderSizePixel = 0
-    sliderKnob.ZIndex = 2
-    sliderKnob.Parent = sliderTrack
-    
-    -- Round the corners of the knob
-    local knobCorner = Instance.new("UICorner")
-    knobCorner.CornerRadius = UDim.new(1, 0)
-    knobCorner.Parent = sliderKnob
-    
-    -- Interactive area - FIXED: Made this cover the entire slider area
-    local sliderInteractive = Instance.new("TextButton")
-    sliderInteractive.Name = "Interactive"
-    sliderInteractive.Size = UDim2.new(1, 0, 1, 20) -- Increased clickable area
-    sliderInteractive.Position = UDim2.new(0, 0, 0, -10) -- Positioned to cover entire slider
-    sliderInteractive.BackgroundTransparency = 1
-    sliderInteractive.Text = ""
-    sliderInteractive.Parent = sliderTrack
-    sliderInteractive.ZIndex = 3 -- Ensure it's on top for input detection
-    
-    -- Current value
-    local currentValue = defaultValue
-    
-    -- Update the slider based on value
-    local function updateSlider(value)
-        value = math.clamp(value, min, max)
-        value = math.floor(value * 10) / 10 -- Round to 1 decimal place
-        
-        if value ~= currentValue then
-            currentValue = value
-            valueDisplay.Text = tostring(value)
-            
-            -- Update the fill and knob position
-            local percent = (value - min) / (max - min)
-            
-            -- FIXED: Immediate update for better responsiveness
-            sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-            sliderKnob.Position = UDim2.new(percent, -8, 0.5, -8)
-            
-            if onChange then
-                onChange(value)
-            end
-        end
-    end
-    
-    -- FIXED: Better dragging implementation
-    local isDragging = false
-    
-    -- Function to calculate value from mouse position
-    local function calculateValueFromMouse()
-        local mousePos = game:GetService("UserInputService"):GetMouseLocation()
-        local trackStart = sliderTrack.AbsolutePosition.X
-        local trackEnd = trackStart + sliderTrack.AbsoluteSize.X
-        local mouseX = math.clamp(mousePos.X, trackStart, trackEnd)
-        
-        local percentage = (mouseX - trackStart) / (trackEnd - trackStart)
-        return min + (max - min) * percentage
-    end
-    
-    -- Mouse button down event
-    sliderInteractive.MouseButton1Down:Connect(function()
-        isDragging = true
-        updateSlider(calculateValueFromMouse())
-    end)
-    
-    -- Input changed event for drag tracking
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateSlider(calculateValueFromMouse())
-        end
-    end)
-    
-    -- Input ended event
-    game:GetService("UserInputService").InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isDragging = false
-        end
-    end)
-    
-    -- Handle touch input for mobile
-    if game:GetService("UserInputService").TouchEnabled then
-        -- Touch began event
-        sliderInteractive.TouchStarted:Connect(function(touch)
-            isDragging = true
-            
-            -- Calculate touch position relative to track
-            local touchPos = touch.Position
-            local trackStart = sliderTrack.AbsolutePosition.X
-            local trackEnd = trackStart + sliderTrack.AbsoluteSize.X
-            local touchX = math.clamp(touchPos.X, trackStart, trackEnd)
-            
-            local percentage = (touchX - trackStart) / (trackEnd - trackStart)
-            local value = min + (max - min) * percentage
-            
-            updateSlider(value)
-        end)
-        
-        -- Touch moved event
-        sliderInteractive.TouchMoved:Connect(function(touch)
-            if isDragging then
-                -- Calculate touch position relative to track
-                local touchPos = touch.Position
-                local trackStart = sliderTrack.AbsolutePosition.X
-                local trackEnd = trackStart + sliderTrack.AbsoluteSize.X
-                local touchX = math.clamp(touchPos.X, trackStart, trackEnd)
-                
-                local percentage = (touchX - trackStart) / (trackEnd - trackStart)
-                local value = min + (max - min) * percentage
-                
-                updateSlider(value)
-            end
-        end)
-        
-        -- Touch ended event
-        game:GetService("UserInputService").TouchEnded:Connect(function()
-            isDragging = false
-        end)
-    end
-    
-    -- DEBUG: Print information about slider creation
-    print("Created slider: " .. name)
-    print("- Parent: " .. (parent and parent.Name or "nil"))
-    print("- Position: " .. tostring(position))
-    
-    -- Return the container and methods for getting/setting the value
-    return sliderContainer, {
-        getValue = function() return currentValue end,
-        setValue = function(value)
-            updateSlider(value)
-        end
-    }
-end
-
--- FIXED BUTTON FUNCTION
--- This improved version fixes rendering issues and ensures proper interaction
-function TeleportGUILibrary.createButton(name, buttonText, position, parent, onClick)
-    -- DEBUG: Print button creation info
-    print("Creating button: " .. name)
-    print("- Position: " .. tostring(position))
-    print("- Parent: " .. (parent and parent.Name or "nil"))
-    
+-- Function to create a stylish button with touch effect
+function TeleportGUILibrary.createButton(name, text, position, parent, onClick)
     -- Button container
     local buttonContainer = Instance.new("Frame")
     buttonContainer.Name = name .. "Container"
-    buttonContainer.Size = UDim2.new(0.9, 0, 0, 36) -- Slightly taller for better visibility
+    buttonContainer.Size = UDim2.new(0.9, 0, 0, 35)
     buttonContainer.Position = position
     buttonContainer.BackgroundTransparency = 1
     buttonContainer.Parent = parent
@@ -833,164 +626,146 @@ function TeleportGUILibrary.createButton(name, buttonText, position, parent, onC
     local buttonBG = Instance.new("Frame")
     buttonBG.Name = "Background"
     buttonBG.Size = UDim2.new(1, 0, 1, 0)
-    buttonBG.BackgroundColor3 = Color3.fromRGB(70, 70, 255) -- Blue color
+    buttonBG.BackgroundColor3 = Color3.fromRGB(55, 55, 60) -- Default button color (dark)
     buttonBG.BorderSizePixel = 0
-    buttonBG.ZIndex = 2 -- Ensure proper layering
     buttonBG.Parent = buttonContainer
     
     -- Round the corners of the button
     local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 6)
+    buttonCorner.CornerRadius = UDim.new(0, 6) -- Match your CORNER_RADIUS constant
     buttonCorner.Parent = buttonBG
     
     -- Button text
-    local buttonLabel = Instance.new("TextLabel")
-    buttonLabel.Name = "Label"
-    buttonLabel.Size = UDim2.new(1, 0, 1, 0)
-    buttonLabel.BackgroundTransparency = 1
-    buttonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    buttonLabel.TextSize = 16
-    buttonLabel.Font = FONT
-    buttonLabel.Text = buttonText
-    buttonLabel.ZIndex = 3 -- Above background
-    buttonLabel.Parent = buttonBG
+    local buttonText = Instance.new("TextLabel")
+    buttonText.Name = "Text"
+    buttonText.Size = UDim2.new(0.95, 0, 0.8, 0)
+    buttonText.Position = UDim2.new(0.025, 0, 0.1, 0)
+    buttonText.BackgroundTransparency = 1
+    buttonText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    buttonText.TextSize = 16
+    buttonText.Font = Enum.Font.GothamBold -- Match your FONT constant
+    buttonText.Text = text
+    buttonText.TextXAlignment = Enum.TextXAlignment.Center
+    buttonText.Parent = buttonBG
     
-    -- Button click area (full size of container)
-    local buttonButton = Instance.new("TextButton")
-    buttonButton.Name = "Button"
-    buttonButton.Size = UDim2.new(1, 0, 1, 0)
-    buttonButton.BackgroundTransparency = 1
-    buttonButton.Text = ""
-    buttonButton.ZIndex = 4 -- Topmost layer for interactions
-    buttonButton.Parent = buttonBG
+    -- Touch ripple effect (initially invisible)
+    local touchRipple = Instance.new("Frame")
+    touchRipple.Name = "TouchRipple"
+    touchRipple.Size = UDim2.new(0, 0, 0, 0) -- Starts as a point
+    touchRipple.Position = UDim2.new(0.5, 0, 0.5, 0) -- Center of button
+    touchRipple.AnchorPoint = Vector2.new(0.5, 0.5)
+    touchRipple.BackgroundColor3 = Color3.fromRGB(70, 200, 120) -- Green color when clicked
+    touchRipple.BackgroundTransparency = 0.5
+    touchRipple.BorderSizePixel = 0
+    touchRipple.ZIndex = 2 -- Above button background but below text
+    touchRipple.Visible = false
+    touchRipple.Parent = buttonBG
     
-    -- DEBUG: Add visual indicator for click detection
-    local clickIndicator = Instance.new("Frame")
-    clickIndicator.Name = "ClickIndicator"
-    clickIndicator.Size = UDim2.new(0, 6, 0, 6)
-    clickIndicator.Position = UDim2.new(1, -10, 0, 4)
-    clickIndicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red indicator
-    clickIndicator.ZIndex = 5
-    clickIndicator.Visible = false -- Only show when debugging
-    clickIndicator.Parent = buttonBG
+    -- Round the corners of the ripple
+    local rippleCorner = Instance.new("UICorner")
+    rippleCorner.CornerRadius = UDim.new(1, 0) -- Fully rounded (circle)
+    rippleCorner.Parent = touchRipple
     
-    local indicatorCorner = Instance.new("UICorner")
-    indicatorCorner.CornerRadius = UDim.new(1, 0)
-    indicatorCorner.Parent = clickIndicator
+    -- Interactive button
+    local buttonInteractive = Instance.new("TextButton")
+    buttonInteractive.Name = "Button"
+    buttonInteractive.Size = UDim2.new(1, 0, 1, 0)
+    buttonInteractive.BackgroundTransparency = 1
+    buttonInteractive.Text = ""
+    buttonInteractive.ZIndex = 3 -- Above everything else to capture clicks
+    buttonInteractive.Parent = buttonContainer
     
-    -- Hover and click effects
-    buttonButton.MouseEnter:Connect(function()
-        game:GetService("TweenService"):Create(
+    -- Hover effect
+    buttonInteractive.MouseEnter:Connect(function()
+        TweenService:Create(
             buttonBG,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(90, 90, 255)}
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(65, 65, 70)} -- Slightly lighter when hovered
         ):Play()
     end)
     
-    buttonButton.MouseLeave:Connect(function()
-        game:GetService("TweenService"):Create(
+    buttonInteractive.MouseLeave:Connect(function()
+        TweenService:Create(
             buttonBG,
-            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {BackgroundColor3 = Color3.fromRGB(70, 70, 255)}
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(55, 55, 60)} -- Back to default color
         ):Play()
     end)
     
-    -- FIXED: Better visual feedback for button presses
-    buttonButton.MouseButton1Down:Connect(function()
-        -- Visual feedback - darken and shrink
-        buttonBG.BackgroundColor3 = Color3.fromRGB(50, 50, 200)
-        buttonBG.Size = UDim2.new(0.98, 0, 0.95, 0)
-        buttonBG.Position = UDim2.new(0.01, 0, 0.025, 0)
+    -- Click effect with touch ripple
+    buttonInteractive.MouseButton1Down:Connect(function(x, y)
+        -- Get position of click relative to button
+        local clickPosition
+        if x and y then -- For mouse input
+            local buttonPos = buttonBG.AbsolutePosition
+            local relativeX = x - buttonPos.X
+            local relativeY = y - buttonPos.Y
+            clickPosition = UDim2.new(0, relativeX, 0, relativeY)
+        else -- Default to center for touch input
+            clickPosition = UDim2.new(0.5, 0, 0.5, 0)
+        end
         
-        -- Debug indicator
-        clickIndicator.Visible = true
-        clickIndicator.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Green when pressed
+        -- Position the ripple at click position
+        touchRipple.Position = clickPosition
+        touchRipple.Size = UDim2.new(0, 0, 0, 0)
+        touchRipple.Visible = true
+        
+        -- Expand the ripple
+        local maxSize = math.max(buttonBG.AbsoluteSize.X, buttonBG.AbsoluteSize.Y) * 2
+        TweenService:Create(
+            touchRipple,
+            TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Size = UDim2.new(0, maxSize, 0, maxSize)}
+        ):Play()
     end)
     
-    buttonButton.MouseButton1Up:Connect(function()
-        -- Restore appearance
-        buttonBG.BackgroundColor3 = Color3.fromRGB(90, 90, 255)
-        buttonBG.Size = UDim2.new(1, 0, 1, 0)
-        buttonBG.Position = UDim2.new(0, 0, 0, 0)
+    buttonInteractive.MouseButton1Click:Connect(function()
+        -- Change button color to green for 2 seconds
+        TweenService:Create(
+            buttonBG,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {BackgroundColor3 = Color3.fromRGB(70, 200, 120)} -- Green when clicked
+        ):Play()
         
-        -- Reset debug indicator
-        clickIndicator.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        clickIndicator.Visible = false
-    end)
-    
-    -- Handle click event - FIXED to ensure it fires correctly
-    buttonButton.MouseButton1Click:Connect(function()
-        print("Button clicked: " .. name)
+        -- Call the onClick callback
         if onClick then
             onClick()
         end
-    end)
-    
-    -- DEBUG: Verify button is created
-    print("Button creation complete: " .. name)
-    print("- Visible: " .. tostring(buttonContainer.Visible))
-    print("- ZIndex: " .. tostring(buttonContainer.ZIndex))
-    
-    -- Return the container and some API functions
-    return buttonContainer, {
-        setText = function(text)
-            buttonLabel.Text = text
-        end,
-        setColor = function(color)
-            game:GetService("TweenService"):Create(
-                buttonBG,
-                TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {BackgroundColor3 = color}
-            ):Play()
-        end,
-        disable = function()
-            buttonButton.Visible = false
-            buttonLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-            buttonBG.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        end,
-        enable = function()
-            buttonButton.Visible = true
-            buttonLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            buttonBG.BackgroundColor3 = Color3.fromRGB(70, 70, 255)
-        end,
-        getContainer = function()
-            return buttonContainer
-        end,
-        flash = function()
-            -- Flash animation to make button noticeable
-            local originalColor = buttonBG.BackgroundColor3
-            game:GetService("TweenService"):Create(
-                buttonBG,
-                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                {BackgroundColor3 = Color3.fromRGB(255, 255, 255)}
-            ):Play()
-            
-            delay(0.2, function()
-                game:GetService("TweenService"):Create(
-                    buttonBG,
-                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-                    {BackgroundColor3 = originalColor}
-                ):Play()
-            end)
-        end
-    }
-end
-
--- Helper function to fix button visibility issues
-function TeleportGUILibrary.fixButtonVisibility(buttonContainer)
-    if buttonContainer then
-        -- Force a layout update
-        buttonContainer.Visible = false
-        buttonContainer.Position = buttonContainer.Position + UDim2.new(0, 0, 0, 0.01)
         
-        -- Re-enable after a small delay
-        delay(0.05, function()
-            buttonContainer.Visible = true
+        -- Schedule color return after 2 seconds
+        task.delay(2, function()
+            -- Check if the button still exists
+            if buttonBG and buttonBG.Parent then
+                TweenService:Create(
+                    buttonBG,
+                    TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {BackgroundColor3 = Color3.fromRGB(55, 55, 60)} -- Back to default color
+                ):Play()
+            end
         end)
         
-        return true
-    end
-    return false
+        -- Fade out ripple effect after animation completes
+        task.delay(0.5, function()
+            if touchRipple and touchRipple.Parent then
+                TweenService:Create(
+                    touchRipple,
+                    TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {BackgroundTransparency = 1}
+                ):Play()
+                
+                -- Hide ripple after fade out
+                task.delay(0.5, function()
+                    if touchRipple and touchRipple.Parent then
+                        touchRipple.Visible = false
+                        touchRipple.BackgroundTransparency = 0.5 -- Reset for next use
+                    end
+                end)
+            end
+        end)
+    end)
+    
+    -- Return the container and the button itself
+    return buttonContainer, buttonInteractive
 end
 
 -- Function to create notification
