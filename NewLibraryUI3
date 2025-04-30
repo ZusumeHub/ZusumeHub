@@ -118,7 +118,7 @@ YouTubeLabel.Visible = true
 
 -- Add padding for YouTube Label (alternative approach)
 local UIPadding = Instance.new("UIPadding")
-UIPadding.PaddingLeft = UDim.new(0, 10)  -- 10 pixel padding from left
+UIPadding.PaddingLeft = UDim.new(0, 18)  -- 10 pixel padding from left
 UIPadding.PaddingRight = UDim.new(0, 10) -- 10 pixel padding from right
 UIPadding.Parent = YouTubeLabel
 
