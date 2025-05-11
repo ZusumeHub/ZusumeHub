@@ -578,7 +578,7 @@ local locateBondCheckbox, locateBondCheckboxMethods = TeleportGUILibrary.createC
             --============== FUNGSI UTAMA ==============
             local function updateDisplay()
                 counterLabel.Text = string.format(
-                    "Total Bonds: %d\nUnique Positions: %d",
+                    "Total Items: %d\nBonds Founded: %d",
                     _G.savedBondData.allBonds,
                     _G.savedBondData.uniquePositions
                 )
@@ -640,7 +640,7 @@ local locateBondCheckbox, locateBondCheckboxMethods = TeleportGUILibrary.createC
                 if not success then
                     statusLabel.Text = "Error during movement: " .. tostring(err)
                 else
-                    statusLabel.Text = "Scan Complete! Controls restored."
+                    statusLabel.Text = "Scan Complete!."
                 end
             end
 
@@ -1166,6 +1166,26 @@ i()
         end
     end
 )
+
+local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Instruction! ~~~~~~~~~~~~~~~~", positionY)
+positionY = positionY + 30
+
+-- Create instructions text label
+local instructions = Instance.new("TextLabel")
+instructions.Name = "InstructionsText"
+instructions.Size = UDim2.new(0.9, 0, 0, 60)
+instructions.Position = UDim2.new(0.05, 0, 0, positionY)
+instructions.BackgroundTransparency = 1
+instructions.TextColor3 = Color3.fromRGB(200, 200, 200)
+instructions.TextSize = 14
+instructions.Font = Enum.Font.SourceSans
+instructions.TextWrapped = true
+instructions.TextXAlignment = Enum.TextXAlignment.Left
+instructions.Text = "1. Click Locate Bond First!\n2. If the 'AutoShare Bond' Not Working, Try to Reactive then Jump\n3. Dont Click Anything If Its Working! Wait Until Finish\n4. Dont use Tesla TP after using AutoShare Bond"
+instructions.Parent = TeleportGUILibrary.ContentFrame
+instructions.ZIndex = 5
+
+positionY = positionY + 83
 
 positionY = positionY + 35
 local sectionLabel, separator = TeleportGUILibrary.createSection("Train Color", positionY)
