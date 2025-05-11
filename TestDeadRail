@@ -1167,6 +1167,7 @@ i()
     end
 )
 
+positionY = positionY + 35
 local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Instruction! ~~~~~~~~~~~~~~~~", positionY)
 positionY = positionY + 30
 
@@ -1181,13 +1182,12 @@ instructions.TextSize = 14
 instructions.Font = Enum.Font.SourceSans
 instructions.TextWrapped = true
 instructions.TextXAlignment = Enum.TextXAlignment.Left
-instructions.Text = "1. Click Locate Bond First!\n2. If the 'AutoShare Bond' Not Working, Try to Reactive then Jump\n3. Dont Click Anything If Its Working! Wait Until Finish\n4. Dont use Tesla TP after using AutoShare Bond"
+instructions.Text = "1. Click Locate Bond First!\n2. If the 'AutoShare Bond' Not Working, Try to Reactive then Jump\n3. Dont Click Anything If Work! Wait till Finish\n4. Dont use Tesla TP after using AutoShare Bond"
 instructions.Parent = TeleportGUILibrary.ContentFrame
 instructions.ZIndex = 5
 
 positionY = positionY + 83
 
-positionY = positionY + 35
 local sectionLabel, separator = TeleportGUILibrary.createSection("Train Color", positionY)
 positionY = positionY + 30
 
