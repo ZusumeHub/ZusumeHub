@@ -1,0 +1,2925 @@
+-- Load the TeleportGUILibrary
+local TeleportGUILibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/ZusumeHub/ZusumeHub/refs/heads/main/NewLibraryUI3"))()
+
+-- Set the topbar title
+local TopBar = TeleportGUILibrary.ContentFrame.Parent.Parent:FindFirstChild("TopBar")
+if TopBar then
+    local Title = TopBar:FindFirstChild("Title")
+    if Title then
+        Title.Text = "Dead Rails v2"
+    end
+end
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Modify the dropdown creation to ensure high ZIndex for the menu container
+local originalCreateDropdown = TeleportGUILibrary.createDropdown
+TeleportGUILibrary.createDropdown = function(name, labelText, options, defaultOption, position, parent, callback)
+    local dropdownContainer, methods = originalCreateDropdown(name, labelText, options, defaultOption, position, parent, callback)
+    dropdownContainer.ZIndex = 10 -- Ensure the dropdown itself has a base ZIndex
+    local dropdownBG = dropdownContainer:FindFirstChild("Background", true)
+    if dropdownBG then
+        dropdownBG.ZIndex = 11
+        local menuContainer = dropdownBG:FindFirstChild("MenuContainer")
+        if menuContainer then
+            menuContainer.ZIndex = 20 -- High ZIndex for the menu
+            local optionsScrollFrame = menuContainer:FindFirstChild("OptionsScrollFrame")
+            if optionsScrollFrame then
+                optionsScrollFrame.ZIndex = 21
+                for _, child in pairs(optionsScrollFrame:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child.ZIndex = 22
+                    end
+                end
+            end
+        end
+    end
+    return dropdownContainer, methods
+end
+
+-- Table to store saved sizes and track if an option's size has been saved
+local savedSizes = {}
+local hasSavedSize = {}
+
+-- ESP System
+local ESPEnabled = false
+local BondESPEnabled = false
+local PlayerESPEnabled = false
+local ZombieHighlightEnabled = false
+
+local ESPFolder = Instance.new("Folder")
+ESPFolder.Name = "ItemESPFolder"
+ESPFolder.Parent = game.CoreGui
+
+local BondESPFolder = Instance.new("Folder")
+BondESPFolder.Name = "BondESPFolder"
+BondESPFolder.Parent = game.CoreGui
+
+local PlayerESPFolder = Instance.new("Folder")
+PlayerESPFolder.Name = "PlayerESPFolder"
+PlayerESPFolder.Parent = game.CoreGui
+
+-- Function to create ESP for an item
+local function createItemESP(item)
+    -- Skip if it's not a Model, if it has a Humanoid, or if it's a Bond
+    if not item:IsA("Model") or item:FindFirstChildOfClass("Humanoid") or item.Name == "Bond" then
+        return
+    end
+    
+    -- Create BillboardGui for the item
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "ESP_" .. item.Name
+    billboardGui.AlwaysOnTop = true
+    billboardGui.Size = UDim2.new(0, 200, 0, 50)
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+    billboardGui.Parent = ESPFolder
+    
+    -- Create text label
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "ItemName"
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 16
+    textLabel.Parent = billboardGui
+    
+    -- Create the connection to update position and distance
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not item or not item:IsDescendantOf(workspace) then
+            if billboardGui and billboardGui.Parent then
+                billboardGui:Destroy()
+            end
+            if connection then
+                connection:Disconnect()
+            end
+            return
+        end
+        
+        local itemPosition
+        if item:IsA("Model") and item.PrimaryPart then
+            itemPosition = item.PrimaryPart.Position
+        else
+            -- Get the center position of the item by averaging all part positions
+            local parts = {}
+            for _, child in pairs(item:GetDescendants()) do
+                if child:IsA("BasePart") then
+                    table.insert(parts, child)
+                end
+            end
+            
+            if #parts > 0 then
+                local sum = Vector3.new(0, 0, 0)
+                for _, part in pairs(parts) do
+                    sum = sum + part.Position
+                end
+                itemPosition = sum / #parts
+            else
+                -- No parts found, use item's position if it's a BasePart
+                if item:IsA("BasePart") then
+                    itemPosition = item.Position
+                else
+                    -- Can't determine position, remove the ESP
+                    billboardGui:Destroy()
+                    connection:Disconnect()
+                    return
+                end
+            end
+        end
+        
+        -- Update the ESP position
+        billboardGui.Adornee = item.PrimaryPart or item:FindFirstChildOfClass("BasePart") or item
+        
+        -- Calculate distance from player
+        local character = LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local distance = (character.HumanoidRootPart.Position - itemPosition).Magnitude
+            local formattedDistance = math.floor(distance * 10) / 10
+            textLabel.Text = item.Name .. " [" .. formattedDistance .. "m]"
+        else
+            textLabel.Text = item.Name
+        end
+    end)
+    
+    return billboardGui
+end
+
+-- Function to create ESP for Bond
+local function createBondESP(bondItem)
+    if not bondItem or bondItem.Name ~= "Bond" then
+        return
+    end
+    
+    -- Create BillboardGui for Bond
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "ESP_Bond"
+    billboardGui.AlwaysOnTop = true
+    billboardGui.Size = UDim2.new(0, 200, 0, 50)
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+    billboardGui.Parent = BondESPFolder
+    
+    -- Create text label
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = "BondLabel"
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = Color3.fromRGB(0, 255, 255) -- Cyan color for Bond
+    textLabel.TextStrokeTransparency = 0.5
+    textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 18
+    textLabel.Parent = billboardGui
+    
+    -- Create the connection to update position and distance
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not bondItem or not bondItem:IsDescendantOf(workspace) then
+            if billboardGui and billboardGui.Parent then
+                billboardGui:Destroy()
+            end
+            if connection then
+                connection:Disconnect()
+            end
+            return
+        end
+        
+        local bondPart = bondItem:FindFirstChild("Part")
+        if not bondPart then
+            billboardGui:Destroy()
+            connection:Disconnect()
+            return
+        end
+        
+        -- Update the ESP position
+        billboardGui.Adornee = bondPart
+        
+        -- Calculate distance from player
+        local character = LocalPlayer.Character
+        if character and character:FindFirstChild("HumanoidRootPart") then
+            local distance = (character.HumanoidRootPart.Position - bondPart.Position).Magnitude
+            local formattedDistance = math.floor(distance * 10) / 10
+            textLabel.Text = "Bond [" .. formattedDistance .. "m]"
+        else
+            textLabel.Text = "Bond"
+        end
+    end)
+    
+    return billboardGui
+end
+
+-- Function to create ESP for Players
+local function createPlayerESP(player)
+    if player == LocalPlayer then return end
+    
+    local playerESP = Instance.new("BillboardGui")
+    playerESP.Name = "ESP_" .. player.Name
+    playerESP.AlwaysOnTop = true
+    playerESP.Size = UDim2.new(0, 200, 0, 50)
+    playerESP.StudsOffset = Vector3.new(0, 3, 0)
+    playerESP.Parent = PlayerESPFolder
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "PlayerName"
+    nameLabel.Size = UDim2.new(1, 0, 1, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = Color3.fromRGB(255, 0, 0) -- Red for players
+    nameLabel.TextStrokeTransparency = 0.5
+    nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 16
+    nameLabel.Parent = playerESP
+    
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        local character = player.Character
+        if not character then
+            playerESP.Enabled = false
+            return
+        end
+        
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        if not humanoidRootPart then
+            playerESP.Enabled = false
+            return
+        end
+        
+        playerESP.Enabled = true
+        playerESP.Adornee = humanoidRootPart
+        
+        -- Calculate distance to player
+        local localCharacter = LocalPlayer.Character
+        if localCharacter and localCharacter:FindFirstChild("HumanoidRootPart") then
+            local distance = (localCharacter.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
+            local formattedDistance = math.floor(distance * 10) / 10
+            nameLabel.Text = player.Name .. " [" .. formattedDistance .. "m]"
+        else
+            nameLabel.Text = player.Name
+        end
+    end)
+    
+    -- Clean up when player leaves
+    player.AncestryChanged:Connect(function(_, parent)
+        if parent == nil then
+            playerESP:Destroy()
+            connection:Disconnect()
+        end
+    end)
+    
+    return playerESP
+end
+
+-- Function to highlight the nearest zombie
+local function updateNearestZombieHighlight()
+    ZombieHighlightFolder:ClearAllChildren()
+    
+    if not ZombieHighlightEnabled then return end
+    
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local playerPosition = character.HumanoidRootPart.Position
+    local nearestZombie = nil
+    local nearestDistance = math.huge
+    
+    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+    if not runtimeItems then return end
+    
+    -- Find all zombies (models with humanoids)
+    for _, item in pairs(runtimeItems:GetChildren()) do
+        if item:IsA("Model") and item:FindFirstChildOfClass("Humanoid") then
+            local zombieRootPart = item:FindFirstChild("HumanoidRootPart")
+            if zombieRootPart then
+                local distance = (playerPosition - zombieRootPart.Position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestZombie = item
+                end
+            end
+        end
+    end
+    
+    if not nearestZombie then return end
+    
+    -- Create highlight for the nearest zombie
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ZombieHighlight"
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.FillColor = Color3.fromRGB(255, 0, 0)
+    highlight.FillTransparency = 0.5
+    highlight.OutlineColor = Color3.fromRGB(255, 0, 0)
+    highlight.OutlineTransparency = 0
+    highlight.Adornee = nearestZombie
+    highlight.Parent = ZombieHighlightFolder
+end
+
+-- Function to update ESP for all items in RuntimeItems
+local function updateAllESP()
+    -- Clear existing ESP
+    ESPFolder:ClearAllChildren()
+    
+    if not ESPEnabled then return end
+    
+    -- Check if RuntimeItems exists
+    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+    if not runtimeItems then
+        TeleportGUILibrary.createNotification("RuntimeItems folder not found!", "error")
+        return
+    end
+    
+    -- Create ESP for each item in RuntimeItems (except Bond)
+    for _, item in pairs(runtimeItems:GetChildren()) do
+        if item.Name ~= "Bond" then
+            createItemESP(item)
+        end
+    end
+    
+    -- Check if Ore folder exists and create ESP for ore models
+    local oreFolder = workspace:FindFirstChild("Ore")
+    if oreFolder then
+        for _, ore in pairs(oreFolder:GetChildren()) do
+            if ore:IsA("Model") then
+                createItemESP(ore)
+            end
+        end
+    end
+    
+    -- Listen for new items being added
+    local itemAddedConnection
+    itemAddedConnection = runtimeItems.ChildAdded:Connect(function(newItem)
+        if ESPEnabled and newItem.Name ~= "Bond" then
+            wait(0.1) -- Small delay to let the item initialize
+            createItemESP(newItem)
+        else
+            itemAddedConnection:Disconnect()
+        end
+    end)
+end
+
+-- Function to update Bond ESP
+local function updateBondESP()
+    -- Clear existing Bond ESP
+    BondESPFolder:ClearAllChildren()
+    
+    if not BondESPEnabled then return end
+    
+    -- Check if RuntimeItems exists and has Bond
+    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+    if not runtimeItems then
+        TeleportGUILibrary.createNotification("RuntimeItems folder not found!", "error")
+        return
+    end
+    
+    local bond = runtimeItems:FindFirstChild("Bond")
+    if bond then
+        createBondESP(bond)
+    end
+    
+    -- Listen for Bond being added
+    local bondAddedConnection
+    bondAddedConnection = runtimeItems.ChildAdded:Connect(function(newItem)
+        if BondESPEnabled and newItem.Name == "Bond" then
+            wait(0.1)
+            createBondESP(newItem)
+        else
+            bondAddedConnection:Disconnect()
+        end
+    end)
+end
+
+-- Function to update Player ESP
+local function updatePlayerESP()
+    PlayerESPFolder:ClearAllChildren()
+    
+    if not PlayerESPEnabled then return end
+    
+    -- Create ESP for all current players
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            createPlayerESP(player)
+        end
+    end
+    
+    -- Listen for new players
+    local playerAddedConnection
+    playerAddedConnection = Players.PlayerAdded:Connect(function(player)
+        if PlayerESPEnabled and player ~= LocalPlayer then
+            createPlayerESP(player)
+        else
+            playerAddedConnection:Disconnect()
+        end
+    end)
+end
+
+-- Train Color Section
+local positionY = 10
+local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Update Logs v2", positionY)
+positionY = positionY + 30
+
+-- Create instructions text label
+local instructions = Instance.new("TextLabel")
+instructions.Name = "InstructionsText"
+instructions.Size = UDim2.new(0.9, 0, 0, 60)
+instructions.Position = UDim2.new(0.05, 0, 0, positionY)
+instructions.BackgroundTransparency = 1
+instructions.TextColor3 = Color3.fromRGB(200, 200, 200)
+instructions.TextSize = 14
+instructions.Font = Enum.Font.SourceSans
+instructions.TextWrapped = true
+instructions.TextXAlignment = Enum.TextXAlignment.Left
+instructions.Text = "1. Added ShareBond Features"
+instructions.Parent = TeleportGUILibrary.ContentFrame
+instructions.ZIndex = 5
+
+positionY = positionY + 21
+
+local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Sharebond Features", positionY)
+positionY = positionY + 30
+
+-- Create the new Locate Bond toggle checkbox
+local locateBondCheckbox, locateBondCheckboxMethods = TeleportGUILibrary.createCheckbox(
+    "LocateBond",
+    "Locate Bond",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(state)
+        if state then
+            -- Enable Locate Bond functionality
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Locate Bond",
+                Text = "Enabled - Starting scan",
+                Duration = 3
+            })
+            
+            -- Run the full Locate Bond code
+            local player = game.Players.LocalPlayer
+            local RunService = game:GetService("RunService")
+
+            --============== KONFIGURASI ==============
+            local DESTINATION = Vector3.new(-424.447, 26.055, -49040.234)
+            local DURATION = 20
+            local POSITION_TOLERANCE = 0.5
+
+            --============== SISTEM PENYIMPANAN ==============
+            _G.savedBondData = {
+                positions = {},    -- Untuk teleportasi (disimpan sesuai urutan ditemukan)
+                allBonds = 0,      -- Total semua Bond terdeteksi
+                uniquePositions = 0 -- Posisi unik
+            }
+
+            local positionRegistry = {}
+
+            local function getPositionKey(pos)
+                return math.floor(pos.X/POSITION_TOLERANCE)..":"..
+                       math.floor(pos.Y/POSITION_TOLERANCE)..":"..
+                       math.floor(pos.Z/POSITION_TOLERANCE)
+            end
+
+            local function saveBond(bondPart)
+                _G.savedBondData.allBonds = _G.savedBondData.allBonds + 1
+                
+                local posKey = getPositionKey(bondPart.Position)
+                if not positionRegistry[posKey] then
+                    positionRegistry[posKey] = true
+                    table.insert(_G.savedBondData.positions, bondPart.Position)
+                    _G.savedBondData.uniquePositions = _G.savedBondData.uniquePositions + 1
+                    return true
+                end
+                return false
+            end
+
+            local function deepScan()
+                local bondRoot = workspace:FindFirstChild("RuntimeItems")
+                if not bondRoot then return 0 end
+                
+                local newUniques = 0
+                local function scanRecursive(parent)
+                    -- Iterate through children in order
+                    for _, item in ipairs(parent:GetChildren()) do
+                        if item.Name == "Bond" then
+                            local part = item:FindFirstChildWhichIsA("BasePart")
+                            if part and saveBond(part) then
+                                newUniques = newUniques + 1
+                            end
+                        elseif item:IsA("Folder") or item:IsA("Model") then
+                            -- Recursively scan children while maintaining order
+                            scanRecursive(item)
+                        end
+                    end
+                end
+                
+                -- Start scanning from the root
+                scanRecursive(bondRoot)
+                return newUniques
+            end
+
+            --============== SIMPLE UI DISPLAY ==============
+            local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+            screenGui.Name = "BondMasterTracker"
+            screenGui.ResetOnSpawn = false
+
+            local mainFrame = Instance.new("Frame", screenGui)
+            mainFrame.Size = UDim2.new(0, 160, 0, 110)
+            mainFrame.Position = UDim2.new(0.5, -80, 0.5, -55)
+            mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+            mainFrame.Active = true
+            mainFrame.Draggable = true
+
+            -- Close Button
+            local closeButton = Instance.new("TextButton", mainFrame)
+            closeButton.Size = UDim2.new(0, 20, 0, 20)
+            closeButton.Position = UDim2.new(1, -20, 0, 0)
+            closeButton.Text = "X"
+            closeButton.Font = Enum.Font.GothamBold
+            closeButton.TextColor3 = Color3.new(1, 1, 1)
+            closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+            closeButton.MouseButton1Click:Connect(function()
+                screenGui:Destroy()
+            end)
+
+            -- Judul
+            local title = Instance.new("TextLabel", mainFrame)
+            title.Size = UDim2.new(1, -20, 0, 20)
+            title.Position = UDim2.new(0, 10, 0, 0)
+            title.Text = "BOND TRACKER"
+            title.Font = Enum.Font.GothamBlack
+            title.TextSize = 14
+            title.TextColor3 = Color3.new(1, 1, 1)
+            title.BackgroundTransparency = 1
+            title.TextXAlignment = Enum.TextXAlignment.Left
+
+            -- Counter Display
+            local counterLabel = Instance.new("TextLabel", mainFrame)
+            counterLabel.Size = UDim2.new(1, -20, 1, -30)
+            counterLabel.Position = UDim2.new(0, 10, 0, 30)
+            counterLabel.Text = "Scanning..."
+            counterLabel.Font = Enum.Font.GothamSemibold
+            counterLabel.TextSize = 16
+            counterLabel.TextColor3 = Color3.new(0.8, 0.8, 1)
+            counterLabel.BackgroundTransparency = 1
+            counterLabel.TextXAlignment = Enum.TextXAlignment.Left
+            counterLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+            -- Status
+            local statusLabel = Instance.new("TextLabel", mainFrame)
+            statusLabel.Size = UDim2.new(1, -20, 0, 20)
+            statusLabel.Position = UDim2.new(0, 10, 1, -20)
+            statusLabel.Font = Enum.Font.Gotham
+            statusLabel.TextSize = 12
+            statusLabel.TextColor3 = Color3.new(1, 1, 1)
+            statusLabel.BackgroundTransparency = 1
+            statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+            --============== FUNGSI UTAMA ==============
+            local function updateDisplay()
+                counterLabel.Text = string.format(
+                    "Total Bonds: %d\nUnique Positions: %d",
+                    _G.savedBondData.allBonds,
+                    _G.savedBondData.uniquePositions
+                )
+            end
+
+            --============== SISTEM SCANNING ==============
+            local function controlledMovement()
+                local char = player.Character or player.CharacterAdded:Wait()
+                local hrp = char:WaitForChild("HumanoidRootPart")
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                
+                if not humanoid or not hrp then
+                    statusLabel.Text = "Character components missing!"
+                    return
+                end
+
+                -- Simpan state awal untuk dikembalikan nanti
+                local originalStates = {}
+                for _, state in pairs(Enum.HumanoidStateType:GetEnumItems()) do
+                    originalStates[state] = humanoid:GetStateEnabled(state)
+                end
+
+                -- Lock controls
+                humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+                for _, state in pairs(Enum.HumanoidStateType:GetEnumItems()) do
+                    humanoid:SetStateEnabled(state, false)
+                end
+                
+                local startPos = hrp.Position
+                local startTime = os.clock()
+                
+                local success, err = pcall(function()
+                    while os.clock() - startTime < DURATION do
+                        local progress = (os.clock() - startTime) / DURATION
+                        hrp.CFrame = CFrame.new(startPos:Lerp(DESTINATION, progress))
+                        
+                        -- Scan setiap 1 detik
+                        if os.clock() % 1 < 0.03 then
+                            deepScan()
+                            updateDisplay()
+                        end
+                        
+                        RunService.Heartbeat:Wait()
+                    end
+                end)
+
+                -- Kembalikan ke state semula
+                for state, enabled in pairs(originalStates) do
+                    humanoid:SetStateEnabled(state, enabled)
+                end
+
+                -- Aktifkan kembali physics dan reset state
+                humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                
+                -- Final scan
+                deepScan()
+                updateDisplay()
+                
+                if not success then
+                    statusLabel.Text = "Error during movement: " .. tostring(err)
+                else
+                    statusLabel.Text = "Scan Complete! Controls restored."
+                end
+            end
+
+            --============== INISIALISASI ==============
+            player.CharacterAdded:Connect(function()
+                task.wait(2)
+                controlledMovement()
+            end)
+
+            if player.Character then
+                task.spawn(controlledMovement)
+            else
+                updateDisplay()
+            end
+            
+            -- Store the screenGui in the checkbox methods so we can remove it later
+            locateBondCheckboxMethods.screenGui = screenGui
+        else
+            -- Disable Locate Bond functionality
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Locate Bond",
+                Text = "Disabled",
+                Duration = 3
+            })
+            
+            -- Remove the UI if it exists
+            if locateBondCheckboxMethods.screenGui then
+                locateBondCheckboxMethods.screenGui:Destroy()
+                locateBondCheckboxMethods.screenGui = nil
+            end
+        end
+    end
+)
+
+-- Add more spacing for the new toggle
+positionY = positionY + 35
+
+local autoBringCheckbox, autoBringCheckboxMethods = TeleportGUILibrary.createCheckbox(
+    "AutoBringBond",
+    "AutoBring Bond",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(state)
+        if state then
+            -- Run the auto bring script when enabled
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Script made by mrpopcat14",
+                Text = "Enjoy the script :)",
+                Duration = 5
+            })
+            
+            local p,g,l=game:GetService("Players"),game:GetService("RunService"),game.Players.LocalPlayer
+local c=l.Character or l.CharacterAdded:Wait()
+local h=c:WaitForChild("Humanoid")
+local r=c:WaitForChild("HumanoidRootPart")
+local t,b,d,n,s=false,nil,nil,nil,0
+local currentSeat = nil -- Track current vehicle seat
+local x=Vector3.new(-424.39,27.5,-49040.54)
+local finalPosition = Vector3.new(-424.39,37.5,-49040.54) -- Position A for seat teleportation
+local teleportInProgress = false
+local teleportRetryCount = 0
+local maxRetries = 3
+local teleportSuccess = false
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local cameraLockEnabled = false -- Flag to control camera lock
+local cameraNeedsReset = false -- Flag to track if we need to reset the camera
+
+local function j()
+    for _,o in ipairs(workspace:GetDescendants()) do
+        if(o:IsA("Model")or o:IsA("BasePart"))and o.Name:lower():find("tesla")then
+            local q=o:IsA("Model")and(o.PrimaryPart or o:FindFirstChildWhichIsA("BasePart"))or o
+            if q then return q end
+        end
+    end
+end
+
+local function k()
+    for _,o in ipairs(workspace:GetDescendants()) do
+        if o.Name:lower():find("brainjar")or o.Name:lower():find("jar")then
+            local q=o:IsA("Model")and(o.PrimaryPart or o:FindFirstChildWhichIsA("BasePart"))or o
+            if q then return q end
+        end
+    end
+end
+
+local function m(f)
+    if d then d:Disconnect() end
+    local u=r.Position
+    s=tick()
+    t=true
+    d=g.Heartbeat:Connect(function()
+        if h.Sit or h.SeatPart then
+            if d then d:Disconnect() end
+            t=false
+            return
+        end
+        local e=math.min(1,(tick()-s)/2)
+        local v=u:Lerp(f.Position,e)
+        r.CFrame=CFrame.new(v)*(f-f.Position)
+        if e>=1 then
+            if d then d:Disconnect() end
+            t=false
+        end
+    end)
+end
+
+-- Function to handle teleport failure and retry
+local function handleTeleportFailure()
+    if teleportRetryCount >= maxRetries then
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "Teleport Failed",
+            Text = "Max retries reached. Try again manually.",
+            Duration = 5
+        })
+        teleportRetryCount = 0
+        return
+    end
+    
+    teleportRetryCount = teleportRetryCount + 1
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Teleport Failed",
+        Text = "Retrying... Attempt " .. teleportRetryCount,
+        Duration = 3
+    })
+    task.spawn(function()
+        i()
+    end)
+    task.wait(2)
+    -- Force unsit the player
+    if h.Sit then
+        h.Sit = false
+    end
+end
+
+-- New function to lock camera to VehicleSeat position
+local function lockCameraToVehicleSeat(vehicleSeat)
+    if not vehicleSeat or not vehicleSeat.Parent then return end
+    
+    local camera = workspace.CurrentCamera
+    cameraLockEnabled = true
+    cameraNeedsReset = true
+    
+    -- Store original camera type to restore later
+    local originalCameraType = camera.CameraType
+    
+    -- Set camera to scriptable mode
+    camera.CameraType = Enum.CameraType.Scriptable
+    
+    -- Create a connection to update camera each frame while lock is enabled
+    local cameraConnection = g.RenderStepped:Connect(function()
+        if not cameraLockEnabled or not vehicleSeat or not vehicleSeat.Parent then
+            if cameraConnection then
+                cameraConnection:Disconnect()
+                if cameraNeedsReset then
+                    camera.CameraType = originalCameraType
+                    cameraNeedsReset = false
+                end
+            end
+            return
+        end
+        
+        -- Position camera 5 studs behind and 2 studs above the seat
+        local seatCFrame = vehicleSeat.CFrame
+        local cameraPosition = seatCFrame.Position - (seatCFrame.LookVector * 10) + (seatCFrame.UpVector * 2)
+        
+        -- Set camera to look at the seat
+        camera.CFrame = CFrame.new(cameraPosition, seatCFrame.Position)
+    end)
+    
+    -- Return a function to disable the camera lock
+    return function()
+        cameraLockEnabled = false
+        if cameraConnection then
+            cameraConnection:Disconnect()
+        end
+        if cameraNeedsReset then
+            camera.CameraType = originalCameraType
+            cameraNeedsReset = false
+        end
+    end
+end
+
+-- Modified function to teleport seat to final position with a single tween
+local function teleportSeat(seat)
+    if not seat then return end
+    local startPosition = seat.Position
+    local startTime = tick()
+    teleportInProgress = true
+    teleportSuccess = false
+    
+    -- Record initial position for later comparison
+    local initialPositionCheck = startPosition
+    
+    -- Set up NoClip for VehicleSeat during teleportation
+    local originalSeatCanCollide = seat.CanCollide
+    local originalAnchored = seat.Anchored
+    local originalCollisionGroupId = seat.CollisionGroupId
+    
+    -- Apply NoClip properties
+    seat.CanCollide = false
+    seat.Anchored = false -- Don't anchor, let tween handle movement
+    seat.CollisionGroupId = 32 -- Use a CollisionGroup that doesn't collide with anything
+    
+    -- Create a TweenService tween instead of using Heartbeat
+    local TweenService = game:GetService("TweenService")
+    
+    -- Create tween info - 2 seconds, smooth transition
+    local tweenInfo = TweenInfo.new(
+        2,                 -- Time (seconds)
+        Enum.EasingStyle.Quad,    -- Smooth easing style
+        Enum.EasingDirection.Out, -- Easing direction
+        0,                 -- Repeat count (0 = no repeat)
+        false,             -- Reverse (false = no reverse)
+        0                  -- Delay time
+    )
+    
+    -- Create the tween properties
+    local tweenProperties = {
+        CFrame = CFrame.new(finalPosition)
+    }
+    
+    -- Create and play the tween
+    local seatTween = TweenService:Create(seat, tweenInfo, tweenProperties)
+    
+    -- Connect to tween completion event
+    seatTween.Completed:Connect(function()
+        -- Reset velocity after tween completes to prevent drifting
+        seat.Velocity = Vector3.new(0, 0, 0)
+        seat.RotVelocity = Vector3.new(0, 0, 0)
+    end)
+    
+    -- Start the tween
+    seatTween:Play()
+    
+    -- Success detection on a separate thread
+    task.spawn(function()
+        -- Wait for the tween to complete
+        task.wait(4)
+        
+        -- First success check - did we move far from starting position?
+        if seat and seat.Parent then
+            local distanceFromStart = (seat.Position - initialPositionCheck).Magnitude
+            
+            -- If seat moved significantly from start position, consider it a success
+            if distanceFromStart > 20 then
+                teleportSuccess = true
+                teleportInProgress = false
+                teleportRetryCount = 0 -- Reset retry count on success
+                game.StarterGui:SetCore("SendNotification", {
+                    Title = "Teleport Success",
+                    Text = "Arrived at destination",
+                    Duration = 3
+                })
+                
+                -- After successful teleport to finalPosition
+                task.wait(0.5)
+                
+                -- Function to find ConductorSeat.VehicleSeat
+                local function findConductorSeat()
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj.Name == "VehicleSeat" and obj.Parent and obj.Parent.Name == "ConductorSeat" then
+                            return obj
+                        end
+                    end
+                    return nil
+                end
+                
+                -- Inside teleportSeat function, replace the bond interaction loop
+                -- Teleport to each bond position from _G.savedBondData.positions
+                if _G.savedBondData and _G.savedBondData.positions then
+                    for _, bondPos in ipairs(_G.savedBondData.positions) do
+                        if seat and seat.Parent and h.Sit then
+                            -- Create a notification for each bond interaction
+                            game.StarterGui:SetCore("SendNotification", {
+                                Title = "Bond Interaction",
+                                Text = "Attempting to interact...",
+                                Duration = 2
+                            })
+                            
+                            -- Position Y+5 above bond, no rotation to simplify interaction
+                            local targetPosition = bondPos + Vector3.new(5, 0, 5)
+                            local targetCFrame = CFrame.new(targetPosition) -- Removed 180° rotation
+                            
+                            -- Apply NoClip initially
+                            local originalSeatCanCollide = seat.CanCollide
+                            local originalAnchored = seat.Anchored
+                            local originalCollisionGroupId = seat.CollisionGroupId
+                            seat.CanCollide = false
+                            seat.Anchored = true
+                            seat.CollisionGroupId = 32
+                            
+                            -- Teleport seat to position
+                            seat.CFrame = targetCFrame
+                            seat.Velocity = Vector3.new(0, 0, 0)
+                            seat.RotVelocity = Vector3.new(0, 0, 0)
+                            
+                            -- Wait to stabilize position
+                            task.wait(0.3)
+                            
+                            -- Disable NoClip temporarily for interaction
+                            seat.CanCollide = true
+                            seat.Anchored = false
+                            seat.CollisionGroupId = originalCollisionGroupId
+                            
+                            -- Set camera to look at bond
+                            local camera = workspace.CurrentCamera
+                            camera.CameraType = Enum.CameraType.Scriptable
+                            local cameraPosition = bondPos + Vector3.new(0, 2, 0)
+                            local cameraOffset = (seat.Position - cameraPosition).Unit * 2
+                            camera.CFrame = CFrame.new(cameraPosition + cameraOffset, bondPos)
+                            
+                            -- Press F key to interact with bond
+                            task.wait(0.7) -- Additional wait for game to register position
+                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+                            task.wait(0.2) -- Longer key press duration
+                            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+                            
+                            -- Restore camera immediately after interaction
+                            camera.CameraType = Enum.CameraType.Custom
+                            
+                            -- Wait for interaction to complete
+                            task.wait(0.1)
+                            
+                            -- Re-apply NoClip for next steps
+                            seat.CanCollide = false
+                            seat.CollisionGroupId = 32
+                            
+                            -- After bond interaction, teleport to ConductorSeat.VehicleSeat
+                            local conductorSeat = findConductorSeat()
+                            if conductorSeat and seat and seat.Parent and h.Sit then
+                                -- Get CFrame of ConductorSeat.VehicleSeat
+                                local conductorCFrame = conductorSeat.CFrame
+                                
+                                -- Calculate position 10 studs behind, facing away
+                                local offset = conductorCFrame.LookVector * -10
+                                local targetConductorPosition = conductorCFrame.Position + offset
+                                local targetConductorCFrame = CFrame.new(targetConductorPosition, conductorCFrame.Position)
+                                
+                                -- Teleport seat to the calculated position
+                                seat.CFrame = targetConductorCFrame
+                                seat.Velocity = Vector3.new(0, 0, 0)
+                                seat.RotVelocity = Vector3.new(0, 0, 0)
+                                
+                                -- Apply NoClip during interaction
+                                seat.CanCollide = false
+                                seat.CollisionGroupId = 32
+                                
+                                -- NEW: Lock camera to ConductorSeat.VehicleSeat position before interaction
+                                local disableCameraLock = lockCameraToVehicleSeat(conductorSeat)
+                                game.StarterGui:SetCore("SendNotification", {
+                                    Title = "Camera Lock",
+                                    Text = "Camera locked to conductor seat",
+                                    Duration = 2
+                                })
+                                
+                                -- Send F key event
+                                task.wait(0.5)
+                                seat.CanCollide = true -- Enable collision for interaction
+                                seat.CollisionGroupId = originalCollisionGroupId
+                                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+                                task.wait(0.2)
+                                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+                                
+                                -- Keep camera locked for an additional period so player can see the seat
+                                task.wait(0.1)
+                                
+                                -- Disable camera lock after interaction
+                                disableCameraLock()
+                                game.StarterGui:SetCore("SendNotification", {
+                                    Title = "Camera Lock",
+                                    Text = "Camera lock disabled",
+                                    Duration = 2
+                                })
+                                
+                                -- Restore NoClip
+                                seat.CanCollide = false
+                                seat.CollisionGroupId = 32
+                                
+                                task.wait(0.1)
+                            else
+                                game.StarterGui:SetCore("SendNotification", {
+                                    Title = "ConductorSeat Not Found",
+                                    Text = "Could not find ConductorSeat.VehicleSeat",
+                                    Duration = 3
+                                })
+                            end
+                            
+                            -- Restore original seat properties before next iteration
+                            seat.CanCollide = originalSeatCanCollide
+                            seat.Anchored = originalAnchored
+                            seat.CollisionGroupId = originalCollisionGroupId
+                        end
+                    end
+                else
+                    game.StarterGui:SetCore("SendNotification", {
+                        Title = "No Bond Data",
+                        Text = "No saved bond positions found",
+                        Duration = 3
+                    })
+                end
+                
+                return
+            end
+        end
+        
+        task.wait(1)
+        if not teleportSuccess and teleportInProgress then
+            teleportInProgress = false
+            handleTeleportFailure()
+        end
+    end)
+end
+
+local function w(y)
+    local z,A=nil,math.huge
+    local B=y:IsA("BasePart")and y.Position or y:GetPivot().Position
+    for _,o in pairs(workspace:GetDescendants()) do
+        if o:IsA("Seat")and not o.Occupant then
+            local C=(o.Position-B).Magnitude
+            if C<300 and C<A then
+                A=C
+                z=o
+            end
+        end
+    end
+    if z then
+        r.CFrame=z.CFrame+Vector3.new(0,3,0)
+        task.wait(0.1)
+        z:Sit(h)
+        currentSeat = z
+        task.spawn(function()
+            while currentSeat and currentSeat.Parent and h.Sit do
+                if currentSeat.CanCollide then currentSeat.CanCollide = false end
+                if currentSeat.CollisionGroupId ~= 32 then currentSeat.CollisionGroupId = 32 end
+                task.wait()
+            end
+        end)
+        task.wait(0.5)
+        teleportSeat(z)
+        return true
+    end
+    return false
+end
+
+function i()
+    m(CFrame.new(x))
+    repeat task.wait() until not t
+    while true do
+        if teleportInProgress then
+            task.wait(0.5)
+            continue
+        end
+        if teleportSuccess then
+            task.wait(3)
+            teleportSuccess = false
+        end
+        if h.Sit or h.SeatPart then
+            repeat task.wait(0.5) until not h.Sit and not h.SeatPart
+        end
+        n=j()
+        b=k()or n
+        if not n then
+            task.wait(1)
+            continue
+        end
+        local D=n:IsA("BasePart")and n.CFrame or n:GetPivot()
+        m(D+Vector3.new(0,3,0))
+        repeat task.wait() until not t
+        if w(b) then
+            task.wait(1)
+            break
+        end
+        task.wait(0.2)
+    end
+end
+
+l.CharacterAdded:Connect(function(E)
+    c=E
+    h=E:WaitForChild("Humanoid")
+    r=E:WaitForChild("HumanoidRootPart")
+    if d then d:Disconnect() end
+    t=false
+    teleportInProgress = false
+    teleportSuccess = false
+    teleportRetryCount = 0
+    currentSeat = nil
+    
+    -- Make sure camera lock is disabled when character respawns
+    cameraLockEnabled = false
+    if cameraNeedsReset then
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+        cameraNeedsReset = false
+    end
+end)
+
+g.Heartbeat:Connect(function()
+    if currentSeat and currentSeat.Parent and h and h.Sit then
+        if currentSeat.CanCollide then 
+            currentSeat.CanCollide = false
+        end
+    end
+end)
+
+-- Ensure camera gets reset if the script is stopped or player leaves vehicle
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    -- Reset camera if player presses a key like Spacebar (jumping out)
+    if input.KeyCode == Enum.KeyCode.Space and cameraLockEnabled then
+        cameraLockEnabled = false
+        if cameraNeedsReset then
+            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+            cameraNeedsReset = false
+        end
+    end
+end)
+
+i()
+        else
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "AutoBring Bond",
+                Text = "Disabled",
+                Duration = 3
+            })
+        end
+    end
+)
+
+local sectionLabel, separator = TeleportGUILibrary.createSection("Train Color", positionY)
+positionY = positionY + 30
+
+-- Color Options Dropdown
+local colorOptions = {"Default", "Rainbow", "Gold", "Red", "Blue", "White", "Pink", "Purple"}
+local selectedTrainColor = colorOptions[1]
+local trainDropdown, trainDropdownMethods = TeleportGUILibrary.createDropdown(
+    "TrainColorDropdown",
+    "Select Color",
+    colorOptions,
+    selectedTrainColor,
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(option)
+        selectedTrainColor = option
+        TeleportGUILibrary.createNotification("Selected train color: " .. option, "info")
+    end
+)
+trainDropdown.ZIndex = 50
+local trainDropdownBG = trainDropdown:FindFirstChild("Background", true)
+if trainDropdownBG then
+    trainDropdownBG.ZIndex = 50
+    local menu = trainDropdownBG:FindFirstChild("MenuContainer")
+    if menu then
+        menu.ZIndex = 50
+        local scroll = menu:FindFirstChild("OptionsScrollFrame")
+        if scroll then
+            scroll.ZIndex = 50
+            for _, child in ipairs(scroll:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.ZIndex = 50
+                end
+            end
+        end
+    end
+end
+positionY = positionY + 35
+
+-- Platform Color Dropdown
+local selectedPlatformColor = colorOptions[1]
+local platformDropdown, platformDropdownMethods = TeleportGUILibrary.createDropdown(
+    "PlatformColorDropdown",
+    "Platform Color",
+    colorOptions,
+    selectedPlatformColor,
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(option)
+        selectedPlatformColor = option
+        TeleportGUILibrary.createNotification("Selected platform color: " .. option, "info")
+    end
+)
+platformDropdown.ZIndex = 49
+local platformDropdownBG = platformDropdown:FindFirstChild("Background", true)
+if platformDropdownBG then
+    platformDropdownBG.ZIndex = 49
+    local menu = platformDropdownBG:FindFirstChild("MenuContainer")
+    if menu then
+        menu.ZIndex = 49
+        local scroll = menu:FindFirstChild("OptionsScrollFrame")
+        if scroll then
+            scroll.ZIndex = 49
+            for _, child in ipairs(scroll:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.ZIndex = 49
+                end
+            end
+        end
+    end
+end
+positionY = positionY + 35
+
+-- Apply Color Checkbox
+local checkbox, checkboxMethods = TeleportGUILibrary.createCheckbox(
+    "ApplyColorCheckbox",
+    "Apply Color",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(state)
+        if state then
+            -- Define color values for each option
+            local colors = {
+                Default = Color3.fromRGB(163, 162, 165), -- Light gray (default)
+                Gold = Color3.fromRGB(255, 215, 0),
+                Red = Color3.fromRGB(255, 0, 0),
+                Blue = Color3.fromRGB(0, 0, 255),
+                White = Color3.fromRGB(255, 255, 255),
+                Pink = Color3.fromRGB(255, 105, 180),
+                Purple = Color3.fromRGB(128, 0, 128)
+            }
+            
+            -- Rainbow colors array
+            local rainbowColors = {
+                Color3.fromRGB(255, 0, 0),      -- Red
+                Color3.fromRGB(255, 127, 0),    -- Orange
+                Color3.fromRGB(255, 255, 0),    -- Yellow
+                Color3.fromRGB(0, 255, 0),      -- Green
+                Color3.fromRGB(0, 0, 255),      -- Blue
+                Color3.fromRGB(75, 0, 130),     -- Indigo
+                Color3.fromRGB(148, 0, 211)     -- Violet
+            }
+            
+            -- Function to find train models in workspace
+            local function findTrainModels()
+                local trainModels = {}
+                
+                for _, model in ipairs(workspace:GetChildren()) do
+                    -- Check if this is a train model by looking for Visual folder
+                    if model:IsA("Model") and model:FindFirstChild("Visual") then
+                        table.insert(trainModels, model)
+                    end
+                end
+                
+                return trainModels
+            end
+            
+            -- Find all train models
+            local trainModels = findTrainModels()
+            if #trainModels == 0 then
+                TeleportGUILibrary.createNotification("No train models found in the workspace!", "error")
+                return
+            else
+                TeleportGUILibrary.createNotification("Found " .. #trainModels .. " train models", "info")
+            end
+            
+            -- Process each train model
+            for _, trainModel in ipairs(trainModels) do
+                -- Collection for all train parts to color
+                local trainParts = {}
+                
+                -- Check for Visual.Main path
+                if trainModel.Visual:FindFirstChild("Main") then
+                    for _, part in ipairs(trainModel.Visual.Main:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            table.insert(trainParts, part)
+                        end
+                    end
+                end
+                
+                -- Check for direct Part children in Visual folder
+                for _, part in ipairs(trainModel.Visual:GetChildren()) do
+                    if part:IsA("BasePart") and part.Name == "Part" then
+                        table.insert(trainParts, part)
+                    end
+                end
+                
+                -- Check for any folders in Visual that might contain Parts
+                for _, folder in ipairs(trainModel.Visual:GetChildren()) do
+                    if folder:IsA("Folder") then
+                        for _, part in ipairs(folder:GetChildren()) do
+                            if part:IsA("BasePart") and part.Name == "Part" then
+                                table.insert(trainParts, part)
+                            end
+                        end
+                    end
+                end
+                
+                -- Color the train parts based on selectedTrainColor
+                if #trainParts > 0 then
+                    if selectedTrainColor == "Rainbow" then
+                        -- Create rainbow effect for train
+                        for i, part in ipairs(trainParts) do
+                            local colorIndex = (i % #rainbowColors) + 1
+                            part.Color = rainbowColors[colorIndex]
+                        end
+                    else
+                        -- Apply a single color to all train parts
+                        local selectedTrainColorValue = colors[selectedTrainColor]
+                        if selectedTrainColorValue then
+                            for _, part in ipairs(trainParts) do
+                                part.Color = selectedTrainColorValue
+                            end
+                        end
+                    end
+                    TeleportGUILibrary.createNotification("Applied " .. selectedTrainColor .. " color to " .. #trainParts .. " train parts!", "success")
+                else
+                    TeleportGUILibrary.createNotification("No train parts found to color in model: " .. trainModel.Name, "warning")
+                end
+                
+                -- Collection for all platform parts to color
+                local platformParts = {}
+                
+                -- Try multiple possible platform locations
+                if trainModel:FindFirstChild("Platform") then
+                    for _, part in ipairs(trainModel.Platform:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            table.insert(platformParts, part)
+                        end
+                    end
+                elseif trainModel:FindFirstChild("Functional") and trainModel.Functional:FindFirstChild("Platform") then
+                    for _, part in ipairs(trainModel.Functional.Platform:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            table.insert(platformParts, part)
+                        end
+                    end
+                end
+                
+                -- Try to find any other potential platform parts by name pattern matching
+                for _, part in ipairs(trainModel:GetDescendants()) do
+                    if part:IsA("BasePart") and string.find(part.Name:lower(), "platform") then
+                        table.insert(platformParts, part)
+                    end
+                end
+                
+                -- Color the platform parts based on selectedPlatformColor
+                if #platformParts > 0 then
+                    if selectedPlatformColor == "Rainbow" then
+                        -- Create rainbow effect for platform
+                        for i, part in ipairs(platformParts) do
+                            local colorIndex = (i % #rainbowColors) + 1
+                            part.Color = rainbowColors[colorIndex]
+                        end
+                    else
+                        -- Apply a single color to all platform parts
+                        local selectedPlatformColorValue = colors[selectedPlatformColor]
+                        if selectedPlatformColorValue then
+                            for _, part in ipairs(platformParts) do
+                                part.Color = selectedPlatformColorValue
+                            end
+                        end
+                    end
+                    TeleportGUILibrary.createNotification("Applied " .. selectedPlatformColor .. " color to " .. #platformParts .. " platform parts!", "success")
+                else
+                    TeleportGUILibrary.createNotification("No platform parts found to color in model: " .. trainModel.Name, "warning")
+                end
+            end
+            
+            TeleportGUILibrary.createNotification("Color application complete!", "success")
+        end
+    end
+)
+checkbox.ZIndex = 5
+positionY = positionY + 35
+
+-- Mob Size Customization Section
+local mobSectionLabel, mobSeparator = TeleportGUILibrary.createSection("Mob Size Customization", positionY)
+positionY = positionY + 30
+
+-- Mob Selection Dropdown
+local mobOptions = {"Default", "City Soldier", "Walker Zombie", "Runner Zombie", "WereWolf"}
+local selectedMob = mobOptions[1]
+local mobDropdown, mobDropdownMethods = TeleportGUILibrary.createDropdown(
+    "MobDropdown",
+    "Select Mobs",
+    mobOptions,
+    selectedMob,
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(option)
+        selectedMob = option
+        TeleportGUILibrary.createNotification("Selected mob: " .. option, "info")
+    end
+)
+mobDropdown.ZIndex = 10
+local mobDropdownBG = mobDropdown:FindFirstChild("Background", true)
+if mobDropdownBG then
+    mobDropdownBG.ZIndex = 11
+    local menu = mobDropdownBG:FindFirstChild("MenuContainer")
+    if menu then
+        menu.ZIndex = 20
+        local scroll = menu:FindFirstChild("OptionsScrollFrame")
+        if scroll then
+            scroll.ZIndex = 21
+            for _, child in ipairs(scroll:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.ZIndex = 22
+                end
+            end
+        end
+    end
+end
+positionY = positionY + 35
+
+-- Size Value Input
+local sizeValue = "1"
+local sizeInputBox, sizeInputMethods = TeleportGUILibrary.createTextInput(
+    "SizeInput",
+    "Size Value:",
+    sizeValue,
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(text)
+        sizeValue = text
+        TeleportGUILibrary.createNotification("Size value set to: " .. text, "info")
+    end
+)
+sizeInputBox.ZIndex = 5
+positionY = positionY + 35
+
+-- Initialize duplicate process control
+_G.duplicateRunning = false
+
+-- Function to store original data for a model
+local function storeOriginalData(model)
+    if not _G.originalData then
+        _G.originalData = {}
+    end
+    
+    local modelKey = model:GetFullName()
+    if not _G.originalData[modelKey] then
+        _G.originalData[modelKey] = {
+            Parts = {},
+            Joints = {},
+            PrimaryPart = nil,
+            Scale = 1
+        }
+        
+        -- Store the primary part if available
+        if model.PrimaryPart then
+            _G.originalData[modelKey].PrimaryPart = model.PrimaryPart.Name
+        end
+        
+        -- Store sizes, positions, and CFrames of all body parts
+        for _, part in ipairs(model:GetDescendants()) do
+            if part:IsA("BasePart") then
+                _G.originalData[modelKey].Parts[part.Name] = {
+                    Size = part.Size,
+                    Position = part.Position,
+                    CFrame = part.CFrame,
+                    OriginalCFrame = part.CFrame
+                }
+            elseif part:IsA("Motor6D") then
+                -- Store joint data for proper limb positioning
+                _G.originalData[modelKey].Joints[part.Name] = {
+                    C0 = part.C0,
+                    C1 = part.C1,
+                    Part0 = part.Part0 and part.Part0.Name,
+                    Part1 = part.Part1 and part.Part1.Name
+                }
+            end
+        end
+        
+        -- Store humanoid data
+        local humanoid = model:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            _G.originalData[modelKey].Humanoid = {
+                HipHeight = humanoid.HipHeight,
+                BodyDepthScale = humanoid.BodyDepthScale,
+                BodyHeightScale = humanoid.BodyHeightScale,
+                BodyWidthScale = humanoid.BodyWidthScale,
+                HeadScale = humanoid.HeadScale
+            }
+        end
+    end
+end
+
+-- Function to apply scaling to a model
+local function applyScaling(model, multiplier)
+    local modelKey = model:GetFullName()
+    
+    storeOriginalData(model) -- Make sure original data is stored before scaling
+    
+    if _G.originalData[modelKey] then
+        -- Method 1: Try to use ScaleParts function if available
+        local success = pcall(function()
+            if model:FindFirstChildOfClass("Humanoid") then
+                -- Try to use Roblox's built-in scaling system for R15 rigs
+                local humanoid = model:FindFirstChildOfClass("Humanoid")
+                
+                -- Store reference to original scales
+                local originalData = _G.originalData[modelKey].Humanoid
+                
+                -- Apply scaling to humanoid
+                humanoid.BodyDepthScale = originalData.BodyDepthScale * multiplier
+                humanoid.BodyHeightScale = originalData.BodyHeightScale * multiplier
+                humanoid.BodyWidthScale = originalData.BodyWidthScale * multiplier
+                humanoid.HeadScale = originalData.HeadScale * multiplier
+                
+                -- Directly apply scaling to each part for better control
+                for _, part in ipairs(model:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        if _G.originalData[modelKey].Parts[part.Name] then
+                            local originalSize = _G.originalData[modelKey].Parts[part.Name].Size
+                            part.Size = originalSize * multiplier
+                        end
+                    end
+                end
+            else
+                -- Method 2: Manual scaling for R6 rigs or custom models
+                -- Get the root part as reference
+                local rootPart = model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart
+                
+                if rootPart then
+                    -- Store the original position to return to
+                    local originalPosition = rootPart.Position
+                    
+                    -- Scale each part individually
+                    for _, part in ipairs(model:GetDescendants()) do
+                        if part:IsA("BasePart") and _G.originalData[modelKey].Parts[part.Name] then
+                            local originalData = _G.originalData[modelKey].Parts[part.Name]
+                            
+                            -- Scale the size
+                            part.Size = originalData.Size * multiplier
+                            
+                            -- Calculate offset from root part in original form
+                            local offset = originalData.Position - rootPart.Position
+                            
+                            -- Apply scaled offset for new position
+                            local newPosition = rootPart.Position + (offset * multiplier)
+                            
+                            -- Create new CFrame preserving orientation but with new position
+                            local originalCF = originalData.OriginalCFrame
+                            local originalRot = originalCF - originalCF.Position
+                            local newCF = CFrame.new(newPosition) * originalRot
+                            
+                            -- Apply the new CFrame
+                            part.CFrame = newCF
+                        end
+                    end
+                    
+                    -- Correct Motor6D joints if present
+                    for _, joint in ipairs(model:GetDescendants()) do
+                        if joint:IsA("Motor6D") and _G.originalData[modelKey].Joints[joint.Name] then
+                            local jointData = _G.originalData[modelKey].Joints[joint.Name]
+                            
+                            -- Scale C0 and C1 transformations
+                            -- Only scale the translation part, not the rotation
+                            local newC0 = jointData.C0 * CFrame.new(
+                                (jointData.C0.Position * (multiplier - 1))
+                            )
+                            
+                            local newC1 = jointData.C1 * CFrame.new(
+                                (jointData.C1.Position * (multiplier - 1))
+                            )
+                            
+                            joint.C0 = newC0
+                            joint.C1 = newC1
+                        end
+                    end
+                    
+                    -- Apply scaling to humanoid properties if present
+                    local humanoid = model:FindFirstChildOfClass("Humanoid")
+                    if humanoid and _G.originalData[modelKey].Humanoid then
+                        humanoid.HipHeight = _G.originalData[modelKey].Humanoid.HipHeight * multiplier
+                    end
+                    
+                    -- Update the stored scale factor
+                    _G.originalData[modelKey].Scale = multiplier
+                end
+            end
+        end)
+        
+        if not success then
+            -- Fallback method using Model:ScaleTo if available (only works in newer Roblox versions)
+            pcall(function()
+                if typeof(model.ScaleTo) == "function" then
+                    model:ScaleTo(multiplier)
+                end
+            end)
+        end
+    end
+end
+
+-- Function to reset scaling on a model
+local function resetScaling(model)
+    local modelKey = model:GetFullName()
+    
+    if _G.originalData and _G.originalData[modelKey] then
+        -- Reset the humanoid scales first if available
+        local humanoid = model:FindFirstChildOfClass("Humanoid")
+        if humanoid and _G.originalData[modelKey].Humanoid then
+            humanoid.HipHeight = _G.originalData[modelKey].Humanoid.HipHeight
+            humanoid.BodyDepthScale = _G.originalData[modelKey].Humanoid.BodyDepthScale
+            humanoid.BodyHeightScale = _G.originalData[modelKey].Humanoid.BodyHeightScale
+            humanoid.BodyWidthScale = _G.originalData[modelKey].Humanoid.BodyWidthScale
+            humanoid.HeadScale = _G.originalData[modelKey].Humanoid.HeadScale
+        end
+        
+        -- Reset all parts to original sizes and positions
+        for _, part in ipairs(model:GetDescendants()) do
+            if part:IsA("BasePart") and _G.originalData[modelKey].Parts[part.Name] then
+                part.Size = _G.originalData[modelKey].Parts[part.Name].Size
+                part.CFrame = _G.originalData[modelKey].Parts[part.Name].OriginalCFrame
+            elseif part:IsA("Motor6D") and _G.originalData[modelKey].Joints[part.Name] then
+                -- Reset joint transformations
+                part.C0 = _G.originalData[modelKey].Joints[part.Name].C0
+                part.C1 = _G.originalData[modelKey].Joints[part.Name].C1
+            end
+        end
+        
+        -- Try using built-in scale reset if available
+        pcall(function()
+            if typeof(model.ScaleTo) == "function" then
+                model:ScaleTo(1)
+            end
+        end)
+        
+        -- Reset the stored scale factor
+        _G.originalData[modelKey].Scale = 1
+    end
+end
+
+-- Function to find all zombie models of specific type in workspace
+local function findModels(modelEndName, includeOriginals, includeDuplicates)
+    local models = {}
+    
+    -- Recursive function to search through workspace
+    local function searchInInstance(instance)
+        if instance.Name == "RuntimeItems" then
+            return -- Skip RuntimeItems
+        end
+        
+        if instance:IsA("Model") then
+            local isDuplicate = string.find(instance.Name, "_Duplicate$")
+            
+            if string.find(instance.Name, modelEndName .. "$") or 
+               (isDuplicate and string.find(instance.Name, modelEndName .. "_Duplicate$")) then
+                
+                if (isDuplicate and includeDuplicates) or 
+                   (not isDuplicate and includeOriginals) then
+                    table.insert(models, instance)
+                end
+            end
+        end
+        
+        for _, child in ipairs(instance:GetChildren()) do
+            searchInInstance(child)
+        end
+    end
+    
+    searchInInstance(workspace)
+    return models
+end
+
+-- Function to get a position in front of the player
+local function getPositionInFrontOfPlayer(distance)
+    -- Get LocalPlayer and character for positioning
+    local player = game.Players.LocalPlayer
+    if not player or not player.Character then
+        return nil
+    end
+    
+    local character = player.Character
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then
+        return nil
+    end
+    
+    -- Calculate position in front of the player
+    local lookDirection = rootPart.CFrame.lookVector
+    local spawnPosition = rootPart.Position + (lookDirection * (distance or 5)) -- Default 5 studs in front
+    
+    return spawnPosition
+end
+
+-- Function to duplicate a model and position it in front of the player
+local function duplicateModel(original)
+    if not original then return nil end
+    
+    -- Clone the model
+    local clone = original:Clone()
+    if not clone then
+        return nil
+    end
+    
+    -- Set a unique name for the clone
+    clone.Name = original.Name .. "_Duplicate"
+    
+    -- Position the clone in front of the player
+    local spawnPosition = getPositionInFrontOfPlayer(5)
+    if not spawnPosition then
+        return nil
+    end
+    
+    local primaryPart = clone.PrimaryPart or clone:FindFirstChildWhichIsA("BasePart")
+    if primaryPart then
+        local originalCFrame = primaryPart.CFrame
+        local positionOffset = spawnPosition - primaryPart.Position
+        
+        -- Move the entire model by adjusting all parts
+        for _, part in ipairs(clone:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CFrame = part.CFrame + positionOffset
+            end
+        end
+    else
+        -- If no primary part, try to position directly
+        if clone:IsA("Model") then
+            pcall(function() 
+                clone:SetPrimaryPartCFrame(CFrame.new(spawnPosition))
+            end)
+        end
+    end
+    
+    -- Parent the clone to the same parent as the original
+    clone.Parent = original.Parent
+    
+    -- If the original has a script, disable it in the clone to prevent conflicts
+    for _, script in ipairs(clone:GetDescendants()) do
+        if script:IsA("Script") or script:IsA("LocalScript") then
+            script.Disabled = true
+        end
+    end
+    
+    -- Also store original data and apply current scaling if applicable
+    storeOriginalData(clone)
+    
+    -- Apply size if we have a size value
+    local sizeNum = tonumber(sizeValue)
+    if sizeNum then
+        applyScaling(clone, sizeNum)
+    end
+    
+    return clone
+end
+
+-- Function to periodically create duplicates
+local function startDuplicateProcess()
+    local duplicateInterval = 1 -- 1 second interval
+    local duplicateCount = 1 -- 1 models per interval
+    
+    -- Check if a process is already running
+    if _G.duplicateCoroutine then
+        coroutine.close(_G.duplicateCoroutine)
+        _G.duplicateCoroutine = nil
+    end
+    
+    -- Start new process
+    _G.duplicateRunning = true
+    _G.duplicateCoroutine = coroutine.create(function()
+        while _G.duplicateRunning do
+            if selectedMob == "City Soldier" then
+                -- Find and duplicate City Soldiers
+                local soldiersFolder = workspace.StartingZone.ActiveSoldiers
+                if soldiersFolder then
+                    local soldiers = {}
+                    for _, soldier in ipairs(soldiersFolder:GetChildren()) do
+                        if soldier.Name == "Model_RifleSoldier" then
+                            table.insert(soldiers, soldier)
+                        end
+                    end
+                    
+                    -- Duplicate up to 2 soldiers
+                    local count = 0
+                    for i, soldier in ipairs(soldiers) do
+                        if count < duplicateCount then
+                            local duplicate = duplicateModel(soldier)
+                            if duplicate then
+                                count = count + 1
+                            end
+                        else
+                            break
+                        end
+                    end
+                end
+            elseif selectedMob == "Walker Zombie" then
+                -- Find Walker Zombies (only originals, not duplicates)
+                local walkerZombies = findModels("Model_Walker", true, false)
+                
+                -- Duplicate up to 2 zombies
+                local count = 0
+                for i, zombie in ipairs(walkerZombies) do
+                    if count < duplicateCount then
+                        local duplicate = duplicateModel(zombie)
+                        if duplicate then
+                            count = count + 1
+                        end
+                    else
+                        break
+                    end
+                end
+            elseif selectedMob == "Runner Zombie" then
+                -- Find Runner Zombies (only originals, not duplicates)
+                local runnerZombies = findModels("Model_Runner", true, false)
+                
+                -- Duplicate up to 2 zombies
+                local count = 0
+                for i, zombie in ipairs(runnerZombies) do
+                    if count < duplicateCount then
+                        local duplicate = duplicateModel(zombie)
+                        if duplicate then
+                            count = count + 1
+                        end
+                    else
+                        break
+                    end
+                end
+            elseif selectedMob == "WereWolf" then
+                -- Find WereWolf models (only originals, not duplicates)
+                local wereWolves = findModels("Model_Werewolf", true, false)
+                
+                -- Duplicate up to 2 werewolves
+                local count = 0
+                for i, wereWolf in ipairs(wereWolves) do
+                    if count < duplicateCount then
+                        local duplicate = duplicateModel(wereWolf)
+                        if duplicate then
+                            count = count + 1
+                        end
+                    else
+                        break
+                    end
+                end
+            end
+            
+            -- Wait before next duplication
+            wait(duplicateInterval)
+        end
+    end)
+    
+    -- Start the coroutine
+    coroutine.resume(_G.duplicateCoroutine)
+end
+
+-- Function to stop duplicate process
+local function stopDuplicateProcess()
+    _G.duplicateRunning = false
+    if _G.duplicateCoroutine then
+        coroutine.close(_G.duplicateCoroutine)
+        _G.duplicateCoroutine = nil
+    end
+end
+
+-- Duplicate Checkbox
+local duplicateCheckbox, duplicateCheckboxMethods = TeleportGUILibrary.createCheckbox(
+    "DuplicateCheckbox",
+    "Duplicate It",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(state)
+        if state then
+            -- Start continuous duplication
+            startDuplicateProcess()
+            TeleportGUILibrary.createNotification("Started duplicating " .. selectedMob .. " mobs!", "info")
+        else
+            -- Stop duplication
+            stopDuplicateProcess()
+            TeleportGUILibrary.createNotification("Stopped duplicating mobs!", "info")
+        end
+    end
+)
+duplicateCheckbox.ZIndex = 5
+positionY = positionY + 35
+
+-- Apply Size Checkbox
+local applySizeCheckbox, applySizeCheckboxMethods = TeleportGUILibrary.createCheckbox(
+    "ApplySizeCheckbox",
+    "Apply Size",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(state)
+        if state then
+            -- Initialize original data storage if not already created
+            if not _G.originalData then
+                _G.originalData = {}
+            end
+            
+            -- Convert size value to number
+            local multiplier = tonumber(sizeValue)
+            if not multiplier then
+                TeleportGUILibrary.createNotification("Invalid size value! Please enter a number.", "error")
+                return
+            end
+            
+            -- Apply scaling based on selected mob type
+            if selectedMob == "City Soldier" then
+                -- Apply to all Rifle Soldiers (both originals and duplicates)
+                local soldiers = workspace.StartingZone.ActiveSoldiers:GetChildren()
+                for _, soldier in ipairs(soldiers) do
+                    if soldier.Name == "Model_RifleSoldier" or soldier.Name == "Model_RifleSoldier_Duplicate" then
+                        applyScaling(soldier, multiplier)
+                    end
+                end
+                TeleportGUILibrary.createNotification("Applied size " .. sizeValue .. "x to City Soldiers!", "success")
+                
+            elseif selectedMob == "Walker Zombie" then
+                -- Find and apply to all Walker Zombies (both originals and duplicates)
+                local walkerZombies = findModels("Model_Walker", true, true)
+                for _, zombie in ipairs(walkerZombies) do
+                    applyScaling(zombie, multiplier)
+                end
+                TeleportGUILibrary.createNotification("Applied size " .. sizeValue .. "x to " .. #walkerZombies .. " Walker Zombies!", "success")
+                
+            elseif selectedMob == "Runner Zombie" then
+                -- Find and apply to all Runner Zombies (both originals and duplicates)
+                local runnerZombies = findModels("Model_Runner", true, true)
+                for _, zombie in ipairs(runnerZombies) do
+                    applyScaling(zombie, multiplier)
+                end
+                TeleportGUILibrary.createNotification("Applied size " .. sizeValue .. "x to " .. #runnerZombies .. " Runner Zombies!", "success")
+                
+            elseif selectedMob == "WereWolf" then
+                -- Find and apply to all WereWolf models (both originals and duplicates)
+                local wereWolves = findModels("Model_Werewolf", true, true)
+                for _, wereWolf in ipairs(wereWolves) do
+                    applyScaling(wereWolf, multiplier)
+                end
+                TeleportGUILibrary.createNotification("Applied size " .. sizeValue .. "x to " .. #wereWolves .. " WereWolves!", "success")
+                
+            elseif selectedMob == "Reset All" then
+                -- "Reset All" now does nothing when selected
+                TeleportGUILibrary.createNotification("Default option selected. No action will be performed.", "info")
+            end
+        end
+    end
+)
+applySizeCheckbox.ZIndex = 5
+positionY = positionY + 35
+
+-- Reset Duplicates Button
+local resetDuplicatesButton = TeleportGUILibrary.createButton(
+    "ResetDuplicatesButton",
+    "Remove All Duplicates",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function()
+        -- Stop duplication process if running
+        if _G.duplicateRunning then
+            stopDuplicateProcess()
+            duplicateCheckboxMethods.setState(false)
+        end
+        
+        -- Find and remove all duplicates
+        local removedCount = 0
+        
+        -- Recursive function to find and delete duplicates
+        local function findAndRemoveDuplicates(instance)
+            for _, child in ipairs(instance:GetChildren()) do
+                if child.Name:match("_Duplicate$") then
+                    child:Destroy()
+                    removedCount = removedCount + 1
+                else
+                    findAndRemoveDuplicates(child)
+                end
+            end
+        end
+        
+        findAndRemoveDuplicates(workspace)
+        
+        if removedCount > 0 then
+            TeleportGUILibrary.createNotification("Removed " .. removedCount .. " duplicated mobs!", "success")
+        else
+            TeleportGUILibrary.createNotification("No duplicated mobs found to remove!", "info")
+        end
+    end
+)
+resetDuplicatesButton.ZIndex = 5
+positionY = positionY + 40
+
+local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Instruction! ~~~~~~~~~~~~~~~~", positionY)
+positionY = positionY + 30
+
+-- Create instructions text label
+local instructions = Instance.new("TextLabel")
+instructions.Name = "InstructionsText"
+instructions.Size = UDim2.new(0.9, 0, 0, 60)
+instructions.Position = UDim2.new(0.05, 0, 0, positionY)
+instructions.BackgroundTransparency = 1
+instructions.TextColor3 = Color3.fromRGB(200, 200, 200)
+instructions.TextSize = 14
+instructions.Font = Enum.Font.SourceSans
+instructions.TextWrapped = true
+instructions.TextXAlignment = Enum.TextXAlignment.Left
+instructions.Text = "1. Theres must be founded mobs nearest\n2. Click 2-3 (Duplicate it) if it cant run\n3. Carefull for Resizer mobs more than ×500"
+instructions.Parent = TeleportGUILibrary.ContentFrame
+instructions.ZIndex = 5
+
+positionY = positionY + 62
+
+local sectionLabel, separator = TeleportGUILibrary.createSection("Teleportation Options", positionY)
+positionY = positionY + 30
+
+-- Teleportation Dropdown (Highest ZIndex)
+local teleportOptions = {"Default", "Your Train", "TeslaLab"}
+local selectedTeleportOption = teleportOptions[1]
+local teleportDropdown, teleportDropdownMethods = TeleportGUILibrary.createDropdown(
+    "TeleportDropdown",
+    "Teleportation",
+    teleportOptions,
+    selectedTeleportOption,
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(option)
+        selectedTeleportOption = option
+        TeleportGUILibrary.createNotification("Selected: " .. option, "info")
+    end
+)
+teleportDropdown.ZIndex = 10
+local dropdownBG = teleportDropdown:FindFirstChild("Background", true)
+if dropdownBG then
+    dropdownBG.ZIndex = 11
+    local menu = dropdownBG:FindFirstChild("MenuContainer")
+    if menu then
+        menu.ZIndex = 20
+        local scroll = menu:FindFirstChild("OptionsScrollFrame")
+        if scroll then
+            scroll.ZIndex = 21
+            for _, child in ipairs(scroll:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.ZIndex = 22
+                end
+            end
+        end
+    end
+end
+positionY = positionY + 35
+
+-- Apply Teleport Button
+local applyTeleportButton = TeleportGUILibrary.createButton(
+    "ApplyTeleportButton",
+    "Apply Teleport Zone",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function()
+        if selectedTeleportOption == "Default" then
+            -- Default option does nothing
+            TeleportGUILibrary.createNotification("Default option selected", "info")
+        elseif selectedTeleportOption == "Your Train" then
+            -- Your Train teleport functionality
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            
+            -- Find train seat
+            local trainSeat
+            for _, model in pairs(workspace:GetChildren()) do
+                if model:IsA("Model") then
+                    local reqComponents = model:FindFirstChild("RequiredComponents")
+                    if reqComponents then
+                        local controls = reqComponents:FindFirstChild("Controls")
+                        if controls then
+                            local conductorSeat = controls:FindFirstChild("ConductorSeat")
+                            if conductorSeat then
+                                local vehicleSeat = conductorSeat:FindFirstChild("VehicleSeat")
+                                if vehicleSeat then
+                                    trainSeat = vehicleSeat
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            
+            -- Teleport to train if found
+            if trainSeat then
+                local targetCFrame = trainSeat.CFrame
+                local startTime = tick()
+                local endTime = startTime + 3 -- Spam teleport for 3 seconds
+                
+                -- Start teleporting
+                TeleportGUILibrary.createNotification("Teleporting to your train...", "info")
+                
+                -- Spam teleport for 3 seconds
+                while tick() < endTime do
+                    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                    if humanoidRootPart then
+                        humanoidRootPart.CFrame = targetCFrame
+                    end
+                    task.wait()
+                end
+                
+                TeleportGUILibrary.createNotification("Teleport complete", "success")
+            else
+                TeleportGUILibrary.createNotification("Could not find your train", "error")
+            end
+        elseif selectedTeleportOption == "TeslaLab" then
+            -- TeslaLab teleport functionality
+            game.StarterGui:SetCore("SendNotification", {
+                Title = "Script made by mrpopcat14",
+                Text = "Enjoy the script :)",
+                Duration = 5
+            })
+            
+            local p,g,l=game:GetService("Players"),game:GetService("RunService"),game.Players.LocalPlayer 
+            local c=l.Character or l.CharacterAdded:Wait() local h=c:WaitForChild("Humanoid") 
+            local r=c:WaitForChild("HumanoidRootPart") 
+            local t,b,d,n,s=false,nil,nil,nil,0 
+            local x=Vector3.new(-424.39,27.5,-49040.54) 
+            local function j()for _,o in ipairs(workspace:GetDescendants())do if(o:IsA("Model")or o:IsA("BasePart"))and o.Name:lower():find("tesla")then local q=o:IsA("Model")and(o.PrimaryPart or o:FindFirstChildWhichIsA("BasePart"))or o if q then return q end end end end 
+            local function k()for _,o in ipairs(workspace:GetDescendants())do if o.Name:lower():find("brainjar")or o.Name:lower():find("jar")then local q=o:IsA("Model")and(o.PrimaryPart or o:FindFirstChildWhichIsA("BasePart"))or o if q then return q end end end end 
+            local function m(f)if d then d:Disconnect()end local u=r.Position s=tick() t=true d=g.Heartbeat:Connect(function()if h.Sit or h.SeatPart then if d then d:Disconnect()end t=false return end 
+            local e=math.min(1,(tick()-s)/2) local v=u:Lerp(f.Position,e) r.CFrame=CFrame.new(v)*(f-f.Position) if e>=1 then if d then d:Disconnect()end t=false end end)end local function w(y)local z,A=nil,math.huge local B=y:IsA("BasePart")and y.Position or y:GetPivot().Position for _,o in pairs(workspace:GetDescendants())do if o:IsA("Seat")and not o.Occupant then 
+            local C=(o.Position-B).Magnitude if C<50 and C<A then A=C z=o end end end if z then r.CFrame=z.CFrame+Vector3.new(0,3,0)task.wait(0.1)z:Sit(h)return true end return false end local function i()m(CFrame.new(x))repeat task.wait()until not t while true do if h.Sit or h.SeatPart then repeat task.wait(0.5)until not h.Sit and not h.SeatPart end n=j()b=k()or n if not n then task.wait(1)continue end 
+            local D=n:IsA("BasePart")and n.CFrame or n:GetPivot()m(D+Vector3.new(0,3,0))repeat task.wait()until not t if w(b)then task.wait(1)break end task.wait(0.2)end end l.CharacterAdded:Connect(function(E)c=E h=E:WaitForChild("Humanoid")r=E:WaitForChild("HumanoidRootPart")if d then d:Disconnect()end t=false end)i()
+        end
+    end
+)
+applyTeleportButton.ZIndex = 5
+positionY = positionY + 40
+
+local sectionLabel, separator = TeleportGUILibrary.createSection("Resizer Option", positionY)
+positionY = positionY + 30 -- Reduced spacing after section (25 for label + 1 for separator + 4 for spacing)
+
+-- Create Dropdown: "Items Resizer" with expanded options
+local dropdownOptions = {
+    "Default",
+    "Gold Bar",
+    "Silver Bar",
+    "Gold Statue",
+    "Statue",
+    "Bond",
+    "Lantern",
+    "Snake Oil",
+    "Gold Cup",
+    "Barrel"
+}
+
+local currentItem = dropdownOptions[1] -- Default to "Gold Bar"
+local itemsResizerDropdown, itemsResizerMethods = TeleportGUILibrary.createDropdown(
+    "ItemsResizer",
+    "Items Resizer",
+    dropdownOptions,
+    currentItem, -- Default option
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(selected)
+        currentItem = selected
+        -- Save the size based on which option is selected
+        if not hasSavedSize[selected] then
+            local targetPath
+            local targetPart
+            
+            if selected == "Gold Bar" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("GoldBar") and
+                           workspace.RuntimeItems.GoldBar:FindFirstChild("Prop_GoldBar")
+                targetPart = targetPath
+            elseif selected == "Silver Bar" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("SilverBar") and
+                           workspace.RuntimeItems.SilverBar:FindFirstChild("Prop_GoldBar")
+                targetPart = targetPath
+            elseif selected == "Gold Statue" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("GoldStatue") and
+                           workspace.RuntimeItems.GoldStatue:FindFirstChild("Angel Lucy Statue II")
+                targetPart = targetPath
+            elseif selected == "Statue" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("Statue") and
+                           workspace.RuntimeItems.Statue:FindFirstChild("MeshPart")
+                targetPart = targetPath
+            elseif selected == "Bond" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("Bond") and
+                           workspace.RuntimeItems.Bond:FindFirstChild("Part")
+                targetPart = targetPath
+            elseif selected == "Lantern" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("Lantern") and
+                           workspace.RuntimeItems.Lantern:FindFirstChild("Handle")
+                targetPart = targetPath
+            elseif selected == "Snake Oil" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("Snake Oil") and
+                           workspace.RuntimeItems["Snake Oil"]:FindFirstChild("Bottle")
+                targetPart = targetPath
+            elseif selected == "Gold Cup" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("GoldCup") and
+                           workspace.RuntimeItems.GoldCup:FindFirstChild("Medieval Goblet")
+                targetPart = targetPath
+            elseif selected == "Barrel" then
+                targetPath = workspace:FindFirstChild("RuntimeItems") and
+                           workspace.RuntimeItems:FindFirstChild("Barrel") and
+                           workspace.RuntimeItems.Barrel:FindFirstChild("Union")
+                targetPart = targetPath
+            end
+            
+            if targetPart then
+                savedSizes[selected] = targetPart.Size -- Save the original size
+                hasSavedSize[selected] = true
+                TeleportGUILibrary.createNotification(selected .. " size saved!", "success")
+            else
+                TeleportGUILibrary.createNotification(selected .. " not found!", "error")
+            end
+        end
+    end
+)
+
+positionY = positionY + 35 -- Reduced spacing after dropdown (32 for dropdown + 3 for spacing)
+
+-- Create Text Input: "Resize to:" with size modification
+local resizeToInput, resizeToMethods = TeleportGUILibrary.createTextInput(
+    "ResizeTo",
+    "Resize to:",
+    "1", -- Default value
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(value)
+        local scale = tonumber(value)
+        if not scale then
+            TeleportGUILibrary.createNotification("Please enter a valid number!", "error")
+            return
+        end
+        
+        local targetPath
+        local targetPart
+        
+        if currentItem == "Gold Bar" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("GoldBar") and
+                       workspace.RuntimeItems.GoldBar:FindFirstChild("Prop_GoldBar")
+            targetPart = targetPath
+        elseif currentItem == "Silver Bar" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("SilverBar") and
+                       workspace.RuntimeItems.SilverBar:FindFirstChild("Prop_GoldBar")
+            targetPart = targetPath
+        elseif currentItem == "Gold Statue" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("GoldStatue") and
+                       workspace.RuntimeItems.GoldStatue:FindFirstChild("Angel Lucy Statue II")
+            targetPart = targetPath
+        elseif currentItem == "Statue" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("Statue") and
+                       workspace.RuntimeItems.Statue:FindFirstChild("MeshPart")
+            targetPart = targetPath
+        elseif currentItem == "Bond" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("Bond") and
+                       workspace.RuntimeItems.Bond:FindFirstChild("Part")
+            targetPart = targetPath
+        elseif currentItem == "Lantern" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("Lantern") and
+                       workspace.RuntimeItems.Lantern:FindFirstChild("Handle")
+            targetPart = targetPath
+        elseif currentItem == "Snake Oil" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("Snake Oil") and
+                       workspace.RuntimeItems["Snake Oil"]:FindFirstChild("Bottle")
+            targetPart = targetPath
+        elseif currentItem == "Gold Cup" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("GoldCup") and
+                       workspace.RuntimeItems.GoldCup:FindFirstChild("Medieval Goblet")
+            targetPart = targetPath
+        elseif currentItem == "Barrel" then
+            targetPath = workspace:FindFirstChild("RuntimeItems") and
+                       workspace.RuntimeItems:FindFirstChild("Barrel") and
+                       workspace.RuntimeItems.Barrel:FindFirstChild("Union")
+            targetPart = targetPath
+        end
+        
+        if targetPart and savedSizes[currentItem] then
+            local originalSize = savedSizes[currentItem]
+            local newSize = Vector3.new(
+                originalSize.X * scale,
+                originalSize.Y * scale,
+                originalSize.Z * scale
+            )
+            targetPart.Size = newSize
+            TeleportGUILibrary.createNotification(currentItem .. " resized to " .. scale .. "x!", "success")
+        else
+            TeleportGUILibrary.createNotification(currentItem .. " not found or size not saved!", "error")
+        end
+    end
+)
+
+positionY = positionY + 35 -- Reduced spacing after text input (32 for input + 3 for spacing)
+
+-- Create Text Input: "Set Your Bond:" with bond modification
+-- Detect initial bond value
+local defaultBondValue = ""
+local bondCount = LocalPlayer.PlayerGui:FindFirstChild("BondGui") and
+                 LocalPlayer.PlayerGui.BondGui:FindFirstChild("BondInfo") and
+                 LocalPlayer.PlayerGui.BondGui.BondInfo:FindFirstChild("BondCount")
+if bondCount then
+    defaultBondValue = bondCount.Text
+end
+
+local setBondInput, setBondMethods = TeleportGUILibrary.createTextInput(
+    "SetBond",
+    "Set Your Bond:",
+    defaultBondValue, -- Set default value to initial bond count
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(value)
+        local bondCount = LocalPlayer.PlayerGui:FindFirstChild("BondGui") and
+                         LocalPlayer.PlayerGui.BondGui:FindFirstChild("BondInfo") and
+                         LocalPlayer.PlayerGui.BondGui.BondInfo:FindFirstChild("BondCount")
+        if bondCount then
+            bondCount.Text = tostring(value)
+            TeleportGUILibrary.createNotification("Bond updated to " .. tostring(value) .. "!", "success")
+        else
+            TeleportGUILibrary.createNotification("BondCount GUI not found!", "error")
+        end
+    end
+)
+
+positionY = positionY + 35 -- Reduced spacing after text input (32 for input + 3 for spacing)
+
+
+-- Duplication Settings
+local sectionLabel, separator = TeleportGUILibrary.createSection("Item Duplicator", positionY)
+positionY = positionY + 30
+
+-- Duplication Variables
+local duplicatingItems = false
+local duplicationInProgress = false
+local countdownTimer = nil
+local duplicatedCount = 0
+local currentDelay = 1
+local selectedItemType = "Default"
+local availableItems = {"Default", "GoldBar", "SilverBar", "Bond", "Coal", "Statue", "MaximGun", "Wolf", "Teapot", "Painting", "Barrel", "RevolverAmmo"}
+local autoUpdateList = false
+
+-- Function to get all available item types in RuntimeItems
+local function updateAvailableItems()
+    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+    if not runtimeItems then
+        return
+    end
+    
+    -- Keep the list as is - no dynamic updating
+    availableItems = {"Default", "All Items", "GoldBar", "SilverBar", "Bond", "Coal", "Statue", "MaximGun", "Wolf", "Teapot", "Painting", "Barrel", "RevolverAmmo"}
+    
+    -- Update dropdown with items
+    if dropdownMethods then
+        dropdownMethods.updateOptions(availableItems)
+    end
+end
+
+-- Function to duplicate an item (actual copy)
+local function duplicateItem(item)
+    if not item then return nil end
+    
+    -- Verify item is directly within RuntimeItems
+    if item.Parent.Name ~= "RuntimeItems" then
+        return nil
+    end
+    
+    -- Only create a duplicate if it's a valid item
+    if item:IsA("Model") or item:IsA("BasePart") then
+        -- Create a clone of the item
+        local duplicate = item:Clone()
+        
+        -- Set the duplicate's parent to RuntimeItems only
+        duplicate.Parent = workspace:FindFirstChild("RuntimeItems")
+        
+        -- Get player position for placing the duplicate
+        local player = game.Players.LocalPlayer
+        local playerHRP = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+        
+        -- Position the duplicate near the player
+        if playerHRP then
+            if duplicate:IsA("Model") and duplicate.PrimaryPart then
+                duplicate:SetPrimaryPartCFrame(playerHRP.CFrame * CFrame.new(0, 0, -3))
+            elseif duplicate:IsA("BasePart") then
+                duplicate.CFrame = playerHRP.CFrame * CFrame.new(0, 0, -3)
+            end
+        end
+        
+        return duplicate
+    end
+    
+    return nil
+end
+
+-- Function to get the target items based on the selected type
+local function getTargetItems()
+    local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+    if not runtimeItems then
+        TeleportGUILibrary.createNotification("RuntimeItems folder not found!", "error")
+        return {}
+    end
+    
+    -- Ensure we only work with items directly within RuntimeItems
+    -- If "All Items" is selected, return all items
+    if selectedItemType == "All Items" then
+        local allItems = {}
+        for _, item in ipairs(runtimeItems:GetChildren()) do
+            if (item:IsA("Model") or item:IsA("BasePart")) then
+                table.insert(allItems, item)
+            end
+        end
+        return allItems
+    else
+        -- Get specific item type
+        local specificItems = {}
+        local itemFound = false
+        for _, item in ipairs(runtimeItems:GetChildren()) do
+            if item.Name == selectedItemType and (item:IsA("Model") or item:IsA("BasePart")) then
+                table.insert(specificItems, item)
+                itemFound = true
+            end
+        end
+        
+        -- Notify if no items were found
+        if not itemFound then
+            TeleportGUILibrary.createNotification("Item '" .. selectedItemType .. "' not found in RuntimeItems!", "error")
+        end
+        
+        return specificItems
+    end
+end
+
+-- Function to run the duplication process
+local function runDuplication()
+    if not duplicatingItems then return end
+    
+    local targetItems = getTargetItems()
+    if #targetItems == 0 then
+        task.wait(currentDelay)
+        if duplicatingItems then
+            task.spawn(runDuplication)
+        end
+        return
+    end
+    
+    -- Choose an item to duplicate (cycling through all items)
+    local itemIndex = (duplicatedCount % #targetItems) + 1
+    local targetItem = targetItems[itemIndex]
+    
+    -- Create the duplicate
+    local duplicate = duplicateItem(targetItem)
+    
+    if duplicate then
+        duplicatedCount = duplicatedCount + 1
+    end
+    
+    -- Wait before next duplication
+    task.wait(currentDelay)
+    
+    -- Continue duplication if still enabled
+    if duplicatingItems then
+        task.spawn(runDuplication)
+    end
+end
+
+-- Auto update available items function
+local function runAutoUpdate()
+    while autoUpdateList do
+        updateAvailableItems()
+        task.wait(5)
+    end
+end
+
+-- Initial update of available items
+task.spawn(updateAvailableItems)
+
+-- Dropdown for item selection (Highest ZIndex)
+local dropdown, dropdownMethods = TeleportGUILibrary.createDropdown(
+    "ItemTypeDropdown",
+    "Select Item Type",
+    availableItems,
+    selectedItemType,
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(option)
+        selectedItemType = option
+        TeleportGUILibrary.createNotification("Selected item type: " .. option, "info")
+    end
+)
+dropdown.ZIndex = 10
+local dropdownBG = dropdown:FindFirstChild("Background", true)
+if dropdownBG then
+    dropdownBG.ZIndex = 11
+    local menu = dropdownBG:FindFirstChild("MenuContainer")
+    if menu then
+        menu.ZIndex = 20
+        local scroll = menu:FindFirstChild("OptionsScrollFrame")
+        if scroll then
+            scroll.ZIndex = 21
+            for _, child in ipairs(scroll:GetChildren()) do
+                if child:IsA("TextButton") then
+                    child.ZIndex = 22
+                end
+            end
+        end
+    end
+end
+positionY = positionY + 35
+
+-- Text Input for delay
+local inputBox, inputMethods = TeleportGUILibrary.createTextInput(
+    "DelayInput",
+    "Delay:",
+    tostring(currentDelay),
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(text)
+        -- Input validation for numbers only
+        local number = tonumber(text)
+        if number and number > 0 then
+            currentDelay = number
+            TeleportGUILibrary.createNotification("Delay set to " .. number .. " seconds", "info")
+        else
+            TeleportGUILibrary.createNotification("Invalid delay! Using default: 1 second", "error")
+            inputMethods.setText("1")
+            currentDelay = 1
+        end
+    end
+)
+inputBox.ZIndex = 5
+positionY = positionY + 35
+
+-- Checkbox to apply settings and start/stop duplication
+local checkbox, checkboxMethods = TeleportGUILibrary.createCheckbox(
+    "StartDuplication",
+    "Start Duplication",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(state)
+        duplicatingItems = state
+        
+        -- Clear tracking when disabled
+        if not duplicatingItems then
+            if countdownTimer then
+                task.cancel(countdownTimer)
+                countdownTimer = nil
+            end
+            
+            duplicationInProgress = false
+            TeleportGUILibrary.createNotification("Item duplication disabled", "info")
+            return
+        end
+        
+        -- Start duplication process with current settings
+        if duplicatingItems and not duplicationInProgress then
+            duplicationInProgress = true
+            duplicatedCount = 0
+            
+            -- Check if the item exists before starting
+            local runtimeItems = workspace:FindFirstChild("RuntimeItems")
+            if runtimeItems then
+                local itemExists = false
+                for _, item in pairs(runtimeItems:GetChildren()) do
+                    if item.Name == selectedItemType or selectedItemType == "All Items" then
+                        itemExists = true
+                        break
+                    end
+                end
+                
+                if not itemExists and selectedItemType ~= "All Items" then
+                    TeleportGUILibrary.createNotification("Warning: Item '" .. selectedItemType .. "' not found in RuntimeItems", "warning")
+                end
+            else
+                TeleportGUILibrary.createNotification("RuntimeItems folder not found!", "error")
+            end
+            
+            -- Confirm current settings
+            TeleportGUILibrary.createNotification("Starting duplication with settings: Type = " .. selectedItemType .. ", Delay = " .. currentDelay .. "s", "info")
+            
+            task.spawn(runDuplication)
+        end
+    end
+)
+checkbox.ZIndex = 5
+positionY = positionY + 35
+
+local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Instruction! ~~~~~~~~~~~~~~~~", positionY)
+positionY = positionY + 12
+
+-- Create instructions text label
+local instructions = Instance.new("TextLabel")
+instructions.Name = "InstructionsText"
+instructions.Size = UDim2.new(0.9, 0, 0, 60)
+instructions.Position = UDim2.new(0.05, 0, 0, positionY)
+instructions.BackgroundTransparency = 1
+instructions.TextColor3 = Color3.fromRGB(200, 200, 200)
+instructions.TextSize = 14
+instructions.Font = Enum.Font.SourceSans
+instructions.TextWrapped = true
+instructions.TextXAlignment = Enum.TextXAlignment.Left
+instructions.Text = "1. Theres must be founded items nearest"
+instructions.Parent = TeleportGUILibrary.ContentFrame
+instructions.ZIndex = 5
+
+positionY = positionY + 40
+
+-- Duplication Settings
+local sectionLabel, separator = TeleportGUILibrary.createSection("Player Setting & ESP", positionY)
+positionY = positionY + 30
+
+-- Create "Show ESP Items" checkbox
+local showESPCheckbox, showESPMethods = TeleportGUILibrary.createCheckbox(
+    "ShowESP",
+    "Show ESP Items",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(isChecked)
+        ESPEnabled = isChecked
+        if isChecked then
+            updateAllESP()
+            TeleportGUILibrary.createNotification("ESP Items enabled!", "success")
+        else
+            ESPFolder:ClearAllChildren()
+            TeleportGUILibrary.createNotification("ESP Items disabled!", "info")
+        end
+    end
+)
+
+positionY = positionY + 35
+
+-- Create "Show Nearest Bond" checkbox
+local showBondESPCheckbox, showBondESPMethods = TeleportGUILibrary.createCheckbox(
+    "ShowBondESP",
+    "Show Nearest Bond",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(isChecked)
+        BondESPEnabled = isChecked
+        if isChecked then
+            updateBondESP()
+            TeleportGUILibrary.createNotification("Bond ESP enabled!", "success")
+        else
+            BondESPFolder:ClearAllChildren()
+            TeleportGUILibrary.createNotification("Bond ESP disabled!", "info")
+        end
+    end
+)
+
+positionY = positionY + 35
+
+-- Create "ESP Player" checkbox
+local espPlayerCheckbox, espPlayerMethods = TeleportGUILibrary.createCheckbox(
+    "ESPPlayer",
+    "ESP Player",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    function(isChecked)
+        PlayerESPEnabled = isChecked
+        if isChecked then
+            updatePlayerESP()
+            TeleportGUILibrary.createNotification("Player ESP enabled!", "success")
+        else
+            PlayerESPFolder:ClearAllChildren()
+            TeleportGUILibrary.createNotification("Player ESP disabled!", "info")
+        end
+    end
+)
+
+positionY = positionY + 35
+
+-- Main Section
+local sectionLabel, separator = TeleportGUILibrary.createSection("Player Hacks", positionY)
+positionY = positionY + 30
+
+-- Camera Extender Input
+local cameraZoomInput, cameraZoomMethods
+
+local function updateCameraZoom(zoomValue)
+    local player = game:GetService("Players").LocalPlayer
+    local numValue = tonumber(zoomValue)
+    
+    if numValue then
+        -- Enforce limits: minimum 0, maximum 1500
+        if numValue < 0 then
+            numValue = 0
+            TeleportGUILibrary.createNotification("Camera Zoom cannot be less than 0", "warning")
+            -- Update input field text to reflect the adjusted value
+            cameraZoomMethods.setText(tostring(numValue))
+        elseif numValue > 1500 then
+            numValue = 1500
+            TeleportGUILibrary.createNotification("Camera Zoom cannot exceed 1500", "warning")
+            -- Update input field text to reflect the adjusted value
+            cameraZoomMethods.setText(tostring(numValue))
+        end
+        
+        player.CameraMaxZoomDistance = numValue
+        TeleportGUILibrary.createNotification("Camera Zoom set to: " .. numValue, "success")
+    else
+        TeleportGUILibrary.createNotification("Please enter a valid number", "error")
+        -- Reset to default value if invalid input
+        cameraZoomMethods.setText("100")
+    end
+end
+
+cameraZoomInput, cameraZoomMethods = TeleportGUILibrary.createTextInput(
+    "CameraExtender",
+    "Camera Extender:",
+    "100",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    updateCameraZoom
+)
+cameraZoomInput.ZIndex = 5
+positionY = positionY + 35
+
+-- Set default camera zoom
+updateCameraZoom("100")
+
+-- NoClip Feature
+local noClipEnabled = false
+local noClipConnection = nil
+
+-- No Clip Function
+local function toggleNoClip(state)
+    noClipEnabled = state
+    
+    if noClipEnabled then
+        -- Enable NoClip
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        
+        noClipConnection = game:GetService("RunService").Stepped:Connect(function()
+            if character and character:FindFirstChild("Humanoid") then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+        
+        TeleportGUILibrary.createNotification("NoClip Enabled", "success")
+    else
+        -- Disable NoClip
+        if noClipConnection then
+            noClipConnection:Disconnect()
+            noClipConnection = nil
+        end
+        
+        local player = game:GetService("Players").LocalPlayer
+        local character = player.Character or player.CharacterAdded:Wait()
+        
+        -- Reset collision
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+        
+        TeleportGUILibrary.createNotification("NoClip Disabled", "info")
+    end
+end
+
+-- NoClip Checkbox
+local noClipCheckbox, noClipMethods = TeleportGUILibrary.createCheckbox(
+    "NoClipCheckbox",
+    "Wall Hack",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    toggleNoClip
+)
+noClipCheckbox.ZIndex = 5
+positionY = positionY + 35
+
+-- Third Person Camera Checkbox
+local function toggleThirdPersonCamera(state)
+    local player = game:GetService("Players").LocalPlayer
+    
+    if state then
+        -- Set to third person (Classic)
+        player.CameraMode = Enum.CameraMode.Classic
+        TeleportGUILibrary.createNotification("Third Person Camera Enabled", "success")
+    else
+        -- Set back to default (LockFirstPerson)
+        player.CameraMode = Enum.CameraMode.LockFirstPerson
+        TeleportGUILibrary.createNotification("First Person Camera Enabled", "info")
+    end
+end
+
+local thirdPersonCheckbox, thirdPersonMethods = TeleportGUILibrary.createCheckbox(
+    "ThirdPersonCheckbox",
+    "Third Person Camera",
+    UDim2.new(0.05, 0, 0, positionY),
+    TeleportGUILibrary.ContentFrame,
+    toggleThirdPersonCamera
+)
+thirdPersonCheckbox.ZIndex = 5
+positionY = positionY + 35
+
+local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("About this script!", positionY)
+positionY = positionY + 30
+
+-- Create instructions text label
+local instructions = Instance.new("TextLabel")
+instructions.Name = "InstructionsText"
+instructions.Size = UDim2.new(0.9, 0, 0, 60)
+instructions.Position = UDim2.new(0.05, 0, 0, positionY)
+instructions.BackgroundTransparency = 1
+instructions.TextColor3 = Color3.fromRGB(200, 200, 200)
+instructions.TextSize = 14
+instructions.Font = Enum.Font.SourceSans
+instructions.TextWrapped = true
+instructions.TextXAlignment = Enum.TextXAlignment.Left
+instructions.Text = "[+] Made by Zysume \n[+] Best Partner: Artificial Intellegence\n[+] Credit TeslaLab: mrpopcat14"
+instructions.Parent = TeleportGUILibrary.ContentFrame
+instructions.ZIndex = 5
+
+positionY = positionY + 62
+
+
+-- Update CanvasSize to fit all content
+TeleportGUILibrary.updateCanvasSize(positionY)
+
+-- Create a connection to item changes in the world
+workspace.ChildAdded:Connect(function(child)
+    if child.Name == "RuntimeItems" then
+        wait(1) -- Wait for child items to load
+        
+        if ESPEnabled then
+            updateAllESP()
+        end
+        
+        if BondESPEnabled then
+            updateBondESP()
+        end
+        
+        if ZombieHighlightEnabled then
+            
+        end
+    elseif child.Name == "Ore" and ESPEnabled then
+        wait(1)
+        updateAllESP()
+    end
+end)
+
+-- Check for existing RuntimeItems and Ore when the script starts
+if workspace:FindFirstChild("RuntimeItems") then
+    if ESPEnabled then
+        updateAllESP()
+    end
+    
+    if BondESPEnabled then
+        updateBondESP()
+    end
+    
+    
+end
+
+-- Set up player ESP listeners
+if PlayerESPEnabled then
+    updatePlayerESP()
+end
+
+-- Set up player added event
+Players.PlayerAdded:Connect(function(player)
+    if PlayerESPEnabled then
+        createPlayerESP(player)
+    end
+    
+    -- Handle player leaving
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+    if player == game:GetService("Players").LocalPlayer then
+        if noClipConnection then
+            noClipConnection:Disconnect()
+            noClipConnection = nil
+        end
+    end
+end)
+
+-- Character respawn handling
+local player = game:GetService("Players").LocalPlayer
+player.CharacterAdded:Connect(function()
+    if noClipEnabled and noClipConnection then
+        noClipConnection:Disconnect()
+        
+        -- Re-enable NoClip after character respawn
+        local character = player.Character
+        noClipConnection = game:GetService("RunService").Stepped:Connect(function()
+            if character and character:FindFirstChild("Humanoid") then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+    end)
+end)
