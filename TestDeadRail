@@ -6,7 +6,7 @@ local TopBar = TeleportGUILibrary.ContentFrame.Parent.Parent:FindFirstChild("Top
 if TopBar then
     local Title = TopBar:FindFirstChild("Title")
     if Title then
-        Title.Text = "Dead Rails v2"
+        Title.Text = "Dead Rails v3"
     end
 end
 
@@ -418,8 +418,8 @@ end
 
 -- Train Color Section
 local positionY = 10
-local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Update Logs v2", positionY)
-positionY = positionY + 30
+local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Update Log v3", positionY)
+positionY = positionY + 12
 
 -- Create instructions text label
 local instructions = Instance.new("TextLabel")
@@ -432,11 +432,11 @@ instructions.TextSize = 14
 instructions.Font = Enum.Font.SourceSans
 instructions.TextWrapped = true
 instructions.TextXAlignment = Enum.TextXAlignment.Left
-instructions.Text = "1. Added ShareBond Features"
+instructions.Text = "1. Added ShareBonds Features [ 70-100 ]"
 instructions.Parent = TeleportGUILibrary.ContentFrame
 instructions.ZIndex = 5
 
-positionY = positionY + 21
+positionY = positionY + 40
 
 local instructionsSectionLabel, instructionsSeparator = TeleportGUILibrary.createSection("Sharebond Features", positionY)
 positionY = positionY + 30
@@ -1167,6 +1167,7 @@ i()
     end
 )
 
+positionY = positionY + 35
 local sectionLabel, separator = TeleportGUILibrary.createSection("Train Color", positionY)
 positionY = positionY + 30
 
