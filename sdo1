@@ -359,6 +359,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     sectionLabel.TextSize = 16
     sectionLabel.Font = Enum.Font.GothamBold
     sectionLabel.Text = sectionName
+    sectionLabel.ZIndex = 1
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
     sectionLabel.Parent = ScrollingFrame
 
@@ -416,6 +417,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     checkboxLabel.TextSize = 14
     checkboxLabel.Font = FONT
     checkboxLabel.Text = text
+    checkboxLabel.ZIndex = 1
     checkboxLabel.TextXAlignment = Enum.TextXAlignment.Left
     checkboxLabel.Parent = checkboxContainer
     
@@ -502,6 +504,7 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     textBox.TextXAlignment = Enum.TextXAlignment.Center
     textBox.ClearTextOnFocus = false
     textBox.Parent = inputBG
+    textBox.ZIndex = 1
     
     local currentValue = defaultValue
     
@@ -806,6 +809,7 @@ end
     buttonLabel.Text = text
     buttonLabel.TextXAlignment = Enum.TextXAlignment.Left
     buttonLabel.Parent = buttonContainer
+    buttonLabel.ZIndex = 101
     
     local buttonBG = Instance.new("Frame")
     buttonBG.Name = "Background"
@@ -830,6 +834,7 @@ end
     ripple.BorderSizePixel = 0
     ripple.Visible = false
     ripple.Parent = buttonBG
+    
     
     local rippleCorner = Instance.new("UICorner")
     rippleCorner.CornerRadius = UDim.new(1, 0)
@@ -1091,144 +1096,5 @@ UIS.InputEnded:Connect(function(input)
         ScreenGui.Enabled = not ScreenGui.Enabled
     end
 end)
-
--- Create floating toggle button (place this before "return TeleportGUILibrary")
-local function createToggleButton()
-    -- Make sure PlayerGui exists
-    if not PlayerGui then
-        warn("PlayerGui not found. Toggle button creation failed.")
-        return
-    end
-    
-    -- Create toggle button screen GUI (separate from main GUI)
-    local ToggleGui = Instance.new("ScreenGui")
-    ToggleGui.Name = "ToggleButtonGui"
-    ToggleGui.ResetOnSpawn = false
-    ToggleGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ToggleGui.DisplayOrder = 999
-    
-    -- Try to parent it properly based on executor environment
-    pcall(function()
-        if syn and syn.protect_gui then
-            syn.protect_gui(ToggleGui)
-            ToggleGui.Parent = CoreGui
-        elseif gethui then
-            ToggleGui.Parent = gethui()
-        else
-            ToggleGui.Parent = PlayerGui
-        end
-    end)
-    
-    local ToggleButton = Instance.new("ImageButton")
-    ToggleButton.Name = "ToggleButton"
-    ToggleButton.Size = UDim2.new(0, 50, 0, 50)
-    ToggleButton.Position = UDim2.new(0.05, 0, 0.9, 0) -- Bottom-left corner
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.Image = ""
-    ToggleButton.ZIndex = 1000
-    ToggleButton.Parent = ToggleGui
-    
-    -- Make it circular
-    local ToggleCorner = Instance.new("UICorner")
-    ToggleCorner.CornerRadius = UDim.new(1, 0)
-    ToggleCorner.Parent = ToggleButton
-    
-    -- Random icon generator
-    local iconKeys = {}
-    for key, _ in pairs(FeatherIcons) do
-        table.insert(iconKeys, key)
-    end
-    
-    local randomIcon = "rbxassetid://7072978559" -- Default fallback
-    if #iconKeys > 0 then
-        local randomKey = iconKeys[math.random(1, #iconKeys)]
-        randomIcon = FeatherIcons[randomKey] or randomIcon
-    end
-    
-    -- Add icon
-    local ToggleIcon = Instance.new("ImageLabel")
-    ToggleIcon.Name = "Icon"
-    ToggleIcon.Size = UDim2.new(0.6, 0, 0.6, 0)
-    ToggleIcon.Position = UDim2.new(0.2, 0, 0.2, 0)
-    ToggleIcon.BackgroundTransparency = 1
-    ToggleIcon.Image = randomIcon
-    ToggleIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleIcon.Parent = ToggleButton
-    
-    -- Add shadow effect
-    local Shadow = Instance.new("ImageLabel")
-    Shadow.Name = "Shadow"
-    Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    Shadow.BackgroundTransparency = 1
-    Shadow.Image = "rbxassetid://7912134082"
-    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    Shadow.ImageTransparency = 0.5
-    Shadow.Position = UDim2.new(0.5, 0, 0.5, 4)
-    Shadow.Size = UDim2.new(1.2, 0, 1.2, 0)
-    Shadow.ZIndex = 999
-    Shadow.Parent = ToggleButton
-    
-    -- Make the button draggable
-    local dragToggle = false
-    local dragInput
-    local dragStart
-    local startPos
-    
-    ToggleButton.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragToggle = true
-            dragStart = input.Position
-            startPos = ToggleButton.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragToggle = false
-                end
-            end)
-        end
-    end)
-    
-    ToggleButton.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-    
-    UIS.InputChanged:Connect(function(input)
-        if input == dragInput and dragToggle then
-            local delta = input.Position - dragStart
-            ToggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    
-    -- Toggle GUI visibility on click
-    ToggleButton.MouseButton1Click:Connect(function()
-        ScreenGui.Enabled = not ScreenGui.Enabled
-        
-        -- Animate button when clicked
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(114, 137, 218)}):Play()
-        TweenService:Create(ToggleButton, TweenInfo.new(0.2), {Size = UDim2.new(0, 45, 0, 45)}):Play()
-        
-        task.wait(0.2)
-        
-        TweenService:Create(ToggleButton, TweenInfo.new(0.2), {Size = UDim2.new(0, 50, 0, 50)}):Play()
-        TweenService:Create(ToggleButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(70, 200, 120)}):Play()
-    end)
-    
-    return ToggleGui, ToggleButton
-end
-
--- Execute this after player is loaded
-if LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait() then
-    task.spawn(function()
-        createToggleButton()
-    end)
-end
-
--- Add this to the TeleportGUILibrary
-TeleportGUILibrary.ToggleGUI = function()
-    ScreenGui.Enabled = not ScreenGui.Enabled
-end
 
 return TeleportGUILibrary
