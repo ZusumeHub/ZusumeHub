@@ -206,27 +206,37 @@ local function createTabButton(tabName, iconName)
     button.Font = Enum.Font.GothamBold
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.TextSize = 14
-    button.Text = tabName
     button.Parent = TabContainer
     
     if iconName and FeatherIcons[iconName] then
+        -- Create icon at the left side
         local icon = Instance.new("ImageLabel")
         icon.Name = "Icon"
         icon.Size = UDim2.new(0, 20, 0, 20)
-        icon.Position = UDim2.new(0, 5, 0.5, -10)
+        icon.Position = UDim2.new(0, 5, 0.5, -10)  -- Left position with 5px padding
         icon.BackgroundTransparency = 1
         icon.Image = FeatherIcons[iconName]
         icon.Parent = button
         
-        -- Change text alignment to left
-        button.TextXAlignment = Enum.TextXAlignment.Left
-        icon.TextXAlignment = Enum.TextXAlignment.Left
+        -- Create a separate label for the text
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Name = "TabLabel"
+        textLabel.Size = UDim2.new(1, -30, 1, 0)  -- Full height, width minus icon space
+        textLabel.Position = UDim2.new(0, 30, 0, 0)  -- 5px + 20px + 5px from left
+        textLabel.BackgroundTransparency = 1
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textLabel.TextSize = 14
+        textLabel.Text = tabName
+        textLabel.TextXAlignment = Enum.TextXAlignment.Left
+        textLabel.Parent = button
         
-        -- Add padding to position text 3 pixels to the right of the icon
-        -- Icon width (20) + left padding (5) + 3 pixel spacing
-        local textPadding = Instance.new("UIPadding")
-        textPadding.PaddingLeft = UDim.new(0, 28) -- 5px + 20px + 3px
-        textPadding.Parent = button
+        -- Set the button's text to empty since we're using a TextLabel
+        button.Text = ""
+    else
+        -- If no icon, just use the button's text property
+        button.Text = tabName
+        button.TextXAlignment = Enum.TextXAlignment.Center
     end
 
     return button
