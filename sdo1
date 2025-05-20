@@ -750,12 +750,15 @@ function TeleportGUILibrary.createButton(name, text, position, parent, onClick, 
     local buttonLabel = Instance.new("TextLabel")
     buttonLabel.Name = "Label"
     if hasIcon then
-        buttonLabel.Size = UDim2.new(1, -70, 1, 0)
-        buttonLabel.Position = UDim2.new(0, 5, 0, 0)
-    else
-        buttonLabel.Size = UDim2.new(1, -70, 1, 0)
-        buttonLabel.Position = UDim2.new(0, 0, 0, 0)
-    end
+    -- Ikon memiliki ukuran 20px dan posisi X adalah 5px
+    -- Jadi posisi label harusnya 5px (posisi ikon) + 20px (lebar ikon) + 1px (jarak yang diinginkan) = 26px
+    buttonLabel.Position = UDim2.new(0, 26, 0, 0)
+    -- Ukuran label perlu disesuaikan agar tidak tumpang tindih dengan tombol di kanan
+    buttonLabel.Size = UDim2.new(1, -90, 1, 0)
+else
+    buttonLabel.Size = UDim2.new(1, -70, 1, 0)
+    buttonLabel.Position = UDim2.new(0, 0, 0, 0)
+end
     buttonLabel.BackgroundTransparency = 1
     buttonLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
     buttonLabel.TextSize = 14
