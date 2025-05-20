@@ -209,7 +209,6 @@ local function createTabButton(tabName, iconName)
     button.Text = tabName
     button.Parent = TabContainer
     
-
     if iconName and FeatherIcons[iconName] then
         local icon = Instance.new("ImageLabel")
         icon.Name = "Icon"
@@ -218,7 +217,15 @@ local function createTabButton(tabName, iconName)
         icon.BackgroundTransparency = 1
         icon.Image = FeatherIcons[iconName]
         icon.Parent = button
-        button.TextXAlignment = Enum.TextXAlignment.Center
+        
+        -- Change text alignment to left
+        button.TextXAlignment = Enum.TextXAlignment.Left
+        
+        -- Add padding to position text 3 pixels to the right of the icon
+        -- Icon width (20) + left padding (5) + 3 pixel spacing
+        local textPadding = Instance.new("UIPadding")
+        textPadding.PaddingLeft = UDim.new(0, 28) -- 5px + 20px + 3px
+        textPadding.Parent = button
     end
 
     return button
