@@ -750,8 +750,8 @@ function TeleportGUILibrary.createButton(name, text, position, parent, onClick, 
     local buttonLabel = Instance.new("TextLabel")
     buttonLabel.Name = "Label"
     if hasIcon then
-        buttonLabel.Size = UDim2.new(1, -100, 1, 0)
-        buttonLabel.Position = UDim2.new(0, 30, 0, 0)
+        buttonLabel.Size = UDim2.new(1, -70, 1, 0)
+        buttonLabel.Position = UDim2.new(0, 25, 0, 0)
     else
         buttonLabel.Size = UDim2.new(1, -70, 1, 0)
         buttonLabel.Position = UDim2.new(0, 0, 0, 0)
