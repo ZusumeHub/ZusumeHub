@@ -292,29 +292,39 @@ end
 
 function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
     local inputContainer = Instance.new("Frame")
-inputContainer.Name = name .. "Container"
-inputContainer.Size = UDim2.new(0.8, 0, 0, 32)  -- Lebar dikurangi jadi 80%
-inputContainer.Position = position
-inputContainer.BackgroundTransparency = 1
-inputContainer.Parent = parent
-
-local inputLabel = Instance.new("TextLabel")
-inputLabel.Name = "Label"
-inputLabel.Size = UDim2.new(0.4, 0, 1, 0)  -- Lebar label jadi 40%
-inputLabel.Parent = inputContainer
-
-local inputBG = Instance.new("Frame")
-inputBG.Name = "Background"
-inputBG.Size = UDim2.new(0.6, 0, 0, 25)  -- Lebar input disesuaikan
-inputBG.Position = UDim2.new(0.4, 0, 0.5, -12.5)
-inputBG.Parent = inputContainer
-
-local textBox = Instance.new("TextBox")
-textBox.Name = "TextBox"
-textBox.Size = UDim2.new(1, -10, 1, 0)  -- Tambah padding
-textBox.Position = UDim2.new(0, 5, 0, 0)
-textBox.Parent = inputBG
+    inputContainer.Name = name .. "Container"
+    inputContainer.Size = UDim2.new(0.9, 0, 0, 32)
+    inputContainer.Position = position
+    inputContainer.BackgroundTransparency = 1
+    inputContainer.Parent = parent
     
+    -- Label
+    local inputLabel = Instance.new("TextLabel")
+    inputLabel.Name = "Label"
+    inputLabel.Size = UDim2.new(0.5, -10, 1, 0)
+    inputLabel.BackgroundTransparency = 1
+    inputLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+    inputLabel.TextSize = 14
+    inputLabel.Font = FONT
+    inputLabel.Text = labelText
+    inputLabel.TextXAlignment = Enum.TextXAlignment.Left
+    inputLabel.Parent = inputContainer
+    
+    -- Input Box Background
+    local inputBG = Instance.new("Frame")
+    inputBG.Name = "Background"
+    inputBG.Size = UDim2.new(0.5, 0, 0, 25)
+    inputBG.Position = UDim2.new(0.5, 0, 0.5, -12.5)
+    inputBG.BackgroundColor3 = COLORS.Input
+    inputBG.BorderSizePixel = 0
+    inputBG.Parent = inputContainer
+    
+    -- Round the corners of the input box
+    local inputCorner = Instance.new("UICorner")
+    inputCorner.CornerRadius = UDim.new(0, 5)
+    inputCorner.Parent = inputBG
+    
+    -- The actual TextBox
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
     textBox.Size = UDim2.new(0.9, 0, 1, 0)
@@ -330,8 +340,10 @@ textBox.Parent = inputBG
     textBox.ClearTextOnFocus = false
     textBox.Parent = inputBG
     
+    -- Store the current value
     local currentValue = defaultValue
     
+    -- Handle focus
     textBox.Focused:Connect(function()
         TweenService:Create(
             inputBG,
@@ -349,10 +361,13 @@ textBox.Parent = inputBG
         
         if enterPressed then
             local newValue = textBox.Text
+            -- Try to convert to number if possible
             local numValue = tonumber(newValue)
             if numValue then
                 newValue = numValue
             end
+            
+            -- Only call onChange if the value actually changed
             if newValue ~= currentValue then
                 currentValue = newValue
                 if onChange then
@@ -360,10 +375,12 @@ textBox.Parent = inputBG
                 end
             end
         else
+            -- Revert to current value if user didn't press enter
             textBox.Text = tostring(currentValue)
         end
     end)
     
+    -- Return the container and functions to get/set the value
     return inputContainer, {
         getValue = function() return currentValue end,
         setValue = function(value)
