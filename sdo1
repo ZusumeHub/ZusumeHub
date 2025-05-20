@@ -90,6 +90,37 @@ ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = PlayerGui
 
+- Create Toggle Circle Button
+local ToggleCircle = Instance.new("ImageButton")
+ToggleCircle.Name = "ToggleCircle"
+ToggleCircle.Size = UDim2.new(0, 50, 0, 50)
+ToggleCircle.Position = UDim2.new(0, 20, 0, 20)
+ToggleCircle.BackgroundColor3 = Color3.fromRGB(70, 200, 120)
+ToggleCircle.BorderSizePixel = 0
+ToggleCircle.Image = FeatherIcons["menu"] or ""  -- Use menu icon or empty if not available
+ToggleCircle.ImageColor3 = Color3.fromRGB(255, 255, 255)
+ToggleCircle.Parent = ScreenGui
+ToggleCircle.ZIndex = 5
+ToggleCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+
+-- Make it circular
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)  -- Full circle
+ToggleCorner.Parent = ToggleCircle
+
+-- Add shadow effect
+local ToggleShadow = Instance.new("ImageLabel")
+ToggleShadow.Name = "Shadow"
+ToggleShadow.Size = UDim2.new(1, 10, 1, 10)
+ToggleShadow.Position = UDim2.new(0.5, 0, 0.5, 0)
+ToggleShadow.BackgroundTransparency = 1
+ToggleShadow.Image = "rbxassetid://1316045217"  -- Shadow asset
+ToggleShadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+ToggleShadow.ImageTransparency = 0.7
+ToggleShadow.ZIndex = 4
+ToggleShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+ToggleShadow.Parent = ToggleCircle
+
 -- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
@@ -124,23 +155,6 @@ Title.Font = Enum.Font.GothamBold
 Title.Text = "Nothing"
 Title.TextXAlignment = Enum.TextXAlignment.Center
 Title.Parent = TopBar
-
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(1, -28, 0, 2)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.Text = "-"
-MinimizeButton.TextSize = 16
-MinimizeButton.Parent = TopBar
-MinimizeButton.ZIndex = 2
-
-local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 5)
-MinimizeCorner.Parent = MinimizeButton
 
 -- Tab Container
 local TabContainer = Instance.new("Frame")
@@ -1067,28 +1081,107 @@ if isMobile then
     end)
 end
 
-local isMinimized = false
+-- Toggle visibility functionality
+local isVisible = true  -- Start visible
 local originalSize = MainFrame.Size
+local originalPosition = MainFrame.Position
 
-MinimizeButton.MouseButton1Click:Connect(function()
-    if isMinimized then
-        MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ScrollingFrame.Visible = true
-        YouTubeLabel.Visible = true
-        MinimizeButton.Text = "-"
+-- Function to toggle GUI visibility with animation
+local function toggleGUIVisibility()
+    if isVisible then
+        -- Hide animation
+        local hideTween = TweenService:Create(
+            MainFrame,
+            TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+            {
+                Size = UDim2.new(0, 0, 0, 0),
+                Position = UDim2.new(ToggleCircle.Position.X.Scale, ToggleCircle.Position.X.Offset, 
+                                     ToggleCircle.Position.Y.Scale, ToggleCircle.Position.Y.Offset),
+                BackgroundTransparency = 1
+            }
+        )
+        hideTween:Play()
+        
+        -- Spin the toggle button
+        TweenService:Create(
+            ToggleCircle,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Rotation = 180}
+        ):Play()
     else
-        originalSize = MainFrame.Size
-        MainFrame:TweenSize(UDim2.new(0, 350, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ScrollingFrame.Visible = false
-        YouTubeLabel.Visible = false
-        MinimizeButton.Text = "+"
+        -- Show animation
+        MainFrame.Size = UDim2.new(0, 0, 0, 0)
+        MainFrame.Position = UDim2.new(ToggleCircle.Position.X.Scale, ToggleCircle.Position.X.Offset, 
+                                       ToggleCircle.Position.Y.Scale, ToggleCircle.Position.Y.Offset)
+        MainFrame.BackgroundTransparency = 1
+        MainFrame.Visible = true
+        
+        local showTween = TweenService:Create(
+            MainFrame,
+            TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+            {
+                Size = originalSize,
+                Position = originalPosition,
+                BackgroundTransparency = 0
+            }
+        )
+        showTween:Play()
+        
+        -- Spin the toggle button back
+        TweenService:Create(
+            ToggleCircle,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {Rotation = 0}
+        ):Play()
     end
-    isMinimized = not isMinimized
+    
+    if isVisible then
+        wait(0.3)  -- Wait for animation to complete before hiding
+        MainFrame.Visible = false
+    end
+    
+    isVisible = not isVisible
+end
+
+-- Connect toggle button functionality
+ToggleCircle.MouseButton1Click:Connect(toggleGUIVisibility)
+
+-- Make toggle button draggable
+local draggingToggle = false
+local toggleDragStart
+local toggleStartPos
+
+ToggleCircle.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        draggingToggle = true
+        toggleDragStart = input.Position
+        toggleStartPos = ToggleCircle.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                draggingToggle = false
+            end
+        end)
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if draggingToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or 
+                          input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - toggleDragStart
+        ToggleCircle.Position = UDim2.new(
+            toggleStartPos.X.Scale, 
+            toggleStartPos.X.Offset + delta.X,
+            toggleStartPos.Y.Scale, 
+            toggleStartPos.Y.Offset + delta.Y
+        )
+    end
 end)
 
 UIS.InputEnded:Connect(function(input)
     if input.KeyCode == Enum.KeyCode.M then
-        ScreenGui.Enabled = not ScreenGui.Enabled
+        toggleGUIVisibility()
     end
 end)
 
