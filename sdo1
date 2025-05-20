@@ -208,6 +208,7 @@ local function createTabButton(tabName, iconName)
     button.TextSize = 14
     button.Text = tabName
     button.Parent = TabContainer
+    
 
     if iconName and FeatherIcons[iconName] then
         local icon = Instance.new("ImageLabel")
@@ -217,7 +218,7 @@ local function createTabButton(tabName, iconName)
         icon.BackgroundTransparency = 1
         icon.Image = FeatherIcons[iconName]
         icon.Parent = button
-        button.TextXAlignment = Enum.TextXAlignment.Right
+        button.TextXAlignment = Enum.TextXAlignment.Left
     end
 
     return button
