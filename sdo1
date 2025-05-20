@@ -244,11 +244,32 @@ end
 
 local function setActiveTab(tabName)
     if activeTab == tabName then return end
+    
+    -- Reset previous tab button color
     if activeTab then
         tabContents[activeTab].Visible = false
+        local prevTabButton = TabContainer:FindFirstChild(activeTab .. "Tab")
+        if prevTabButton then
+            TweenService:Create(
+                prevTabButton,
+                TweenInfo.new(0.3),
+                {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}
+            ):Play()
+        end
     end
+    
+    -- Set new tab as active and change its color to green
     activeTab = tabName
     tabContents[tabName].Visible = true
+    
+    local tabButton = TabContainer:FindFirstChild(tabName .. "Tab")
+    if tabButton then
+        TweenService:Create(
+            tabButton,
+            TweenInfo.new(0.3),
+            {BackgroundColor3 = Color3.fromRGB(70, 200, 120)}
+        ):Play()
+    end
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, tabContentHeights[tabName] or 0)
 end
 
