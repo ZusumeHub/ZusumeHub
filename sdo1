@@ -93,8 +93,8 @@ ScreenGui.Parent = PlayerGui
 -- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 250, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -125, 0.5, -150)
+MainFrame.Size = UDim2.new(0, 350, 0, 300) -- Lebar diperbesar untuk TabContainer
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -150)
 MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -142,11 +142,25 @@ local MinimizeCorner = Instance.new("UICorner")
 MinimizeCorner.CornerRadius = UDim.new(0, 5)
 MinimizeCorner.Parent = MinimizeButton
 
+-- Tab Container
+local TabContainer = Instance.new("Frame")
+TabContainer.Name = "TabContainer"
+TabContainer.Size = UDim2.new(0, 100, 1, -30)
+TabContainer.Position = UDim2.new(0, 0, 0, 30)
+TabContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+TabContainer.BorderSizePixel = 0
+TabContainer.Parent = MainFrame
+
+local TabListLayout = Instance.new("UIListLayout")
+TabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+TabListLayout.Padding = UDim.new(0, 5)
+TabListLayout.Parent = TabContainer
+
 -- ScrollingFrame
 local ScrollingFrame = Instance.new("ScrollingFrame")
 ScrollingFrame.Name = "ScrollingFrame"
-ScrollingFrame.Size = UDim2.new(1, 0, 1, -60)
-ScrollingFrame.Position = UDim2.new(0, 0, 0, 30)
+ScrollingFrame.Size = UDim2.new(1, -100, 1, -60) -- Dikurangi lebar TabContainer
+ScrollingFrame.Position = UDim2.new(0, 100, 0, 30) -- Geser ke kanan
 ScrollingFrame.BackgroundTransparency = 1
 ScrollingFrame.ScrollBarThickness = 6
 ScrollingFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
@@ -154,12 +168,8 @@ ScrollingFrame.HorizontalScrollBarInset = Enum.ScrollBarInset.None
 ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 ScrollingFrame.Parent = MainFrame
 
--- Content Frame
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, 0, 0, 0)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = ScrollingFrame
+-- Content Frame (dihapus karena digantikan per tab)
+-- local ContentFrame = Instance.new("Frame") -- Tidak lagi digunakan secara global
 
 -- YouTube Label
 local YouTubeLabel = Instance.new("TextLabel")
@@ -181,6 +191,123 @@ local UIPadding = Instance.new("UIPadding")
 UIPadding.PaddingLeft = UDim.new(0, 15)
 UIPadding.Parent = YouTubeLabel
 
+-- Tab Management
+local tabContents = {}
+local tabPositionY = {}
+local tabContentHeights = {}
+local activeTab = nil
+
+local function createTabButton(tabName, iconName)
+    local button = Instance.new("TextButton")
+    button.Name = tabName .. "Tab"
+    button.Size = UDim2.new(1, 0, 0, 30)
+    button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    button.BorderSizePixel = 0
+    button.Font = Enum.Font.GothamBold
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 14
+    button.Text = tabName
+    button.Parent = TabContainer
+
+    if iconName and FeatherIcons[iconName] then
+        local icon = Instance.new("ImageLabel")
+        icon.Name = "Icon"
+        icon.Size = UDim2.new(0, 20, 0, 20)
+        icon.Position = UDim2.new(0, 5, 0.5, -10)
+        icon.BackgroundTransparency = 1
+        icon.Image = FeatherIcons[iconName]
+        icon.Parent = button
+        button.TextXAlignment = Enum.TextXAlignment.Right
+    end
+
+    return button
+end
+
+local function setActiveTab(tabName)
+    if activeTab == tabName then return end
+    if activeTab then
+        tabContents[activeTab].Visible = false
+    end
+    activeTab = tabName
+    tabContents[tabName].Visible = true
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, tabContentHeights[tabName] or 0)
+end
+
+function TeleportGUILibrary.MakeTab(config)
+    local tabName = config.Name
+    local iconName = config.Icon
+
+    -- Create ContentFrame for this tab
+    local tabContent = Instance.new("Frame")
+    tabContent.Name = tabName .. "Content"
+    tabContent.Size = UDim2.new(1, 0, 1, 0)
+    tabContent.Position = UDim2.new(0, 0, 0, 0)
+    tabContent.BackgroundTransparency = 1
+    tabContent.Parent = ScrollingFrame
+    tabContent.Visible = false
+
+    tabContents[tabName] = tabContent
+    tabPositionY[tabName] = 10
+    tabContentHeights[tabName] = 0
+
+    -- Create Tab Button
+    local tabButton = createTabButton(tabName, iconName)
+    tabButton.MouseButton1Click:Connect(function()
+        setActiveTab(tabName)
+    end)
+
+    -- Set first tab as active by default
+    if not activeTab then
+        setActiveTab(tabName)
+    end
+
+    -- Tab object
+    local tab = {
+        AddDropdown = function(name, labelText, options, defaultOption, position, callback)
+            local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
+            local dropdown, methods = TeleportGUILibrary.createDropdown(name, labelText, options, defaultOption, pos, tabContent, callback)
+            tabPositionY[tabName] = tabPositionY[tabName] + 35
+            tabContentHeights[tabName] = tabPositionY[tabName]
+            if activeTab == tabName then
+                ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, tabContentHeights[tabName])
+            end
+            return dropdown, methods
+        end,
+        AddCheckbox = function(name, text, position, onToggle)
+            local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
+            local checkbox, methods = TeleportGUILibrary.createCheckbox(name, text, pos, tabContent, onToggle)
+            tabPositionY[tabName] = tabPositionY[tabName] + 35
+            tabContentHeights[tabName] = tabPositionY[tabName]
+            if activeTab == tabName then
+                ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, tabContentHeights[tabName])
+            end
+            return checkbox, methods
+        end,
+        AddTextInput = function(name, labelText, defaultValue, position, onChange)
+            local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
+            local input, methods = TeleportGUILibrary.createTextInput(name, labelText, defaultValue, pos, tabContent, onChange)
+            tabPositionY[tabName] = tabPositionY[tabName] + 35
+            tabContentHeights[tabName] = tabPositionY[tabName]
+            if activeTab == tabName then
+                ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, tabContentHeights[tabName])
+            end
+            return input, methods
+        end,
+        AddButton = function(name, text, position, onClick, iconName)
+            local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
+            local button, btn = TeleportGUILibrary.createButton(name, text, pos, tabContent, onClick, iconName)
+            tabPositionY[tabName] = tabPositionY[tabName] + 35
+            tabContentHeights[tabName] = tabPositionY[tabName]
+            if activeTab == tabName then
+                ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, tabContentHeights[tabName])
+            end
+            return button, btn
+        end,
+    }
+
+    return tab
+end
+
 -- Function Definitions (unchanged except for createButton)
 function TeleportGUILibrary.createSection(sectionName, positionY)
     local sectionLabel = Instance.new("TextLabel")
@@ -193,7 +320,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     sectionLabel.Font = Enum.Font.GothamBold
     sectionLabel.Text = sectionName
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    sectionLabel.Parent = ContentFrame
+    sectionLabel.Parent = ScrollingFrame
 
     local separator = Instance.new("Frame")
     separator.Name = sectionName .. "Separator"
@@ -201,7 +328,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     separator.Position = UDim2.new(0.05, 0, 0, positionY + 30)
     separator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     separator.BorderSizePixel = 0
-    separator.Parent = ContentFrame
+    separator.Parent = ScrollingFrame
 
     return sectionLabel, separator
 end
@@ -298,7 +425,6 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputContainer.BackgroundTransparency = 1
     inputContainer.Parent = parent
     
-    -- Label
     local inputLabel = Instance.new("TextLabel")
     inputLabel.Name = "Label"
     inputLabel.Size = UDim2.new(0.5, -10, 1, 0)
@@ -310,7 +436,6 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputLabel.TextXAlignment = Enum.TextXAlignment.Left
     inputLabel.Parent = inputContainer
     
-    -- Input Box Background
     local inputBG = Instance.new("Frame")
     inputBG.Name = "Background"
     inputBG.Size = UDim2.new(0.5, 0, 0, 25)
@@ -319,12 +444,10 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     inputBG.BorderSizePixel = 0
     inputBG.Parent = inputContainer
     
-    -- Round the corners of the input box
     local inputCorner = Instance.new("UICorner")
     inputCorner.CornerRadius = UDim.new(0, 5)
     inputCorner.Parent = inputBG
     
-    -- The actual TextBox
     local textBox = Instance.new("TextBox")
     textBox.Name = "TextBox"
     textBox.Size = UDim2.new(0.9, 0, 1, 0)
@@ -340,10 +463,8 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     textBox.ClearTextOnFocus = false
     textBox.Parent = inputBG
     
-    -- Store the current value
     local currentValue = defaultValue
     
-    -- Handle focus
     textBox.Focused:Connect(function()
         TweenService:Create(
             inputBG,
@@ -361,13 +482,11 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
         
         if enterPressed then
             local newValue = textBox.Text
-            -- Try to convert to number if possible
             local numValue = tonumber(newValue)
             if numValue then
                 newValue = numValue
             end
             
-            -- Only call onChange if the value actually changed
             if newValue ~= currentValue then
                 currentValue = newValue
                 if onChange then
@@ -375,12 +494,10 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
                 end
             end
         else
-            -- Revert to current value if user didn't press enter
             textBox.Text = tostring(currentValue)
         end
     end)
     
-    -- Return the container and functions to get/set the value
     return inputContainer, {
         getValue = function() return currentValue end,
         setValue = function(value)
@@ -828,11 +945,10 @@ function TeleportGUILibrary.createNotification(message, type)
     end)
 end
 
-TeleportGUILibrary.ContentFrame = ContentFrame
+TeleportGUILibrary.ContentFrame = nil -- Dihapus karena digantikan per tab
 
 function TeleportGUILibrary.updateCanvasSize(contentHeight)
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-    ContentFrame.Size = UDim2.new(1, 0, 0, contentHeight)
 end
 
 local dragging = false
@@ -919,7 +1035,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
         MinimizeButton.Text = "-"
     else
         originalSize = MainFrame.Size
-        MainFrame:TweenSize(UDim2.new(0, 250, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
+        MainFrame:TweenSize(UDim2.new(0, 350, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
         ScrollingFrame.Visible = false
         YouTubeLabel.Visible = false
         MinimizeButton.Text = "+"
