@@ -217,8 +217,7 @@ local function createTabButton(tabName, iconName)
     textLabel.Font = Enum.Font.GothamBold
     textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     textLabel.TextSize = 14
-    textLabel.TextXAlignment = Enum.TextXAlignment.Left
-
+    
     if iconName and FeatherIcons[iconName] then
         local icon = Instance.new("ImageLabel")
         icon.Name = "Icon"
