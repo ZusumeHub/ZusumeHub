@@ -220,6 +220,7 @@ local function createTabButton(tabName, iconName)
         
         -- Change text alignment to left
         button.TextXAlignment = Enum.TextXAlignment.Left
+        icon.TextXAlignment = Enum.TextXAlignment.Left
         
         -- Add padding to position text 3 pixels to the right of the icon
         -- Icon width (20) + left padding (5) + 3 pixel spacing
