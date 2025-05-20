@@ -206,18 +206,9 @@ local function createTabButton(tabName, iconName)
     button.Font = Enum.Font.GothamBold
     button.TextColor3 = Color3.fromRGB(255, 255, 255)
     button.TextSize = 14
-    button.Text = "" -- Kosongkan teks default pada TextButton
+    button.Text = tabName
     button.Parent = TabContainer
-
-    -- Buat TextLabel untuk teks tab
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Name = "TabLabel"
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = tabName
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textLabel.TextSize = 14
-    textLabel.TextXAlignment = Enum.TextXAlignment.Center
+    
 
     if iconName and FeatherIcons[iconName] then
         local icon = Instance.new("ImageLabel")
@@ -227,18 +218,8 @@ local function createTabButton(tabName, iconName)
         icon.BackgroundTransparency = 1
         icon.Image = FeatherIcons[iconName]
         icon.Parent = button
-
-        -- Atur posisi TextLabel 1px di samping ikon
-        -- Ikon: posisi X = 5px, lebar = 20px, jarak 1px -> 5 + 20 + 1 = 26px
-        textLabel.Position = UDim2.new(0, 26, 0, 0)
-        textLabel.Size = UDim2.new(1, -70, 1, 0) -- Sesuaikan ukuran agar tidak tumpang tindih
-    else
-        -- Tanpa ikon, teks mulai dari kiri
-        textLabel.Position = UDim2.new(0, 5, 0, 0)
-        textLabel.Size = UDim2.new(1, -70, 1, 0)
+        button.TextXAlignment = Enum.TextXAlignment.Center
     end
-
-    textLabel.Parent = button
 
     return button
 end
