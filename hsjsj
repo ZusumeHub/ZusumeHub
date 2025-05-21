@@ -1,0 +1,5 @@
+local SecretModule = {}
+
+SecretModule.secret = "55acd596-9e84-4dbd-934e-9def6297d4d3"
+
+return SecretModule
