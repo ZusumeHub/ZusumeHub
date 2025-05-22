@@ -150,6 +150,9 @@ TabContainer.Position = UDim2.new(0, 0, 0, 30)
 TabContainer.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 TabContainer.BorderSizePixel = 0
 TabContainer.ScrollBarThickness = 4
+TabContainer.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+TabContainer.SelectionImageObject = nil
+TabContainer.AutomaticCanvasSize = Enum.AutomaticSize.Y
 TabContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
 TabContainer.Parent = MainFrame
 
