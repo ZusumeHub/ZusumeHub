@@ -677,7 +677,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     optionsScrollFrame.BackgroundTransparency = 1
     optionsScrollFrame.BorderSizePixel = 0
     optionsScrollFrame.ScrollBarThickness = 4
-    optionsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+    optionsScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0)
     optionsScrollFrame.ZIndex = 11
     optionsScrollFrame.Parent = menuContainer
     
