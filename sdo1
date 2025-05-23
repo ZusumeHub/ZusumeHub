@@ -8,7 +8,7 @@ local CoreGui = game:GetService("CoreGui")
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local TeleportGUILibrary = {}
+local ModernGUILibrary = {}
 
 -- Constants for Notification and UI
 local FONT = Enum.Font.GothamBold
@@ -301,7 +301,7 @@ local function setActiveTab(tabName)
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, tabContentHeights[tabName] or 0)
 end
 
-function TeleportGUILibrary.MakeTab(config)
+function ModernGUILibrary.MakeTab(config)
     local tabName = config.Name
     local iconName = config.Icon
 
@@ -333,7 +333,7 @@ function TeleportGUILibrary.MakeTab(config)
     local tab = {
         AddDropdown = function(name, labelText, options, defaultOption, position, callback)
             local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
-            local dropdown, methods = TeleportGUILibrary.createDropdown(name, labelText, options, defaultOption, pos, tabContent, callback)
+            local dropdown, methods = ModernGUILibrary.createDropdown(name, labelText, options, defaultOption, pos, tabContent, callback)
             tabPositionY[tabName] = tabPositionY[tabName] + 35
             tabContentHeights[tabName] = tabPositionY[tabName]
             if activeTab == tabName then
@@ -343,7 +343,7 @@ function TeleportGUILibrary.MakeTab(config)
         end,
         AddCheckbox = function(name, text, position, onToggle)
             local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
-            local checkbox, methods = TeleportGUILibrary.createCheckbox(name, text, pos, tabContent, onToggle)
+            local checkbox, methods = ModernGUILibrary.createCheckbox(name, text, pos, tabContent, onToggle)
             tabPositionY[tabName] = tabPositionY[tabName] + 35
             tabContentHeights[tabName] = tabPositionY[tabName]
             if activeTab == tabName then
@@ -353,7 +353,7 @@ function TeleportGUILibrary.MakeTab(config)
         end,
         AddTextInput = function(name, labelText, defaultValue, position, onChange)
             local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
-            local input, methods = TeleportGUILibrary.createTextInput(name, labelText, defaultValue, pos, tabContent, onChange)
+            local input, methods = ModernGUILibrary.createTextInput(name, labelText, defaultValue, pos, tabContent, onChange)
             tabPositionY[tabName] = tabPositionY[tabName] + 35
             tabContentHeights[tabName] = tabPositionY[tabName]
             if activeTab == tabName then
@@ -363,7 +363,7 @@ function TeleportGUILibrary.MakeTab(config)
         end,
         AddButton = function(name, text, position, onClick, iconName)
             local pos = position or UDim2.new(0.05, 0, 0, tabPositionY[tabName])
-            local button, btn = TeleportGUILibrary.createButton(name, text, pos, tabContent, onClick, iconName)
+            local button, btn = ModernGUILibrary.createButton(name, text, pos, tabContent, onClick, iconName)
             tabPositionY[tabName] = tabPositionY[tabName] + 35
             tabContentHeights[tabName] = tabPositionY[tabName]
             if activeTab == tabName then
@@ -377,7 +377,7 @@ function TeleportGUILibrary.MakeTab(config)
 end
 
 -- Function Definitions (unchanged except for createButton)
-function TeleportGUILibrary.createSection(sectionName, positionY)
+function ModernGUILibrary.createSection(sectionName, positionY)
     local sectionLabel = Instance.new("TextLabel")
     sectionLabel.Name = sectionName .. "Label"
     sectionLabel.Size = UDim2.new(0.9, 0, 0, 25)
@@ -402,7 +402,7 @@ function TeleportGUILibrary.createSection(sectionName, positionY)
     return sectionLabel, separator
 end
 
-function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggle)
+function ModernGUILibrary.createCheckbox(name, text, position, parent, onToggle)
     local checkboxContainer = Instance.new("Frame")
     checkboxContainer.Name = name .. "Container"
     checkboxContainer.Size = UDim2.new(0.9, 0, 0, 28)
@@ -487,7 +487,7 @@ function TeleportGUILibrary.createCheckbox(name, text, position, parent, onToggl
     return checkboxContainer, function() return checked end
 end
 
-function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
+function ModernGUILibrary.createTextInput(name, labelText, defaultValue, position, parent, onChange)
     local inputContainer = Instance.new("Frame")
     inputContainer.Name = name .. "Container"
     inputContainer.Size = UDim2.new(0.9, 0, 0, 32)
@@ -581,7 +581,7 @@ function TeleportGUILibrary.createTextInput(name, labelText, defaultValue, posit
     }
 end
 
-function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOption, position, parent, callback)
+function ModernGUILibrary.createDropdown(name, labelText, options, defaultOption, position, parent, callback)
     local dropdownContainer = Instance.new("Frame")
     dropdownContainer.Name = name .. "Container"
     dropdownContainer.Size = UDim2.new(0.9, 0, 0, 32)
@@ -800,7 +800,7 @@ function TeleportGUILibrary.createDropdown(name, labelText, options, defaultOpti
     }
 end
 
-function TeleportGUILibrary.createButton(name, text, position, parent, onClick, iconName)
+function ModernGUILibrary.createButton(name, text, position, parent, onClick, iconName)
     local buttonContainer = Instance.new("Frame")
     buttonContainer.Name = name .. "Container"
     buttonContainer.Size = UDim2.new(0.9, 0, 0, 28)
@@ -934,7 +934,7 @@ end
     return buttonContainer, button
 end
 
-function TeleportGUILibrary.createNotification(message, type)
+function ModernGUILibrary.createNotification(message, type)
     local notifColor = COLORS.Accent
     if type == "success" then
         notifColor = COLORS.Success
@@ -1022,9 +1022,9 @@ function TeleportGUILibrary.createNotification(message, type)
     end)
 end
 
-TeleportGUILibrary.ContentFrame = nil -- Dihapus karena digantikan per tab
+ModernGUILibrary.ContentFrame = nil -- Dihapus karena digantikan per tab
 
-function TeleportGUILibrary.updateCanvasSize(contentHeight)
+function ModernGUILibrary.updateCanvasSize(contentHeight)
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
 end
 
@@ -1126,4 +1126,4 @@ UIS.InputEnded:Connect(function(input)
     end
 end)
 
-return TeleportGUILibrary
+return ModernGUILibrary
