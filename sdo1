@@ -381,7 +381,7 @@ function ModernGUILibrary.MakeTab(config)
 end
 
 -- Function Definitions (unchanged except for createButton)
-function ModernGUILibrary.createSection(sectionName, positionY)
+function ModernGUILibrary.createSection(sectionName, positionY, parent)
     local sectionLabel = Instance.new("TextLabel")
     sectionLabel.Name = sectionName .. "Label"
     sectionLabel.Size = UDim2.new(0.9, 0, 0, 25)
@@ -393,7 +393,7 @@ function ModernGUILibrary.createSection(sectionName, positionY)
     sectionLabel.Text = sectionName
     sectionLabel.ZIndex = 1
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    sectionLabel.Parent = ScrollingFrame
+    sectionLabel.Parent = parent
 
     local separator = Instance.new("Frame")
     separator.Name = sectionName .. "Separator"
@@ -401,7 +401,7 @@ function ModernGUILibrary.createSection(sectionName, positionY)
     separator.Position = UDim2.new(0.05, 0, 0, positionY + 30)
     separator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     separator.BorderSizePixel = 0
-    separator.Parent = ScrollingFrame
+    separator.Parent = parent
 
     return sectionLabel, separator
 end
