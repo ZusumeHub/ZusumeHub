@@ -129,7 +129,7 @@ local CloseButton = Instance.new("TextButton")
 CloseButton.Name = "CloseButton"
 CloseButton.Size = UDim2.new(0, 25, 0, 25)
 CloseButton.Position = UDim2.new(1, -28, 0, 2)
-CloseButton.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 89, 89)
 CloseButton.BorderSizePixel = 0
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -138,9 +138,9 @@ CloseButton.TextSize = 16
 CloseButton.Parent = TopBar
 CloseButton.ZIndex = 2
 
-local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 5)
-MinimizeCorner.Parent = CloseButton
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.Parent = CloseButton
 
 -- Tab Container
 local TabContainer = Instance.new("Frame")
