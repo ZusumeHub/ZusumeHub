@@ -125,15 +125,15 @@ Title.Text = "This is growwww"
 Title.TextXAlignment = Enum.TextXAlignment.Center
 Title.Parent = TopBar
 
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
 MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
 MinimizeButton.Position = UDim2.new(1, -28, 0, 2)
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.Text = "-"
+MinimizeButton.Text = "×"
 MinimizeButton.TextSize = 16
 MinimizeButton.Parent = TopBar
 MinimizeButton.ZIndex = 2
@@ -208,12 +208,16 @@ local function createTabButton(tabName, iconName)
     button.TextSize = 14
     button.Parent = TabContainer
     
+    local tabButtonCorner = Instance.new("UICorner")
+tabButtonCorner.CornerRadius = UDim.new(0, 15)
+tabButtonCorner.Parent = button
+    
     if iconName and FeatherIcons[iconName] then
         -- Create icon at the left side
         local icon = Instance.new("ImageLabel")
         icon.Name = "Icon"
         icon.Size = UDim2.new(0, 20, 0, 20)
-        icon.Position = UDim2.new(0, 5, 0.5, -10)  -- Left position with 5px padding
+        icon.Position = UDim2.new(0, 10, 0.5, -10)  -- Left position with 5px padding icon position
         icon.BackgroundTransparency = 1
         icon.Image = FeatherIcons[iconName]
         icon.Parent = button
@@ -222,7 +226,7 @@ local function createTabButton(tabName, iconName)
         local textLabel = Instance.new("TextLabel")
         textLabel.Name = "TabLabel"
         textLabel.Size = UDim2.new(1, -30, 1, 0)  -- Full height, width minus icon space
-        textLabel.Position = UDim2.new(0, 30, 0, 0)  -- 5px + 20px + 5px from left
+        textLabel.Position = UDim2.new(0, 35, 0, 0)  -- 5px + 20px + 5px from left
         textLabel.BackgroundTransparency = 1
         textLabel.Font = Enum.Font.GothamBold
         textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1104,20 +1108,61 @@ end
 local isMinimized = false
 local originalSize = MainFrame.Size
 
-MinimizeButton.MouseButton1Click:Connect(function()
-    if isMinimized then
-        MainFrame:TweenSize(originalSize, Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ScrollingFrame.Visible = true
-        YouTubeLabel.Visible = true
-        MinimizeButton.Text = "-"
-    else
-        originalSize = MainFrame.Size
-        MainFrame:TweenSize(UDim2.new(0, 350, 0, 30), Enum.EasingDirection.Out, Enum.EasingStyle.Quart, 0.3, true)
-        ScrollingFrame.Visible = false
-        YouTubeLabel.Visible = false
-        MinimizeButton.Text = "+"
-    end
-    isMinimized = not isMinimized
+CloseButton.MouseButton1Click:Connect(function()
+    -- Buat popup konfirmasi
+    local confirmGui = Instance.new("Frame")
+    confirmGui.Size = UDim2.new(0, 250, 0, 120)
+    confirmGui.Position = UDim2.new(0.5, -125, 0.5, -60)
+    confirmGui.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    confirmGui.BorderSizePixel = 0
+    confirmGui.Parent = ScreenGui
+    
+    local confirmCorner = Instance.new("UICorner")
+    confirmCorner.CornerRadius = UDim.new(0, 10)
+    confirmCorner.Parent = confirmGui
+    
+    local confirmText = Instance.new("TextLabel")
+    confirmText.Size = UDim2.new(1, -20, 0, 60)
+    confirmText.Position = UDim2.new(0, 10, 0, 10)
+    confirmText.BackgroundTransparency = 1
+    confirmText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    confirmText.TextSize = 14
+    confirmText.Font = Enum.Font.GothamBold
+    confirmText.Text = "Are you sure want to close this GUI?"
+    confirmText.TextWrapped = true
+    confirmText.Parent = confirmGui
+    
+    local yesButton = Instance.new("TextButton")
+    yesButton.Size = UDim2.new(0, 80, 0, 30)
+    yesButton.Position = UDim2.new(0, 40, 1, -40)
+    yesButton.BackgroundColor3 = Color3.fromRGB(255, 89, 89)
+    yesButton.Text = "Yes"
+    yesButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    yesButton.Font = Enum.Font.GothamBold
+    yesButton.Parent = confirmGui
+    
+    local nopeButton = Instance.new("TextButton")
+    nopeButton.Size = UDim2.new(0, 80, 0, 30)
+    nopeButton.Position = UDim2.new(1, -120, 1, -40)
+    nopeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    nopeButton.Text = "Nope"
+    nopeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nopeButton.Font = Enum.Font.GothamBold
+    nopeButton.Parent = confirmGui
+    
+    -- Animasi muncul
+    confirmGui.Size = UDim2.new(0, 0, 0, 0)
+    TweenService:Create(confirmGui, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 250, 0, 120)}):Play()
+    
+    yesButton.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
+    
+    nopeButton.MouseButton1Click:Connect(function()
+        TweenService:Create(confirmGui, TweenInfo.new(0.2), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        wait(0.2)
+        confirmGui:Destroy()
+    end)
 end)
 
 UIS.InputEnded:Connect(function(input)
