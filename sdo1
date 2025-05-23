@@ -381,7 +381,7 @@ function ModernGUILibrary.MakeTab(config)
 end
 
 -- Function Definitions (unchanged except for createButton)
-function ModernGUILibrary.createSection(sectionName, positionY, parent)
+function ModernGUILibrary.createSection(sectionName, positionY)
     local sectionLabel = Instance.new("TextLabel")
     sectionLabel.Name = sectionName .. "Label"
     sectionLabel.Size = UDim2.new(0.9, 0, 0, 25)
@@ -393,7 +393,7 @@ function ModernGUILibrary.createSection(sectionName, positionY, parent)
     sectionLabel.Text = sectionName
     sectionLabel.ZIndex = 1
     sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    sectionLabel.Parent = parent
+    sectionLabel.Parent = ScrollingFrame
 
     local separator = Instance.new("Frame")
     separator.Name = sectionName .. "Separator"
@@ -401,7 +401,7 @@ function ModernGUILibrary.createSection(sectionName, positionY, parent)
     separator.Position = UDim2.new(0.05, 0, 0, positionY + 30)
     separator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     separator.BorderSizePixel = 0
-    separator.Parent = parent
+    separator.Parent = ScrollingFrame
 
     return sectionLabel, separator
 end
@@ -936,6 +936,53 @@ end
     end)
     
     return buttonContainer, button
+end
+
+function ModernGUILibrary.createLabel(labelName, text, positionY, parent, options)
+    local options = options or {}
+    local textSize = options.textSize or 14
+    local textColor = options.textColor or Color3.fromRGB(255, 255, 255)
+    local font = options.font or Enum.Font.Gotham
+    local textAlignment = options.textAlignment or Enum.TextXAlignment.Left
+    local zIndex = options.zIndex or 1
+    local hasBackground = options.hasBackground or false
+    local backgroundColor = options.backgroundColor or Color3.fromRGB(30, 30, 30)
+    local backgroundTransparency = options.backgroundTransparency or 0.7
+
+    -- Create a container frame for the label (optional background)
+    local labelContainer = Instance.new("Frame")
+    labelContainer.Name = labelName .. "LabelContainer"
+    labelContainer.Size = UDim2.new(0.9, 0, 0, 30)
+    labelContainer.Position = UDim2.new(0.05, 0, 0, positionY)
+    labelContainer.BackgroundTransparency = hasBackground and backgroundTransparency or 1
+    labelContainer.BackgroundColor3 = backgroundColor
+    labelContainer.BorderSizePixel = 0
+    labelContainer.ZIndex = zIndex
+    labelContainer.Parent = parent
+
+    -- Add corner radius for modern look if background is enabled
+    if hasBackground then
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0, 5)
+        corner.Parent = labelContainer
+    end
+
+    -- Create the text label
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = labelName .. "Label"
+    textLabel.Size = UDim2.new(1, -10, 1, 0) -- Slightly smaller to fit within container
+    textLabel.Position = UDim2.new(0, 5, 0, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = textColor
+    textLabel.TextSize = textSize
+    textLabel.Font = font
+    textLabel.Text = text
+    textLabel.ZIndex = zIndex + 1 -- Ensure text is above background
+    textLabel.TextXAlignment = textAlignment
+    textLabel.TextWrapped = true
+    textLabel.Parent = labelContainer
+
+    return labelContainer, textLabel
 end
 
 function ModernGUILibrary.createNotification(message, type)
