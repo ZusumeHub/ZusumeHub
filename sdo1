@@ -93,7 +93,7 @@ ScreenGui.Parent = PlayerGui
 -- Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 360, 0, 300) -- Lebar diperbesar untuk TabContainer
+MainFrame.Size = UDim2.new(0, 375, 0, 300) -- Lebar diperbesar untuk TabContainer
 MainFrame.Position = UDim2.new(0.5, -180, 0.5, -150)
 MainFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 MainFrame.BorderSizePixel = 0
