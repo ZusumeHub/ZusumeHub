@@ -1200,6 +1200,11 @@ CloseButton.MouseButton1Click:Connect(function()
     
     yesButton.MouseButton1Click:Connect(function()
         ScreenGui:Destroy()
+        local existingCircleGui = PlayerGui:FindFirstChild("CircleGui")
+if existingCircleGui then
+    existingCircleGui:Destroy()
+    wait(0.1) -- Tunggu sebentar untuk memastikan GUI terhapus
+end
     end)
     
     nopeButton.MouseButton1Click:Connect(function()
