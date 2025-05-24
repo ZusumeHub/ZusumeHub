@@ -142,6 +142,23 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 5)
 CloseCorner.Parent = CloseButton
 
+local MinimizeButton = Instance.new("TextButton")
+     MinimizeButton.Name = "MinimizeButton"
+     MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
+     MinimizeButton.Position = UDim2.new(1, -58, 0, 2) -- Positioned to the left of CloseButton (-28 - 25 - 5 for spacing)
+     MinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 201, 79) -- Yellow to distinguish from close button
+     MinimizeButton.BorderSizePixel = 0
+     MinimizeButton.Font = Enum.Font.GothamBold
+     MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+     MinimizeButton.Text = "−"
+     MinimizeButton.TextSize = 16
+     MinimizeButton.Parent = TopBar
+     MinimizeButton.ZIndex = 2
+
+     local MinimizeCorner = Instance.new("UICorner")
+     MinimizeCorner.CornerRadius = UDim.new(0, 5)
+     MinimizeCorner.Parent = MinimizeButton
+     
 -- Tab Container
 local TabContainer = Instance.new("Frame")
 TabContainer.Name = "TabContainer"
@@ -1210,7 +1227,65 @@ end
     nopeButton.MouseButton1Click:Connect(function()
         
         confirmGui:Destroy()
+        
     end)
 end)
+
+MinimizeButton.MouseButton1Click:Connect(function()
+         -- Create confirmation popup for minimizing
+         local confirmMinimizeGui = Instance.new("Frame")
+         confirmMinimizeGui.Size = UDim2.new(0, 250, 0, 120)
+         confirmMinimizeGui.Position = UDim2.new(0.5, -125, 0.5, -60)
+         confirmMinimizeGui.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+         confirmMinimizeGui.BorderSizePixel = 0
+         confirmMinimizeGui.Parent = ScreenGui
+
+         local confirmMinimizeCorner = Instance.new("UICorner")
+         confirmMinimizeCorner.CornerRadius = UDim.new(0, 10)
+         confirmMinimizeCorner.Parent = confirmMinimizeGui
+
+         local confirmMinimizeText = Instance.new("TextLabel")
+         confirmMinimizeText.Size = UDim2.new(1, -20, 0, 60)
+         confirmMinimizeText.Position = UDim2.new(0, 10, 0, 10)
+         confirmMinimizeText.BackgroundTransparency = 1
+         confirmMinimizeText.TextColor3 = Color3.fromRGB(255, 255, 255)
+         confirmMinimizeText.TextSize = 14
+         confirmMinimizeText.Font = Enum.Font.GothamBold
+         confirmMinimizeText.Text = "Are you sure you want to minimize this GUI?"
+         confirmMinimizeText.TextWrapped = true
+         confirmMinimizeText.Parent = confirmMinimizeGui
+
+         local yesMinimizeButton = Instance.new("TextButton")
+         yesMinimizeButton.Size = UDim2.new(0, 80, 0, 30)
+         yesMinimizeButton.Position = UDim2.new(0, 40, 1, -40)
+         yesMinimizeButton.BackgroundColor3 = Color3.fromRGB(255, 201, 79) -- Match minimize button color
+         yesMinimizeButton.Text = "Yes"
+         yesMinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+         yesMinimizeButton.Font = Enum.Font.GothamBold
+         yesMinimizeButton.Parent = confirmMinimizeGui
+
+         local nopeMinimizeButton = Instance.new("TextButton")
+         nopeMinimizeButton.Size = UDim2.new(0, 80, 0, 30)
+         nopeMinimizeButton.Position = UDim2.new(1, -120, 1, -40)
+         nopeMinimizeButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+         nopeMinimizeButton.Text = "Nope"
+         nopeMinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+         nopeMinimizeButton.Font = Enum.Font.GothamBold
+         nopeMinimizeButton.Parent = confirmMinimizeGui
+
+         -- Animation for popup appearance
+         confirmMinimizeGui.Size = UDim2.new(0, 0, 0, 0)
+         TweenService:Create(confirmMinimizeGui, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 250, 0, 120)}):Play()
+
+         yesMinimizeButton.MouseButton1Click:Connect(function()
+             ScreenGui.Enabled = false
+             confirmMinimizeGui:Destroy()
+         end)
+
+         nopeMinimizeButton.MouseButton1Click:Connect(function()
+             confirmMinimizeGui:Destroy()
+         end)
+     end)
+     
 
 return ModernGUILibrary
