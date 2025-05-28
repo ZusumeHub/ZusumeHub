@@ -342,13 +342,9 @@ function ModernGUILibrary.MakeTab(config)
 end
 
 function ModernGUILibrary.createSection(sectionName, position, parent)
-    -- Use autopositioning if no position is provided
-    local positionY = position or ModernGUILibrary.getNextPosition(parent)
-    
     local sectionLabel = Instance.new("TextLabel")
     sectionLabel.Name = sectionName .. "Label"
     sectionLabel.Size = UDim2.new(0.9, 0, 0, 25)
-    sectionLabel.Position = UDim2.new(0.05, 0, 0, positionY)
     sectionLabel.BackgroundTransparency = 1
     sectionLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     sectionLabel.TextSize = 16
@@ -361,13 +357,9 @@ function ModernGUILibrary.createSection(sectionName, position, parent)
     local separator = Instance.new("Frame")
     separator.Name = sectionName .. "Separator"
     separator.Size = UDim2.new(0.9, 0, 0, 1)
-    separator.Position = UDim2.new(0.05, 0, 0, positionY + 30)
     separator.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     separator.BorderSizePixel = 0
     separator.Parent = parent
-
-    -- Update the position tracker for the parent
-    ModernGUILibrary.updatePosition(parent, positionY + 40) -- 25 (label height) + 30 (separator offset) + 5 (padding)
 
     return sectionLabel, separator
 end
